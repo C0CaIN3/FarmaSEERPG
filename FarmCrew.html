@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#313338">
+  <meta name="theme-color" content="#171717">
   <meta name="description" content="FarmCrew – pracovný priestor vašej farmárskej partie v SeeRPG. Zákazky, kalendár, nacenenie a zárobky na jednom mieste.">
   <title>FarmCrew · Farmársky panel</title>
   <script>
-    (()=>{let saved;try{saved=localStorage.getItem('farmcrew_theme_v1');}catch{}const theme=saved==='dark'||saved==='light'?saved:'dark';document.documentElement.dataset.theme=theme;document.documentElement.style.colorScheme=theme;document.querySelector('meta[name="theme-color"]').content=theme==='dark'?'#313338':'#f5f6f3';})();
+    (()=>{let saved;try{saved=localStorage.getItem('farmcrew_theme_v1');}catch{}const theme=saved==='dark'||saved==='light'?saved:'dark';document.documentElement.dataset.theme=theme;document.documentElement.style.colorScheme=theme;document.querySelector('meta[name="theme-color"]').content=theme==='dark'?'#171717':'#f5f6f3';})();
   </script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='14' fill='%23232428'/%3E%3Cpath d='M24 37V23M24 26C9 26 10 12 10 12s15-1 14 14m0-5C23 8 38 8 38 8s1 14-14 15' fill='none' stroke='%2357f287' stroke-width='3'/%3E%3C/svg%3E">
   <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;550;600;650;700;750;800&family=Manrope:wght@500;600;650;700;750;800&display=swap');
@@ -22,13 +22,14 @@
   --hero:#23282a; --hero-text:#f2f6ed; --hero-muted:#b0bab6;
 }
 :root[data-theme=dark] {
+  /* Supabase-style dark: neutral near-black surfaces, hairline borders, emerald brand green. */
   color-scheme:dark;
-  --bg:#313338; --white:#2b2d31; --ink:#f2f3f5; --muted:#b5bac1; --line:#3f4147;
-  --green:#57f287; --bright:#57f287; --soft:#35373c; --orange:#f0c78c;
-  --panel:#2b2d31; --panel-soft:#27292d; --sidebar:#232428; --field:#1e1f22;
-  --text-secondary:#b5bac1; --text-strong:#e5e7eb; --accent:#57f287; --accent-surface:#294536;
-  --accent-text:#91edaf; --hover:#35373c; --shadow:0 5px 20px #00000012;
-  --hero:#23282a; --hero-text:#f2f3f5; --hero-muted:#b0bab6;
+  --bg:#171717; --white:#1c1c1c; --ink:#ededed; --muted:#a0a0a0; --line:#2e2e2e;
+  --green:#3ecf8e; --bright:#3ecf8e; --soft:#242424; --orange:#ffb547;
+  --panel:#1c1c1c; --panel-soft:#1f1f1f; --sidebar:#121212; --field:#121212;
+  --text-secondary:#b4b4b4; --text-strong:#fafafa; --accent:#3ecf8e; --accent-surface:#0f2e21;
+  --accent-text:#3ecf8e; --hover:#232323; --shadow:none;
+  --hero:#1c1c1c; --hero-text:#fafafa; --hero-muted:#a0a0a0;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:13px Inter,system-ui,sans-serif;letter-spacing:-.15px;-webkit-font-smoothing:antialiased}
@@ -157,7 +158,7 @@ input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}input[typ
 @media(max-width:390px){.content{padding-left:15px;padding-right:15px}.page-head h1{font-size:23px}.head-actions .btn{padding:9px;font-size:9px}.head-actions .btn svg{width:13px}.hero h2{font-size:31px}.hero-content{padding:23px}.hero-crew{display:none}.kpi{padding:17px 14px}.kpi-title{font-size:8px}.kpi-value{font-size:22px}.kpi-foot{font-size:7px}.kpi-title svg{width:22px;height:22px;right:10px}.breadcrumb strong{max-width:90px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
-/* Discord-inspired charcoal surfaces, with green fading into the dark panels. */
+/* Supabase-inspired surfaces (originally Discord charcoal); overridden again at the end of the file. */
 :root[data-theme=dark] .topbar{background:#313338ed}
 :root[data-theme=dark] .sidebar{border-right-color:#1e1f22}
 :root[data-theme=dark] .workspace{background:#2b2d31;border-color:#3f4147}
@@ -255,6 +256,70 @@ input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}input[typ
 .pending-row small{color:var(--muted);font-size:10px}
 .pending-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:700px){.pending-row{flex-wrap:wrap;padding:14px 18px}.pending-actions{width:100%}.pending-actions .btn{flex:1;font-size:10px}}
+
+/* Supabase dark theme. Later rules win over the older Discord-style dark overrides above. */
+:root[data-theme=dark] :is(button,a,input,select,textarea,[tabindex]):focus-visible{outline-color:#3ecf8e}
+:root[data-theme=dark] ::selection{background:#3ecf8e;color:#0b2a1d}
+:root[data-theme=dark] :is(input,select,textarea):hover{border-color:#3e3e3e}
+:root[data-theme=dark] :is(input,select,textarea):focus{border-color:#3ecf8e80}
+:root[data-theme=dark] .btn-primary{background:#006239;border:1px solid #3ecf8e4d;color:#fafafa;box-shadow:none}
+:root[data-theme=dark] .btn-primary:hover{filter:none;background:#00703f;border-color:#3ecf8e99}
+:root[data-theme=dark] .btn-secondary{background:#1f1f1f;border-color:#2e2e2e;color:#ededed}
+:root[data-theme=dark] .btn-secondary:hover{background:#262626;border-color:#3e3e3e}
+:root[data-theme=dark] .btn-text{color:#3ecf8e}
+:root[data-theme=dark] .btn-danger{background:#2a1416;color:#ff9592}
+:root[data-theme=dark] .theme-toggle[aria-pressed=true]{color:#3ecf8e;background:#0f2e21;border-color:#3ecf8e4d}
+:root[data-theme=dark] .topbar{background:#171717e6;border-bottom-color:#2e2e2e}
+:root[data-theme=dark] .sidebar{border-right-color:#2e2e2e}
+:root[data-theme=dark] .workspace{background:#1c1c1c;border-color:#2e2e2e}
+:root[data-theme=dark] .nav button.active{background:#242424;color:#fafafa}
+:root[data-theme=dark] .nav button.active svg{color:#3ecf8e}
+:root[data-theme=dark] .card{border-color:#2e2e2e}
+:root[data-theme=dark] .live{background:#3ecf8e}
+:root[data-theme=dark] .hero-tag .live{box-shadow:0 0 0 4px #3ecf8e1a}
+:root[data-theme=dark] .hero{background:linear-gradient(112deg,#0f2e21 0%,#161f1b 42%,#1c1c1c 85%);border-color:#2e2e2e}
+:root[data-theme=dark] .hero:before{background:radial-gradient(ellipse at 70% 30%,#3ecf8e12,transparent 65%)}
+:root[data-theme=dark] .hero h2 em{color:#3ecf8e}
+:root[data-theme=dark] .hero-button{background:#006239;color:#fafafa;border:1px solid #3ecf8e4d}
+:root[data-theme=dark] .hero-button:hover{background:#00703f}
+:root[data-theme=dark] .status-icon{background:#3ecf8e1a;color:#3ecf8e}
+:root[data-theme=dark] .field-tile.tile-12{background:#3ecf8e;box-shadow:0 6px 0 #1f7a52}
+:root[data-theme=dark] .kpi-grid>.kpi:first-child{background:linear-gradient(120deg,#0f3324,#16231d 62%,#1c1c1c);border-color:#1f5a40;color:#fafafa}
+:root[data-theme=dark] .kpi-grid>.kpi:first-child .kpi-title{color:#b4b4b4}
+:root[data-theme=dark] .kpi-grid>.kpi:first-child .kpi-title svg{background:#3ecf8e1a;color:#3ecf8e}
+:root[data-theme=dark] .kpi-grid>.kpi:first-child :is(.kpi-foot,.positive){color:#a0a0a0}
+:root[data-theme=dark] .payout-stat.accent{background:linear-gradient(120deg,#0f3324,#16231d 60%,#1c1c1c);border-color:#1f5a40}
+:root[data-theme=dark] .payout-stat.accent strong{color:#fafafa}
+:root[data-theme=dark] .payout-stat.accent :is(p,small){color:#b4b4b4}
+:root[data-theme=dark] .quote-card{background:linear-gradient(140deg,#0f3324,#16231d 45%,#1c1c1c);border-color:#1f5a40}
+:root[data-theme=dark] .quote-card:before{border-color:#3ecf8e1a}
+:root[data-theme=dark] .quote-price{color:#fafafa}
+:root[data-theme=dark] .login-visual{background:linear-gradient(145deg,#0f3324 0%,#13211b 42%,#121212 90%)}
+:root[data-theme=dark] .login-visual :is(.brand-mark,.brand-name span){color:#3ecf8e}
+:root[data-theme=dark] .season-card{background:linear-gradient(145deg,#1c1c1c,#122219);border-color:#2e2e2e}
+:root[data-theme=dark] .profile{background:#121212}
+:root[data-theme=dark] .modal{background:#1c1c1c;border-color:#2e2e2e}
+:root[data-theme=dark] :is(.modal-header,.modal-footer){background:#1f1f1f}
+:root[data-theme=dark] .modal-overlay{background:#000000b3}
+:root[data-theme=dark] .calendar-day-label{background:#1f1f1f}
+:root[data-theme=dark] .calendar-cell.selected{background:#0f2e21;box-shadow:inset 0 0 0 1px #3ecf8e80}
+:root[data-theme=dark] .cal-event.active{background:#2c2210;color:#ffcf8b}
+:root[data-theme=dark] .bar{background:#1f6f4c}
+:root[data-theme=dark] .bar-wrap:nth-child(5) .bar{background:#3ecf8e}
+:root[data-theme=dark] .bar-wrap:hover .bar{background:#34b27b}
+:root[data-theme=dark] .badge-completed{background:#0f2e21;color:#3ecf8e}
+:root[data-theme=dark] .badge-active{background:#2c2210;color:#ffb547}
+:root[data-theme=dark] .badge-planned{background:#172331;color:#7ab8f5}
+:root[data-theme=dark] .badge-cancelled{background:#2a1416;color:#ff9592}
+:root[data-theme=dark] .badge-draft{background:#242424;color:#a0a0a0}
+:root[data-theme=dark] .avatar{background:#2c2210;color:#ffcf8b;border-color:#1c1c1c}
+:root[data-theme=dark] .avatar.green{background:#0f2e21;color:#3ecf8e}
+:root[data-theme=dark] .avatar.blue{background:#172331;color:#8fc2f5}
+:root[data-theme=dark] .avatar.purple{background:#241a33;color:#c9a8f0}
+:root[data-theme=dark] .error{background:#2a1416;color:#ff9592}
+:root[data-theme=dark] .toast{background:#1f1f1f;color:#ededed;border-color:#3ecf8e66;box-shadow:0 8px 35px #00000066}
+:root[data-theme=dark] .pending-card{border-color:#3ecf8e66}
+:root[data-theme=dark] .toast.error-toast{background:#2a1416;color:#ff9592;border-color:#ff959266}
 </style>
   
 </head>
