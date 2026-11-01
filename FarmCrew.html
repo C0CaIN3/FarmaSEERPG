@@ -566,7 +566,7 @@ async function submitCloudAuth(v){
   if((authMode==='register'||authMode==='password')&&v.password!==v.password2){formError('Heslá sa nezhodujú.');return;}
   cloudBusy=true;document.body.classList.add('cloud-saving');
   try{
-    if(authMode==='register'){const result=await cloud.signUp(name,v.password);if(!result?.session)throw new Error('Email not confirmed');}
+    if(authMode==='register'){const result=await cloud.signUp(name,v.password);if(!result?.session){/* Supabase hides existing accounts behind a user with no identities. */if(result?.user&&Array.isArray(result.user.identities)&&!result.user.identities.length)throw new Error('User already registered');throw new Error('Email not confirmed');}}
     else if(authMode==='password')await cloud.password(v.password);
     else await cloud.signIn(name,v.password);
     authMode='login';

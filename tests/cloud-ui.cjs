@@ -27,6 +27,10 @@ const snapshot={version:3,revision:0,memberId:'member',serverNow:Date.now(),user
   assert(b.elements.get('#form-error').textContent.includes('meno aj priezvisko'));assert.equal(b.run('cloudBusy'),false);
   await b.run("submitCloudAuth({name:'Meno Priezvisko',password:'test-password-only',password2:'ine-heslo-123'})");
   assert(b.elements.get('#form-error').textContent.includes('nezhodujú'));
+  const existing=boot({...cloud,signUp:async()=>({user:{identities:[]},session:null})});await new Promise(setImmediate);
+  existing.run("authMode='register';renderCloudLogin()");
+  await existing.run("submitCloudAuth({name:'Brendon Erenay',password:'heslo-1234',password2:'heslo-1234'})");
+  assert(existing.elements.get('#form-error').textContent.includes('už používa iný účet'));
   b.run("authMode='login';renderCloudLogin()");const loginHtml=b.elements.get('#app').innerHTML;
   assert(!/type="email"|name="email"|Zabudnuté heslo<\/button>/.test(loginHtml));assert(loginHtml.includes('Požiadaj leadera'));
   // A pending registration shows a waiting screen, not a form or business data.
