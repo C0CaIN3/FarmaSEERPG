@@ -4,8 +4,8 @@
 - Projekt: FarmCrew, `yonjpqthjjnkfuicrcpi`, región `eu-central-1` (Frankfurt).
 - API: `https://yonjpqthjjnkfuicrcpi.supabase.co`.
 - Konfigurácia klienta: `config.js`, iba verejný publishable kľúč.
-- Migrácie na projekte: `20261101205644 farmcrew_initial_database`, `20261101205808 farmcrew_explicit_private_policies`, `20261101211647 first_member_registration`. Na nasadenie čaká `20261101215500 name_password_login` (prihlásenie menom a heslom, schvaľovanie členov, nastavenie hesla leaderom).
-- Po kontrole: 0 zákaziek, 0 výplat, 0 členov, 0 auditných udalostí.
+- Migrácie na projekte: `20261101205644 farmcrew_initial_database`, `20261101205808 farmcrew_explicit_private_policies`, `20261101211647 first_member_registration`. `20261101220801 name_password_login` (prihlásenie menom a heslom, schvaľovanie členov, nastavenie hesla leaderom).
+- Prvý člen a leader: **Brendon Erenay** (účet prevedený z e-mailového prihlásenia na prihlásenie menom, heslo zachované).
 
 ## Overené na hostovanom projekte
 
@@ -24,9 +24,9 @@ Výkonnostný advisor eviduje dva [zatiaľ nepoužité indexy](https://supabase.
 
 ## Prihlásenie menom a heslom: zostáva dokončiť v Supabase Dashboarde
 
-1. **SQL Editor:** spustiť celý súbor `supabase/migrations/20261101215500_name_password_login.sql`.
+1. ~~SQL migrácia~~ hotovo 1. 11. 2026; overená rollback testom na hostovanom projekte (čakajúci účet, schválenie, nastavenie hesla leaderom, odhlásenie relácií).
 2. **Authentication → Sign In / Providers → Email:** nechať Email zapnutý a **vypnúť „Confirm email“**. Bez toho registrácia zlyhá, lebo prihlasovacia adresa `…@farmcrew.invalid` nemôže prijať potvrdenie.
 3. **Authentication → Sign In / Providers → Email → Minimum password length:** nastaviť na 8.
-4. Hneď potom sa na stránke zaregistrovať ako prvý člen. Ten je leader. Každý ďalší čaká na schválenie v časti Tím.
+4. Leader už existuje. Každý ďalší člen po registrácii čaká na schválenie v časti Tím.
 
 Prihlásenie, schválenie druhého účtu, nastavenie hesla leaderom a dve zariadenia treba po nasadení vyskúšať na skutočnom projekte. Databázové testy túto kontrolu nenahrádzajú.
