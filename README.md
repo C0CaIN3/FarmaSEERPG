@@ -4,7 +4,9 @@ Farmársky panel v slovenčine. [Verejný web](https://c0cain3.github.io/FarmaSE
 
 ## Stav databázy
 
-Táto vetva pridáva Supabase Auth, spoločnú databázu a serverové oprávnenia. **Aktivácia zatiaľ čaká na konkrétny Supabase projekt a prvého leadera.** Prázdny `config.js` ponecháva existujúce lokálne demo. Inštalácia doplnku v ChatGPT sama databázu nevytvára.
+Panel je pripojený k samostatnému Supabase projektu **FarmCrew** (`yonjpqthjjnkfuicrcpi`, Frankfurt). Databáza je nainštalovaná, bez ukážkových zákaziek a výplat. Skutočný prístup vyžaduje overený účet a členstvo; prvý leader sa pridáva správcom podľa e-mailu určeného vlastníkom.
+
+Aktuálne overenia a zostávajúce nastavenie prvého prihlásenia sú v [database/deployment.md](database/deployment.md).
 
 Presný postup aktivácie, schéma a bezpečnostný model sú v [database/README.md](database/README.md). Do verejného repozitára patrí iba Project URL a publishable kľúč. Heslá, tajné kľúče, osobné zálohy a e-mail vlastníka sem nepatria.
 

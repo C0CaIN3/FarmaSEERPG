@@ -1,6 +1,6 @@
 // Public browser configuration. Never put a secret/service_role key here.
-// Empty values keep the existing local demo available until a project is connected.
+// FarmCrew production project. Access to business data requires verified membership.
 window.FARMCREW_CONFIG = Object.freeze({
-  supabaseUrl: '',
-  publishableKey: ''
+  supabaseUrl: 'https://yonjpqthjjnkfuicrcpi.supabase.co',
+  publishableKey: 'sb_publishable_RsmOVUiAnouwhxgwCGZeag_WqFeRvQH'
 });

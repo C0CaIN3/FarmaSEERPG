@@ -1,6 +1,6 @@
 # Pripojenie Supabase
 
-Implementácia je pripravená, ale prázdny `config.js` úmyselne ponecháva živý web v pôvodnom lokálnom demo režime. Inštalácia doplnku sama nevytvorí projekt ani nenainštaluje schému.
+Projekt FarmCrew je vytvorený a `config.js` obsahuje jeho verejnú konfiguráciu. Schéma je nainštalovaná a overená na Supabase. Aktuálny stav prvého účtu a ďalších nastavení je v [deployment.md](deployment.md). Nasledujúci postup slúži aj na opätovné nasadenie do nového projektu.
 
 ## Aktivácia
 
@@ -27,7 +27,7 @@ Implementácia je pripravená, ale prázdny `config.js` úmyselne ponecháva ži
 
 ## Oprávnenia a dáta
 
-- Tabuľky sú v neexponovanej schéme `farmcrew_private`, majú zapnuté RLS a browser roly k nim nemajú priame práva. Predvolené práva `PUBLIC` na funkcie sú explicitne odobraté.
+- Tabuľky sú v neexponovanej schéme `farmcrew_private`, majú zapnuté RLS s explicitnými zamietacími politikami a browser roly k nim nemajú priame práva. Predvolené práva `PUBLIC` na funkcie sú explicitne odobraté.
 - Dve verejné `SECURITY INVOKER` RPC obálky volajú úzko vymedzené interné funkcie. Tie potrebujú `SECURITY DEFINER` na čítanie chránených tabuliek, majú prázdny `search_path`, plne kvalifikované názvy a pri každom volaní overujú `auth.uid()`, potvrdený e-mail a aktívne členstvo. Oprávnenia sa nečítajú z používateľom upraviteľných metadát.
 - Zamestnanec predvolene dostane sanitizovaný kalendár, vlastné odmeny a vlastné výplaty. Zákaznícke mená, poznámky, cena a cudzie percentá sa mu vôbec neposielajú. Percento pri vlastnej odmene je v tomto pohľade skryté, aby z neho nebolo možné dopočítať cenu zákazky.
 - Povolenie Prehľad, Zákazky, Kalkulačka alebo Štatistiky sprístupní obchodné údaje. Povolenie Zákazky umožní aj ich úpravy a stopky. Členov, roly, cenník a výplaty vždy mení iba leader.

@@ -49,6 +49,12 @@ alter table farmcrew_private.jobs enable row level security;
 alter table farmcrew_private.payments enable row level security;
 alter table farmcrew_private.audit enable row level security;
 revoke all on all tables in schema farmcrew_private from public, anon, authenticated;
+-- Explicit deny policies document that all browser access goes through the RPC API.
+create policy rpc_only on farmcrew_private.workspace for all to anon,authenticated using (false) with check (false);
+create policy rpc_only on farmcrew_private.members for all to anon,authenticated using (false) with check (false);
+create policy rpc_only on farmcrew_private.jobs for all to anon,authenticated using (false) with check (false);
+create policy rpc_only on farmcrew_private.payments for all to anon,authenticated using (false) with check (false);
+create policy rpc_only on farmcrew_private.audit for all to anon,authenticated using (false) with check (false);
 
 create function farmcrew_private.actor() returns farmcrew_private.members
 language plpgsql stable security definer set search_path = '' as $$
