@@ -19,7 +19,9 @@ export function createCloud(config, factory = createClient) {
     const auth = check(await client.auth.getUser());
     if (!auth?.user) return null;
     identity = auth.user.id;
-    const snapshot = check(await client.rpc('farmcrew_snapshot'));
+    // The database decides the role once. User metadata supplies only a display name.
+    const fullName = typeof auth.user.user_metadata?.full_name === 'string' ? auth.user.user_metadata.full_name : 'Člen partie';
+    const snapshot = check(await client.rpc('farmcrew_join', { p_name: fullName }));
     if (!snapshot || snapshot.authId !== identity) throw new Error('Neplatná odpoveď databázy.');
     revision = snapshot.revision;
     return snapshot;
@@ -37,7 +39,7 @@ export function createCloud(config, factory = createClient) {
       return result;
     },
     async signIn(email, password) { check(await client.auth.signInWithPassword({ email: email.trim(), password })); },
-    async signUp(email, password) { return check(await client.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: redirectTo() } })); },
+    async signUp(email, password, name) { return check(await client.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: redirectTo(), data: { full_name: name.trim() } } })); },
     async reset(email) { check(await client.auth.resetPasswordForEmail(email.trim(), { redirectTo: redirectTo() })); },
     async password(password) { check(await client.auth.updateUser({ password })); },
     async signOut() { check(await client.auth.signOut({ scope: 'local' })); revision = null; identity = null; },

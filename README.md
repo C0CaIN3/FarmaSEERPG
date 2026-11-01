@@ -4,9 +4,9 @@ Farmársky panel v slovenčine. [Verejný web](https://c0cain3.github.io/FarmaSE
 
 ## Stav databázy
 
-Panel je pripojený k samostatnému Supabase projektu **FarmCrew** (`yonjpqthjjnkfuicrcpi`, Frankfurt). Databáza je nainštalovaná, bez ukážkových zákaziek a výplat. Skutočný prístup vyžaduje overený účet a členstvo; prvý leader sa pridáva správcom podľa e-mailu určeného vlastníkom.
+Panel je pripojený k samostatnému Supabase projektu **FarmCrew** (`yonjpqthjjnkfuicrcpi`, Frankfurt). Databáza je nainštalovaná, bez ukážkových zákaziek a výplat. Registrácia je otvorená. Prvý overený člen, ktorý vstúpi do panelu, automaticky získa plné práva leadera. Ďalšie účty sa pridajú ako zamestnanci s kalendárom a vlastnými odmenami.
 
-Aktuálne overenia a zostávajúce nastavenie prvého prihlásenia sú v [database/deployment.md](database/deployment.md).
+Aktuálne overenia a nastavenie prihlásenia sú v [database/deployment.md](database/deployment.md).
 
 Presný postup aktivácie, schéma a bezpečnostný model sú v [database/README.md](database/README.md). Do verejného repozitára patrí iba Project URL a publishable kľúč. Heslá, tajné kľúče, osobné zálohy a e-mail vlastníka sem nepatria.
 

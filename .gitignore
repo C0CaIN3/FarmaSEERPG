@@ -9,3 +9,5 @@ _site/
 farmcrew-zaloha-*.json
 farmcrew-zakazky-*.csv
 .openai/
+supabase/.temp/
+supabase/.branches/
