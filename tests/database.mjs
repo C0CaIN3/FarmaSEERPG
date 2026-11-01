@@ -12,7 +12,7 @@ await db.exec(`create role anon; create role authenticated; create schema auth;
   create table auth.sessions(id uuid primary key default gen_random_uuid(),user_id uuid not null);
   create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
   grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated;`);
-for (const name of ['schema.sql','registration.sql','name-login.sql']) await db.exec(await readFile(new URL('../database/'+name, import.meta.url), 'utf8'));
+for (const name of ['schema.sql','registration.sql','name-login.sql','job-floor-phone.sql']) await db.exec(await readFile(new URL('../database/'+name, import.meta.url), 'utf8'));
 await db.query(`insert into auth.users(id,email,email_confirmed_at) values ($1,'owner@example.test',now()),($2,'worker@example.test',now()),($3,'stranger@example.test',now()),($4,'unverified@example.test',null)`, [owner,employee,stranger,unverified]);
 await db.exec(`insert into farmcrew_private.members(id,name,email,role) values
   ('owner','Leader Test','owner@example.test','leader'),('worker','Pracovník Test','worker@example.test','employee'),('unverified','Neoverený Test','unverified@example.test','employee');`);
@@ -36,16 +36,18 @@ await assert.rejects(()=>command('member_save',{name:'Hacker Test',email:'hacker
 await assert.rejects(()=>command('permissions_save',{employee:['jobs']},employee),/FORBIDDEN/);
 await assert.rejects(()=>command('settings_save',{share:100},employee),/FORBIDDEN/);
 await assert.rejects(()=>command('job_save',{},employee),/FORBIDDEN/);
-let base={first:'Súkromné',last:'Meno zákazníka',farm:'7',floor:'Prízemie',fields:80,works:['Okopávanie','Sadenie'],
+let base={first:'Súkromné',last:'Meno zákazníka',phone:' 555  0123 ',farm:'7',floor:'15',fields:80,works:['Okopávanie','Sadenie'],
   crew:['owner','worker'],workerShares:{owner:25,worker:55},date:'2027-06-02',time:'14:20',price:10000,status:'planned',estimatedDurationSeconds:1200,note:'Tajná poznámka'};
 await assert.rejects(()=>command('job_save',{...base,workerShares:{owner:60,worker:50}}),/INVALID_SHARES/);
 await assert.rejects(()=>command('job_save',{...base,farm:'8'}),/INVALID_JOB/);
+for(const floor of ['0','16','Prízemie','',' 3','03'])await assert.rejects(()=>command('job_save',{...base,floor}),/INVALID_JOB/);
+for(const phone of ['12','abc-123','5'.repeat(21),'555;0123',123,null])await assert.rejects(()=>command('job_save',{...base,phone}),/INVALID_JOB/);
 await assert.rejects(()=>command('job_save',{...base,time:'14:10'}),/INVALID_JOB/);
 await assert.rejects(()=>command('job_save',{...base,date:'2027-02-30'}),/date\/time field value out of range/);
 await assert.rejects(()=>command('job_save',{...base,status:'completed'}),/INVALID_STATUS/);
 let result=await command('job_save',{...base,startedAt:1,completedAt:1,durationSeconds:999});
 const id=result.changedId;
-assert.equal(id,'FC-1'); assert.equal(result.jobs[0].startedAt,null);assert.equal(result.jobs[0].durationSeconds,0);
+assert.equal(id,'FC-1'); assert.equal(result.jobs[0].phone,'555 0123'); assert.equal(result.jobs[0].floor,'15'); assert.equal(result.jobs[0].startedAt,null);assert.equal(result.jobs[0].durationSeconds,0);
 await assert.rejects(()=>command('job_save',{...base,id,status:'completed'}),/INVALID_STATUS/);
 await assert.rejects(()=>command('job_save',{...base,id,status:'active',startedAt:1}),/INVALID_STATUS/);
 await assert.rejects(()=>command('job_save',{...base,id,status:null}),/INVALID_STATUS/);
@@ -67,7 +69,7 @@ assert.equal(job.myReward,5500);
 for(const key of ['first','last','note','price','workerShares','share']) assert(!Object.hasOwn(job,key),key);
 assert(!Object.hasOwn(personal.users[0],'email'));
 assert(!Object.hasOwn(personal.settings,'hourRate'));
-assert(!JSON.stringify(personal).includes('Tajná poznámka'));
+assert(!JSON.stringify(personal).includes('Tajná poznámka'));assert(!JSON.stringify(personal).includes('555'));assert(!('phone' in job));assert.equal(job.floor,'15');
 result=await command('payment_add',{uid:'worker',amount:4000,date:'2026-01-01',note:'Odoslané v hre'});
 await assert.rejects(()=>command('payment_add',{uid:'worker',amount:1501,date:'2026-01-01'}),/PAYMENT_EXCEEDS_BALANCE/);
 await assert.rejects(()=>command('payment_add',{uid:'worker',amount:1,date:'2099-01-01'}),/FUTURE_PAYMENT/);

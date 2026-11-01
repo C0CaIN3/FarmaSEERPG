@@ -13,7 +13,7 @@ function boot(initial,initialNow=Date.parse('2027-05-03T08:00:00Z')){
 }
 let b=boot(),r=b.run;
 assert.equal(r('data.version'),3);assert(r("data.jobs.filter(j=>j.status==='planned').every(j=>j.durationSeconds===0&&j.estimatedDurationSeconds>0)"));
-const vals={first:'Test',last:'Časovač',farm:'3',floor:'prízemie',fields:'80',works:['Okopávanie','Sadenie'],crew:['u1','u2'],date:'2027-06-01',time:'12:00',price:'10000',status:'planned',note:'automatické meranie','share-u1':'30','share-u2':'20'};
+const vals={first:'Test',last:'Časovač',farm:'3',floor:'3',fields:'80',works:['Okopávanie','Sadenie'],crew:['u1','u2'],date:'2027-06-01',time:'12:00',price:'10000',status:'planned',note:'automatické meranie','share-u1':'30','share-u2':'20'};
 const before=r('data.jobs.length'),earnedBefore=r("earned('u1')");b.submit(vals);assert.equal(r('data.jobs.length'),before+1);const id=r('data.jobs.at(-1).id');assert.equal(r('data.jobs.at(-1).durationSeconds'),0);assert.equal(r('data.jobs.at(-1).estimatedDurationSeconds'),0);assert.equal(r('scheduleSeconds(data.jobs.at(-1))'),1200);
 assert.equal(r(`finishJob('${id}')`),false);assert.equal(r("earned('u1')"),earnedBefore);
 r('jobForm()');const form=b.elements.get('#overlay-root').innerHTML;assert(form.includes('Odhad trvania pre kalendár (nepovinné)'));assert(!form.includes('Čas práce *'));for(const input of form.matchAll(/<input[^>]*name="duration(?:Hours|Minutes|SecondsPart)"[^>]*>/g))assert(!input[0].includes(' required'));

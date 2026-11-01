@@ -55,6 +55,8 @@ const snapshot={version:3,revision:0,memberId:'member',serverNow:Date.now(),user
   reject=true;assert.equal(await b.run("cloudWrite('job_finish',{id:'FC-1'})"),false);assert.equal(b.run('data.revision'),1);assert.equal(b.run('cloudBusy'),false);
   assert(b.elements.get('#form-error').textContent.includes('medzitým zmenil'));
   assert.equal(b.stored.get('farmcrew_data_v1'),'{"original":"kept"}');
+  b.run("jobForm()");const formHtml=b.elements.get('#overlay-root').innerHTML;
+  assert(formHtml.includes('name="phone"'));assert.equal((formHtml.match(/\. poschodie<\/option>/g)||[]).length,15);assert(!formHtml.includes('prízemie'));
   for(const route of routes){b.run(`page='${route}';render()`);const html=b.elements.get('#app').innerHTML;assert(!html.includes('NaN'),route);assert(!html.includes('undefined'),route);}
   console.log('PASS: name and password forms without e-mail, waiting screen for pending accounts, leader approval list, configured SDK failures stay signed out, no fake cloud profiles, local backup preservation, all shared views, duplicate writes blocked, failed writes retain data and surface errors.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

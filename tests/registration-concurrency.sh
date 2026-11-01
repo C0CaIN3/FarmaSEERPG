@@ -5,7 +5,7 @@ case "$TEST_DATABASE_URL" in
   postgresql://*@127.0.0.1:5432/farmcrew_test) ;;
   *) echo 'This test only runs against the disposable localhost farmcrew_test database.' >&2; exit 1 ;;
 esac
-psql "$TEST_DATABASE_URL" -Xq -v ON_ERROR_STOP=1 -f tests/postgres-auth-fixture.sql -f database/schema.sql -f database/registration.sql -f database/name-login.sql
+psql "$TEST_DATABASE_URL" -Xq -v ON_ERROR_STOP=1 -f tests/postgres-auth-fixture.sql -f database/schema.sql -f database/registration.sql -f database/name-login.sql -f database/job-floor-phone.sql
 registration_test_dir=$(mktemp -d)
 trap 'rm -rf "$registration_test_dir"' EXIT
 register_racer() {

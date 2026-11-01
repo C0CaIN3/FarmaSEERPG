@@ -8,7 +8,7 @@ await db.exec(`create role anon;create role authenticated;create schema auth;
   create table auth.sessions(id uuid primary key default gen_random_uuid(),user_id uuid not null);
   create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
   grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;`);
-for(const name of ['schema.sql','registration.sql','name-login.sql'])await db.exec(await readFile(new URL('../database/'+name,import.meta.url),'utf8'));
+for(const name of ['schema.sql','registration.sql','name-login.sql','job-floor-phone.sql'])await db.exec(await readFile(new URL('../database/'+name,import.meta.url),'utf8'));
 const ids=Array.from({length:7},(_,i)=>`00000000-0000-0000-0000-00000000000${i+1}`);
 // Name logins are auto-confirmed by Supabase Auth; ids[0] simulates an unconfirmed account.
 for(let i=0;i<ids.length;i++)await db.query('insert into auth.users(id,email,email_confirmed_at) values($1,$2,$3)',[ids[i],`clen.${i}@farmcrew.invalid`,i===0?null:new Date()]);
@@ -40,7 +40,7 @@ const pendingRow=(await snapshot(ids[1])).users.find(u=>u.name==='Druhý Zamestn
 assert.equal(pendingRow.pending,true);assert.equal(pendingRow.active,false);assert.equal(pendingRow.role,'employee');
 
 // A pending member cannot be assigned to work.
-const job={first:'Ján',last:'Zákazník',farm:'1',floor:'Prízemie',fields:40,works:['Sadenie'],crew:[pendingRow.id],workerShares:{[pendingRow.id]:50},date:'2026-11-02',time:'10:00',price:1000,status:'planned'};
+const job={first:'Ján',last:'Zákazník',farm:'1',floor:'1',fields:40,works:['Sadenie'],crew:[pendingRow.id],workerShares:{[pendingRow.id]:50},date:'2026-11-02',time:'10:00',price:1000,status:'planned'};
 await assert.rejects(()=>command(ids[1],'job_save',job),/INVALID_SHARES/);
 
 // Approval grants employee access; other employees never see pending registrations.

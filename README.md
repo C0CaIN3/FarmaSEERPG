@@ -12,7 +12,7 @@ Presný postup aktivácie, schéma a bezpečnostný model sú v [database/README
 
 ## Funkcie
 
-- Zákazky s menom zákazníka, farmou 1–7, voľným poschodím, 40/80/120 políčkami a viacerými úkonmi: Okopávanie, Rylovanie, Polievanie, Sadenie.
+- Zákazky s menom a nepovinným telefónom zákazníka, farmou 1–7, poschodím 1–15, 40/80/120 políčkami a viacerými úkonmi: Okopávanie, Rylovanie, Polievanie, Sadenie.
 - Kalendár s termínmi každých 20 minút a kontrolou kolízií pracovníkov.
 - Automatické stopky Začať → Dokončiť. Skutočné trvanie sa zadávať vopred nemusí; nepovinný odhad slúži na rezerváciu termínu.
 - Nacenenie z histórie podľa úkonov, políčok, počtu pracovníkov, času a predchádzajúcej ceny. Výsledok je orientačný.

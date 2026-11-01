@@ -4,7 +4,7 @@
 - Projekt: FarmCrew, `yonjpqthjjnkfuicrcpi`, región `eu-central-1` (Frankfurt).
 - API: `https://yonjpqthjjnkfuicrcpi.supabase.co`.
 - Konfigurácia klienta: `config.js`, iba verejný publishable kľúč.
-- Migrácie na projekte: `20261101205644 farmcrew_initial_database`, `20261101205808 farmcrew_explicit_private_policies`, `20261101211647 first_member_registration`. `20261101220801 name_password_login` (prihlásenie menom a heslom, schvaľovanie členov, nastavenie hesla leaderom).
+- Migrácie na projekte: `20261101205644 farmcrew_initial_database`, `20261101205808 farmcrew_explicit_private_policies`, `20261101211647 first_member_registration`. `20261101220801 name_password_login` (prihlásenie menom a heslom, schvaľovanie členov, nastavenie hesla leaderom). `20261101224048 job_floor_phone` (poschodie 1–15, telefónne číslo zákazníka skryté v obmedzenom pohľade zamestnanca).
 - Prvý člen a leader: **Brendon Erenay** (účet prevedený z e-mailového prihlásenia na prihlásenie menom, heslo zachované).
 
 ## Overené na hostovanom projekte
