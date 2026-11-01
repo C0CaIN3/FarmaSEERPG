@@ -7,7 +7,7 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "node --check app.js && node tests/timers.cjs && node tests/database.mjs && node tests/registration.mjs && node tests/cloud-client.mjs && node tests/cloud-ui.cjs",
+    "test": "node --check app.js && node tests/timers.cjs && node tests/database.mjs && node tests/name-auth.mjs && node tests/name-auth-handler.mjs && node tests/cloud-client.mjs && node tests/cloud-ui.cjs",
     "build": "node scripts/build.mjs"
   },
   "keywords": [],

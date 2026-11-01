@@ -22,10 +22,8 @@
 
 Výkonnostný advisor eviduje dva [zatiaľ nepoužité indexy](https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index). Pri novej prázdnej databáze je to očakávané; indexy zostávajú pre budúce vyhľadávanie pracovníkov a výplat.
 
-## Prvé prihlásenie
+## Aktuálne prihlásenie
 
-Registrácia je otvorená. Prvý overený člen, ktorý vstúpi do panelu, automaticky získa plné práva leadera. Ďalší sa pridajú ako zamestnanci. E-mail prvého leadera sa nemusí ručne zapisovať ani ukladať do repozitára. Pridelenie prebieha pod databázovým zámkom a jednorazový príznak zabraňuje opätovnému otvoreniu registrácie leadera.
+Registrácia a prihlásenie používajú iba meno, priezvisko a heslo. Prvá dokončená registrácia dostane plné práva leadera, ďalšie zamestnaneckú rolu. Nevyžaduje sa kontaktný e-mail, potvrdzovanie ani návrat z e-mailového odkazu.
 
-Pred prvým prihlásením treba v Supabase Auth overiť návratové adresy na `https://c0cain3.github.io/FarmaSEERPG/` a doručovanie potvrdení. Doplnok neponúka úpravu Auth URL configuration; táto časť sa dokončuje v Supabase Dashboarde. Pre celú partiu je potrebné overiť SMTP a jeho limity podľa [postupu nasadenia](README.md).
-
-Skutočné prihlásenie vlastníka, doručenie e-mailu a dve zariadenia zatiaľ nie sú overené. Databázové smoke testy túto kontrolu nenahrádzajú.
+Podrobný popis je v [NAME_AUTH.md](NAME_AUTH.md). Predchádzajúce obmedzenie nastavenia Auth Dashboardu sa tejto prihlasovacej cesty netýka.

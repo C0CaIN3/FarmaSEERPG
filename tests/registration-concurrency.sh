@@ -5,15 +5,15 @@ case "$TEST_DATABASE_URL" in
   postgresql://*@127.0.0.1:5432/farmcrew_test) ;;
   *) echo 'This test only runs against the disposable localhost farmcrew_test database.' >&2; exit 1 ;;
 esac
-psql "$TEST_DATABASE_URL" -Xq -v ON_ERROR_STOP=1 -f tests/postgres-auth-fixture.sql -f database/schema.sql -f database/registration.sql
+psql "$TEST_DATABASE_URL" -Xq -v ON_ERROR_STOP=1 -f tests/postgres-auth-fixture.sql -f database/schema.sql -f database/registration.sql -f database/name-auth.sql
 registration_test_dir=$(mktemp -d)
 trap 'rm -rf "$registration_test_dir"' EXIT
 register_racer() {
   psql "$TEST_DATABASE_URL" -Xq -v ON_ERROR_STOP=1 <<SQL
 begin;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000000$1',true);
-set local role authenticated;
-select public.farmcrew_join('Súbežný Člen $1');
+set local role service_role;
+select public.farmcrew_name_enroll('00000000-0000-0000-0000-00000000000$1',repeat(case when $1=1 then 'a' else 'b' end,64),'Súbežný','Člen $1');
 select pg_sleep(0.4);
 commit;
 SQL

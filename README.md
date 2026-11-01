@@ -4,11 +4,11 @@ Farmársky panel v slovenčine. [Verejný web](https://c0cain3.github.io/FarmaSE
 
 ## Stav databázy
 
-Panel je pripojený k samostatnému Supabase projektu **FarmCrew** (`yonjpqthjjnkfuicrcpi`, Frankfurt). Databáza je nainštalovaná, bez ukážkových zákaziek a výplat. Registrácia je otvorená. Prvý overený člen, ktorý vstúpi do panelu, automaticky získa plné práva leadera. Ďalšie účty sa pridajú ako zamestnanci s kalendárom a vlastnými odmenami.
+Panel je pripojený k samostatnému Supabase projektu **FarmCrew** (`yonjpqthjjnkfuicrcpi`, Frankfurt). Databáza je nainštalovaná, bez ukážkových zákaziek a výplat. Registrácia je otvorená. Registrácia a prihlásenie používajú meno, priezvisko a heslo bez e-mailu alebo potvrdenia. Prvá dokončená registrácia automaticky získa plné práva leadera. Ďalšie účty sa pridajú ako zamestnanci s kalendárom a vlastnými odmenami.
 
 Aktuálne overenia a nastavenie prihlásenia sú v [database/deployment.md](database/deployment.md).
 
-Presný postup aktivácie, schéma a bezpečnostný model sú v [database/README.md](database/README.md). Do verejného repozitára patrí iba Project URL a publishable kľúč. Heslá, tajné kľúče, osobné zálohy a e-mail vlastníka sem nepatria.
+Aktuálny spôsob prihlásenia a bezpečnostný model sú v [database/NAME_AUTH.md](database/NAME_AUTH.md). Do verejného repozitára patrí iba Project URL a publishable kľúč. Heslá, tajné kľúče, osobné zálohy a e-mail vlastníka sem nepatria.
 
 ## Funkcie
 
@@ -18,7 +18,7 @@ Presný postup aktivácie, schéma a bezpečnostný model sú v [database/README
 - Nacenenie z histórie podľa úkonov, políčok, počtu pracovníkov, času a predchádzajúcej ceny. Výsledok je orientačný.
 - Individuálny podiel každého pracovníka z celej ceny, spolu najviac 100 %. Odmena vzniká po dokončení práce.
 - Evidencia výplat v hernej mene, kontrola nároku a ochrana už vyplatených odmien. Aplikácia sama peniaze neposiela.
-- V spoločnom režime: vlastné overené účty, roly, blokovanie členov, sanitizovaný kalendár a vlastné odmeny zamestnanca; leader spravuje obchodné údaje a výplaty.
+- V spoločnom režime: vlastné účty s menom a heslom, roly, blokovanie členov, sanitizovaný kalendár a vlastné odmeny zamestnanca; leader spravuje obchodné údaje a výplaty.
 - Aktualizácia spoločného panelu každých 20 sekúnd, ochrana súbežných zmien a serverový čas stopiek.
 - CSV export a JSON zálohy; zachovanie pôvodnej lokálnej zálohy.
 - Tmavý Discord štýl so zelenými akcentmi, svetlý režim, mobilné rozhranie a ovládanie klávesnicou.

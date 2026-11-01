@@ -1,0 +1,34 @@
+import {PGlite} from '@electric-sql/pglite';
+import {readFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const db=new PGlite();
+await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;
+create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_app_meta_data jsonb default '{}');
+create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;`);
+for(const name of ['schema.sql','registration.sql','name-auth.sql'])await db.exec(await readFile(new URL('../database/'+name,import.meta.url),'utf8'));
+const ids=Array.from({length:4},(_,i)=>`00000000-0000-0000-0000-00000000000${i+1}`),keys=['a','b','c','d'].map(x=>x.repeat(64));
+for(let i=0;i<ids.length;i++)await db.query('insert into auth.users values($1,$2,now(),$3)',[ids[i],keys[i]+'@members.farmcrew.invalid',JSON.stringify({farmcrew_name_login:'v1'})]);
+async function enroll(i,role='service_role'){
+await db.exec('reset role');await db.exec('set role '+role);
+return (await db.query('select public.farmcrew_name_enroll($1,$2,$3,$4) as s',[ids[i],keys[i],'Člen','Test'+i])).rows[0].s;}
+await assert.rejects(()=>enroll(0,'anon'),/permission denied/);
+await assert.rejects(()=>enroll(0,'authenticated'),/permission denied/);
+const first=await enroll(0);assert.equal(first.role,'leader');
+assert.equal((await enroll(0)).memberId,first.memberId);
+const second=await enroll(1);assert.equal(second.role,'employee');
+await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[ids[0]]);await db.exec('set role authenticated');
+const snapshot=(await db.query('select public.farmcrew_snapshot() as s')).rows[0].s;
+assert.equal(snapshot.permissions.leader.length,8);assert(!JSON.stringify(snapshot.users).includes('email'));
+await assert.rejects(()=>db.query("select public.farmcrew_join('Fake User')"),/permission denied/);
+await assert.rejects(()=>db.query('select public.farmcrew_command($1,$2,$3,$4)',['member_save',JSON.stringify({id:first.memberId,name:'Iné Meno',role:'leader',active:true}),snapshot.revision,crypto.randomUUID()]),/LOGIN_NAME_IMMUTABLE/);
+await db.exec('reset role');await db.query('update farmcrew_private.members set active=false where id=$1',[second.memberId]);
+await assert.rejects(()=>enroll(1),/MEMBERSHIP_REQUIRED/);
+await db.exec('reset role');await db.exec("update auth.users set raw_app_meta_data='{}' where email like 'cccc%'");
+await assert.rejects(()=>enroll(2),/INVALID_ACCOUNT/);
+await db.exec('reset role');await db.exec('set role service_role');
+for(let i=0;i<10;i++)assert.equal((await db.query('select public.farmcrew_name_attempt($1,$2,false) as ok',[keys[0],keys[1]])).rows[0].ok,true);
+assert.equal((await db.query('select public.farmcrew_name_attempt($1,$2,false) as ok',[keys[0],keys[1]])).rows[0].ok,false);
+await db.exec('reset role');await db.exec('delete from farmcrew_private.members;delete from farmcrew_private.name_accounts');
+assert.equal((await enroll(3)).role,'employee');
+await db.close();console.log('PASS: managed named accounts, service-only enrollment, first leader, employee defaults, retries, private identifiers, immutable login names, blocked accounts, closed old signup route, rate limits and permanent bootstrap latch.');

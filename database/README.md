@@ -1,3 +1,7 @@
+# Aktuálne prihlásenie
+
+Aktívne je prihlásenie menom, priezviskom a heslom bez e-mailu a potvrdzovania. Pozri [NAME_AUTH.md](NAME_AUTH.md). Nasledujúce nastavenie e-mailového Auth je historický postup pred touto zmenou a pre aktívny panel sa nepoužíva.
+
 # Pripojenie Supabase
 
 Projekt FarmCrew je vytvorený a `config.js` obsahuje jeho verejnú konfiguráciu. Schéma je nainštalovaná a overená na Supabase. Aktuálny stav prvého účtu a ďalších nastavení je v [deployment.md](deployment.md). Nasledujúci postup slúži aj na opätovné nasadenie do nového projektu.

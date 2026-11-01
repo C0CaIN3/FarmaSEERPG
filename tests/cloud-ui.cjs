@@ -21,8 +21,8 @@ const snapshot={version:3,revision:0,memberId:'member',serverNow:Date.now(),user
   assert(b.elements.get('#app').innerHTML.includes('Prihlásiť sa'));assert(!b.elements.get('#app').innerHTML.includes('data-login'));
   b.run("authMode='register';renderCloudLogin()");
   const registrationHtml=b.elements.get('#app').innerHTML;
-  assert(registrationHtml.includes('name="name"'));assert(registrationHtml.includes('Prvý overený člen'));assert(!registrationHtml.includes('name="role"'));
-  await b.run("submitCloudAuth({name:'X',email:'test@example.test',password:'test-password-only'})");
+  assert(registrationHtml.includes('name="first"')&&registrationHtml.includes('name="last"')&&!registrationHtml.includes('type="email"'));assert(registrationHtml.includes('Prvý vytvorený účet'));assert(!registrationHtml.includes('name="role"'));
+  await b.run("submitCloudAuth({first:'',last:'Test',password:'test-password-only'})");
   assert(b.elements.get('#form-error').textContent.includes('meno a priezvisko'));assert.equal(b.run('cloudBusy'),false);
   b.run("authMode='login'");
   b.run(`acceptCloud(${JSON.stringify(snapshot)});land();render()`);

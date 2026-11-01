@@ -6,11 +6,12 @@ const owner = '00000000-0000-0000-0000-000000000001';
 const employee = '00000000-0000-0000-0000-000000000002';
 const stranger = '00000000-0000-0000-0000-000000000003';
 const unverified = '00000000-0000-0000-0000-000000000004';
-await db.exec(`create role anon; create role authenticated; create schema auth;
+await db.exec(`create role anon; create role authenticated; create role service_role; create schema auth;
   create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);
   create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
   grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated;`);
 await db.exec(await readFile(new URL('../database/schema.sql', import.meta.url), 'utf8'));
+for(const name of ['registration.sql','name-auth.sql'])await db.exec(await readFile(new URL('../database/'+name,import.meta.url),'utf8'));
 await db.query(`insert into auth.users values ($1,'owner@example.test',now()),($2,'worker@example.test',now()),($3,'stranger@example.test',now()),($4,'unverified@example.test',null)`, [owner,employee,stranger,unverified]);
 await db.exec(`insert into farmcrew_private.members(id,name,email,role) values
   ('owner','Leader Test','owner@example.test','leader'),('worker','Pracovník Test','worker@example.test','employee'),('unverified','Neoverený Test','unverified@example.test','employee');`);
