@@ -55,6 +55,13 @@ const snapshot={version:3,revision:0,memberId:'member',serverNow:Date.now(),user
   reject=true;assert.equal(await b.run("cloudWrite('job_finish',{id:'FC-1'})"),false);assert.equal(b.run('data.revision'),1);assert.equal(b.run('cloudBusy'),false);
   assert(b.elements.get('#form-error').textContent.includes('medzitým zmenil'));
   assert.equal(b.stored.get('farmcrew_data_v1'),'{"original":"kept"}');
+  // Earlier visits of the same customer show up while typing the name.
+  b.run(`data.jobs=[{id:'FC-1',first:'Ján',last:'Novák',phone:'555-0123',farm:'3',floor:'7',fields:80,works:['Sadenie'],crew:['member'],workerShares:{member:50},date:'2026-10-01',time:'10:00',price:12000,status:'completed'},{id:'FC-2',first:'jan',last:'NOVAK',farm:'4',floor:'2',fields:40,works:['Rylovanie'],crew:['member'],workerShares:{member:50},date:'2026-10-20',time:'12:00',price:5000,status:'cancelled'},{id:'FC-3',first:'Iný',last:'Človek',farm:'1',floor:'1',fields:40,works:['Sadenie'],crew:['member'],workerShares:{member:50},date:'2026-10-25',time:'12:00',price:999,status:'planned'}]`);
+  const history=b.run("customerHistoryHtml(' Jan ','novák')");
+  assert(history.includes('sme už boli 2×'));assert(history.includes('12'+String.fromCharCode(160)+'000')||history.includes('12 000')||history.includes('12,000')||history.includes('12000'));assert(history.includes('555-0123'));assert(history.includes('data-id="FC-1"'));assert(!history.includes('999'));
+  assert.equal(b.run("customerHistoryHtml('Ján','')"),'');assert.equal(b.run("customerHistoryHtml('Nový','Zákazník')"),'');
+  assert.equal(b.run("customerJobs('Ján','Novák','FC-1').length"),1);
+  b.run("data.jobs=[]");
   b.run("jobForm()");const formHtml=b.elements.get('#overlay-root').innerHTML;
   assert(formHtml.includes('name="phone"'));assert.equal((formHtml.match(/\. poschodie<\/option>/g)||[]).length,15);assert(!formHtml.includes('prízemie'));
   for(const route of routes){b.run(`page='${route}';render()`);const html=b.elements.get('#app').innerHTML;assert(!html.includes('NaN'),route);assert(!html.includes('undefined'),route);}

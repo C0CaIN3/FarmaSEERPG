@@ -15,6 +15,7 @@ Presný postup aktivácie, schéma a bezpečnostný model sú v [database/README
 - Zákazky s menom a nepovinným telefónom zákazníka, farmou 1–7, poschodím 1–15, 40/80/120 políčkami a viacerými úkonmi: Okopávanie, Rylovanie, Polievanie, Sadenie.
 - Kalendár s termínmi každých 20 minút a kontrolou kolízií pracovníkov.
 - Automatické stopky Začať → Dokončiť. Skutočné trvanie sa zadávať vopred nemusí; nepovinný odhad slúži na rezerváciu termínu.
+- Pri novej zákazke sa po zadaní mena ukáže, či u zákazníka už partia bola, kedy, čo robila a koľko nacenila; jedným klikom sa údaje vyplnia ako minule.
 - Nacenenie z histórie podľa úkonov, políčok, počtu pracovníkov, času a predchádzajúcej ceny. Výsledok je orientačný.
 - Individuálny podiel každého pracovníka z celej ceny, spolu najviac 100 %. Odmena vzniká po dokončení práce.
 - Evidencia výplat v hernej mene, kontrola nároku a ochrana už vyplatených odmien. Aplikácia sama peniaze neposiela.

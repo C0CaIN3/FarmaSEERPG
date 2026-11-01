@@ -308,3 +308,22 @@ input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}input[typ
 :root[data-theme=dark] .toast{background:#1f1f1f;color:#ededed;border-color:#3ecf8e66;box-shadow:0 8px 35px #00000066}
 :root[data-theme=dark] .pending-card{border-color:#3ecf8e66}
 :root[data-theme=dark] .toast.error-toast{background:#2a1416;color:#ff9592;border-color:#ff959266}
+/* Earlier visits of the same customer inside the job form. */
+#customer-history:empty{display:none}
+.customer-history{display:grid;gap:12px;padding:16px 18px;border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));background:var(--accent-surface);border-radius:12px}
+.customer-history-head{display:flex;align-items:center;gap:12px;color:var(--accent-text)}
+.customer-history-head>div{flex:1;min-width:0;display:grid;gap:3px}
+.customer-history-head b{color:var(--ink);font-size:13px}
+.customer-history-head small,.customer-history>small{color:var(--muted);font-size:10px}
+.customer-history-head .btn{flex-shrink:0;font-size:10px;padding:8px 11px;min-height:0}
+.customer-last{display:grid;grid-template-columns:auto 1fr;align-items:baseline;gap:4px 12px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.customer-last span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.customer-last strong{font:700 20px Manrope,Inter,system-ui,sans-serif;color:var(--ink);text-align:right}
+.customer-last small{grid-column:1/-1;color:var(--text-secondary);font-size:10px}
+.customer-past{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.customer-past li{display:grid;grid-template-columns:78px minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 2px;border-bottom:1px solid var(--line);font-size:10px;color:var(--text-secondary)}
+.customer-past li:last-child{border-bottom:0}
+.customer-past li span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.customer-past li b{color:var(--ink)}
+.customer-past li em{grid-column:2/-1;font-style:normal;color:var(--orange);font-size:9px;margin-top:-6px}
+@media(max-width:700px){.customer-history-head{flex-wrap:wrap}.customer-history-head .btn{width:100%}.customer-past li{grid-template-columns:66px minmax(0,1fr) auto}}
