@@ -21,7 +21,7 @@ Výkonnostný advisor eviduje dva [zatiaľ nepoužité indexy](https://supabase.
 
 ## Prvé prihlásenie
 
-Vlastník ešte neurčil e-mail prvého leadera. Správca ho musí pridať do členstva; samotná registrácia nikoho nepovýši. E-mail sa neukladá do verejného repozitára.
+Registrácia je otvorená. Prvý overený člen, ktorý vstúpi do panelu, automaticky získa plné práva leadera. Ďalší sa pridajú ako zamestnanci. E-mail prvého leadera sa nemusí ručne zapisovať ani ukladať do repozitára. Pridelenie prebieha pod databázovým zámkom a jednorazový príznak zabraňuje opätovnému otvoreniu registrácie leadera.
 
 Pred prvým prihlásením treba v Supabase Auth overiť návratové adresy na `https://c0cain3.github.io/FarmaSEERPG/` a doručovanie potvrdení. Doplnok neponúka úpravu Auth URL configuration; táto časť sa dokončuje v Supabase Dashboarde. Pre celú partiu je potrebné overiť SMTP a jeho limity podľa [postupu nasadenia](README.md).
 

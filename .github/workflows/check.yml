@@ -17,3 +17,24 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+  registration-concurrency:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: farmcrew_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 1s
+          --health-timeout 5s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check concurrent first-member registration
+        run: bash tests/registration-concurrency.sh
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/farmcrew_test

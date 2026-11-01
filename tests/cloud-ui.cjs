@@ -19,6 +19,12 @@ const snapshot={version:3,revision:0,memberId:'member',serverNow:Date.now(),user
   const cloud={session:async()=>null,onAuthChange(){},load:async()=>snapshot,command:async(action,payload)=>{commands.push({action,payload});if(reject)throw {message:'CONFLICT'};return new Promise(resolve=>{resolveWrite=resolve;});}};
   const b=boot(cloud);await new Promise(setImmediate);
   assert(b.elements.get('#app').innerHTML.includes('Prihlásiť sa'));assert(!b.elements.get('#app').innerHTML.includes('data-login'));
+  b.run("authMode='register';renderCloudLogin()");
+  const registrationHtml=b.elements.get('#app').innerHTML;
+  assert(registrationHtml.includes('name="name"'));assert(registrationHtml.includes('Prvý overený člen'));assert(!registrationHtml.includes('name="role"'));
+  await b.run("submitCloudAuth({name:'X',email:'test@example.test',password:'test-password-only'})");
+  assert(b.elements.get('#form-error').textContent.includes('meno a priezvisko'));assert.equal(b.run('cloudBusy'),false);
+  b.run("authMode='login'");
   b.run(`acceptCloud(${JSON.stringify(snapshot)});land();render()`);
   assert.equal(b.stored.get('farmcrew_data_v1'),'{"original":"kept"}');
   b.run("setSession('u1')");assert.equal(b.run('session'),'member');
