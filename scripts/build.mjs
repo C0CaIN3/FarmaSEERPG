@@ -1,5 +1,6 @@
 import { build } from 'esbuild';
 import { mkdir, copyFile, readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 await mkdir('_site', { recursive: true });
 await build({ entryPoints: ['src/cloud-client.mjs'], bundle: true, minify: true, format: 'iife', target: ['es2022'], outfile: '_site/cloud-client.js', legalComments: 'eof' });
 // Keep the downloadable, offline-only demo consistent with the app source.
@@ -10,4 +11,14 @@ const offline = html.replace('<link rel="stylesheet" href="styles.css">', () => 
   .replace('<script defer src="app.js"></script>', '')
   .replace('</body>', () => `<script>\n${app}\n</script>\n</body>`);
 await writeFile('FarmCrew.html', offline);
-for (const name of ['index.html', 'app.js', 'styles.css', 'config.js', 'FarmCrew.html', '.nojekyll']) await copyFile(name, `_site/${name}`);
+for (const name of ['app.js', 'styles.css', 'config.js', 'FarmCrew.html', '.nojekyll']) await copyFile(name, `_site/${name}`);
+// Version every asset by content so browsers and the Pages CDN never mix an old script with a new page.
+const version = async name => createHash('sha256').update(await readFile(`_site/${name}`)).digest('hex').slice(0, 12);
+let page = html;
+for (const name of ['styles.css', 'config.js', 'cloud-client.js', 'app.js']) {
+  const tag = name.endsWith('.css') ? `href="${name}"` : `src="${name}"`;
+  if (!page.includes(tag)) throw new Error(`index.html does not reference ${name}`);
+  const v = await version(name);
+  page = page.replace(tag, () => tag.replace(name, `${name}?v=${v}`));
+}
+await writeFile('_site/index.html', page);
