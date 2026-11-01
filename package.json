@@ -1,0 +1,25 @@
+{
+  "name": "farmcrew-seerpg",
+  "version": "2.0.0",
+  "description": "Shared SeeRPG farm operations panel with Supabase Auth and PostgreSQL",
+  "main": "app.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "node --check app.js && node tests/timers.cjs && node tests/database.mjs && node tests/cloud-client.mjs && node tests/cloud-ui.cjs",
+    "build": "node scripts/build.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@supabase/supabase-js": "2.118.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.14",
+    "esbuild": "0.25.12"
+  },
+  "private": true
+}
