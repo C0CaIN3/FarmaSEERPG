@@ -16,8 +16,7 @@ begin
     if s->>'memberId'<>first_id or jsonb_array_length(s->'users')<>1 then raise exception 'Idempotent registration check failed'; end if;
     perform set_config('request.jwt.claim.sub','00000000-0000-0000-0000-00000000fc12',true);
     s:=public.farmcrew_join('Druhý Smoke Člen');
-    if not exists(select 1 from jsonb_array_elements(s->'users') u where u->>'id'=s->>'memberId' and u->>'role'='employee')
-      then raise exception 'Later employee check failed'; end if;
+    if s->>'pending' is distinct from 'true' or s ? 'users' then raise exception 'Later member approval check failed'; end if;
     raise exception 'Rollback successful registration check' using errcode='ZX001';
   exception when sqlstate 'ZX001' then null;
   end;

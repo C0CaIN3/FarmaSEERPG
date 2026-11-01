@@ -1,5 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Players sign in with their first and last name. Supabase Auth needs an e-mail address, so the
+// name maps to a fixed address on the reserved .invalid domain. Nothing is ever sent there, and
+// e-mail confirmation must stay off in the Supabase project.
+export const LOGIN_DOMAIN = 'farmcrew.invalid';
+export const cleanName = name => String(name ?? '').normalize('NFC').trim().replace(/\s+/g, ' ');
+export function loginEmail(name) {
+  const parts = cleanName(name).toLocaleLowerCase('sk').split(' ');
+  if (parts.length < 2 || cleanName(name).length < 3 || cleanName(name).length > 80) throw new Error('INVALID_NAME');
+  // Diacritics are ignored, so "Ján Novák" and "Jan Novak" are the same login.
+  const slug = parts.map(part => {
+    const ascii = part.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9-]/g, '').replace(/^-+|-+$/g, '');
+    return ascii || 'x' + Array.from(new TextEncoder().encode(part), b => b.toString(16).padStart(2, '0')).join('');
+  });
+  const email = `${slug.join('.')}@${LOGIN_DOMAIN}`;
+  if (email.length > 254) throw new Error('INVALID_NAME');
+  return email;
+}
+
 export function createCloud(config, factory = createClient) {
   const { supabaseUrl = '', publishableKey = '' } = config || {};
   if (!supabaseUrl && !publishableKey) return null;
@@ -13,7 +31,6 @@ export function createCloud(config, factory = createClient) {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce', storageKey: 'farmcrew_auth_v1' }
   });
   let revision = null, identity = null;
-  const redirectTo = () => new URL('./', window.location.href).href;
   const check = result => { if (result.error) throw result.error; return result.data; };
   async function load() {
     const auth = check(await client.auth.getUser());
@@ -23,6 +40,8 @@ export function createCloud(config, factory = createClient) {
     const fullName = typeof auth.user.user_metadata?.full_name === 'string' ? auth.user.user_metadata.full_name : 'Člen partie';
     const snapshot = check(await client.rpc('farmcrew_join', { p_name: fullName }));
     if (!snapshot || snapshot.authId !== identity) throw new Error('Neplatná odpoveď databázy.');
+    // Accounts after the first leader wait until a leader approves them.
+    if (snapshot.pending === true) { revision = null; throw new Error('APPROVAL_PENDING'); }
     revision = snapshot.revision;
     return snapshot;
   }
@@ -38,9 +57,8 @@ export function createCloud(config, factory = createClient) {
       revision = result.revision;
       return result;
     },
-    async signIn(email, password) { check(await client.auth.signInWithPassword({ email: email.trim(), password })); },
-    async signUp(email, password, name) { return check(await client.auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: redirectTo(), data: { full_name: name.trim() } } })); },
-    async reset(email) { check(await client.auth.resetPasswordForEmail(email.trim(), { redirectTo: redirectTo() })); },
+    async signIn(name, password) { check(await client.auth.signInWithPassword({ email: loginEmail(name), password })); },
+    async signUp(name, password) { return check(await client.auth.signUp({ email: loginEmail(name), password, options: { data: { full_name: cleanName(name) } } })); },
     async password(password) { check(await client.auth.updateUser({ password })); },
     async signOut() { check(await client.auth.signOut({ scope: 'local' })); revision = null; identity = null; },
     onAuthChange(fn) { return client.auth.onAuthStateChange((event, session) => { setTimeout(() => fn(event, session), 0); }); }

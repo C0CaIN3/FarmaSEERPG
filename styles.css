@@ -235,3 +235,11 @@ input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}input[typ
 
 /* Shared workspace authentication */
 .cloud-auth-submit{width:100%;justify-content:center;margin-top:24px}.cloud-auth-links{display:flex;justify-content:space-between;gap:12px;margin:14px 0}.cloud-fieldset{border:0;padding:0;margin:0;min-width:0}.cloud-saving button[type=submit],.cloud-saving button[form],.cloud-saving [data-action=start-job],.cloud-saving [data-action=complete-job]{pointer-events:none;opacity:.55}.cloud-saving{cursor:progress}.login-form .error{margin-bottom:20px}
+.pending-card{margin-bottom:25px;border-color:var(--green,#57f287)}
+.pending-list{display:grid}
+.pending-row{display:flex;align-items:center;gap:14px;padding:15px 23px;border-top:1px solid var(--line)}
+.pending-row>div:nth-child(2){flex:1;min-width:0;display:grid;gap:3px}
+.pending-row b{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pending-row small{color:var(--muted);font-size:10px}
+.pending-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:700px){.pending-row{flex-wrap:wrap;padding:14px 18px}.pending-actions{width:100%}.pending-actions .btn{flex:1;font-size:10px}}

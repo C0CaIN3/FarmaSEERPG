@@ -4,7 +4,7 @@
 - Projekt: FarmCrew, `yonjpqthjjnkfuicrcpi`, región `eu-central-1` (Frankfurt).
 - API: `https://yonjpqthjjnkfuicrcpi.supabase.co`.
 - Konfigurácia klienta: `config.js`, iba verejný publishable kľúč.
-- Migrácie na projekte: `20261101205644 farmcrew_initial_database`, `20261101205808 farmcrew_explicit_private_policies`, `20261101211647 first_member_registration`.
+- Migrácie na projekte: `20261101205644 farmcrew_initial_database`, `20261101205808 farmcrew_explicit_private_policies`, `20261101211647 first_member_registration`. Na nasadenie čaká `20261101215500 name_password_login` (prihlásenie menom a heslom, schvaľovanie členov, nastavenie hesla leaderom).
 - Po kontrole: 0 zákaziek, 0 výplat, 0 členov, 0 auditných udalostí.
 
 ## Overené na hostovanom projekte
@@ -22,10 +22,11 @@
 
 Výkonnostný advisor eviduje dva [zatiaľ nepoužité indexy](https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index). Pri novej prázdnej databáze je to očakávané; indexy zostávajú pre budúce vyhľadávanie pracovníkov a výplat.
 
-## Prvé prihlásenie
+## Prihlásenie menom a heslom: zostáva dokončiť v Supabase Dashboarde
 
-Registrácia je otvorená. Prvý overený člen, ktorý vstúpi do panelu, automaticky získa plné práva leadera. Ďalší sa pridajú ako zamestnanci. E-mail prvého leadera sa nemusí ručne zapisovať ani ukladať do repozitára. Pridelenie prebieha pod databázovým zámkom a jednorazový príznak zabraňuje opätovnému otvoreniu registrácie leadera.
+1. **SQL Editor:** spustiť celý súbor `supabase/migrations/20261101215500_name_password_login.sql`.
+2. **Authentication → Sign In / Providers → Email:** nechať Email zapnutý a **vypnúť „Confirm email“**. Bez toho registrácia zlyhá, lebo prihlasovacia adresa `…@farmcrew.invalid` nemôže prijať potvrdenie.
+3. **Authentication → Sign In / Providers → Email → Minimum password length:** nastaviť na 8.
+4. Hneď potom sa na stránke zaregistrovať ako prvý člen. Ten je leader. Každý ďalší čaká na schválenie v časti Tím.
 
-Pred prvým prihlásením treba v Supabase Auth overiť návratové adresy na `https://c0cain3.github.io/FarmaSEERPG/` a doručovanie potvrdení. Doplnok neponúka úpravu Auth URL configuration; táto časť sa dokončuje v Supabase Dashboarde. Pre celú partiu je potrebné overiť SMTP a jeho limity podľa [postupu nasadenia](README.md).
-
-Skutočné prihlásenie vlastníka, doručenie e-mailu a dve zariadenia zatiaľ nie sú overené. Databázové smoke testy túto kontrolu nenahrádzajú.
+Prihlásenie, schválenie druhého účtu, nastavenie hesla leaderom a dve zariadenia treba po nasadení vyskúšať na skutočnom projekte. Databázové testy túto kontrolu nenahrádzajú.

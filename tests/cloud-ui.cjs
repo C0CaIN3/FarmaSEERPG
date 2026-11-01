@@ -21,11 +21,27 @@ const snapshot={version:3,revision:0,memberId:'member',serverNow:Date.now(),user
   assert(b.elements.get('#app').innerHTML.includes('Prihlásiť sa'));assert(!b.elements.get('#app').innerHTML.includes('data-login'));
   b.run("authMode='register';renderCloudLogin()");
   const registrationHtml=b.elements.get('#app').innerHTML;
-  assert(registrationHtml.includes('name="name"'));assert(registrationHtml.includes('Prvý overený člen'));assert(!registrationHtml.includes('name="role"'));
-  await b.run("submitCloudAuth({name:'X',email:'test@example.test',password:'test-password-only'})");
-  assert(b.elements.get('#form-error').textContent.includes('meno a priezvisko'));assert.equal(b.run('cloudBusy'),false);
+  assert(registrationHtml.includes('name="name"'));assert(registrationHtml.includes('name="password2"'));assert(registrationHtml.includes('Prvý člen'));
+  assert(!registrationHtml.includes('name="role"'));assert(!/e-mail|type="email"|name="email"/i.test(registrationHtml));
+  await b.run("submitCloudAuth({name:'X',password:'test-password-only',password2:'test-password-only'})");
+  assert(b.elements.get('#form-error').textContent.includes('meno aj priezvisko'));assert.equal(b.run('cloudBusy'),false);
+  await b.run("submitCloudAuth({name:'Meno Priezvisko',password:'test-password-only',password2:'ine-heslo-123'})");
+  assert(b.elements.get('#form-error').textContent.includes('nezhodujú'));
+  b.run("authMode='login';renderCloudLogin()");const loginHtml=b.elements.get('#app').innerHTML;
+  assert(!/type="email"|name="email"|Zabudnuté heslo<\/button>/.test(loginHtml));assert(loginHtml.includes('Požiadaj leadera'));
+  // A pending registration shows a waiting screen, not a form or business data.
+  const waitingCloud={...cloud,load:async()=>{throw new Error('APPROVAL_PENDING');},signIn:async()=>{}};
+  const w=boot(waitingCloud);await new Promise(setImmediate);
+  await w.run("submitCloudAuth({name:'Čakajúci Člen',password:'heslo-1234'})");
+  const waitingHtml=w.elements.get('#app').innerHTML;
+  assert(waitingHtml.includes('Počkaj na schválenie'));assert(waitingHtml.includes('cloud-refresh'));assert(!waitingHtml.includes('cloud-auth-form'));assert.equal(w.run('session'),null);
   b.run("authMode='login'");
-  b.run(`acceptCloud(${JSON.stringify(snapshot)});land();render()`);
+  const withPending={...snapshot,users:[...snapshot.users,{id:'new',name:'Nový Hráč',role:'employee',email:'novy.hrac@farmcrew.invalid',active:false,pending:true}]};
+  b.run(`acceptCloud(${JSON.stringify(withPending)});land();render()`);
+  assert.equal(b.run('data.users.length'),1);assert.equal(b.run('data.pendingUsers.length'),1);
+  b.run("page='team';render()");const teamHtml=b.elements.get('#app').innerHTML;
+  assert(teamHtml.includes('Čakajú na schválenie'));assert(teamHtml.includes('data-action="approve-user" data-id="new"'));assert(teamHtml.includes('novy hrac'));
+  b.run("page='payouts';render()");assert(!b.elements.get('#app').innerHTML.includes('Nový Hráč'));
   assert.equal(b.stored.get('farmcrew_data_v1'),'{"original":"kept"}');
   b.run("setSession('u1')");assert.equal(b.run('session'),'member');
   const pending=b.run("cloudWrite('job_start',{id:'FC-1'})");await Promise.resolve();
@@ -36,5 +52,5 @@ const snapshot={version:3,revision:0,memberId:'member',serverNow:Date.now(),user
   assert(b.elements.get('#form-error').textContent.includes('medzitým zmenil'));
   assert.equal(b.stored.get('farmcrew_data_v1'),'{"original":"kept"}');
   for(const route of routes){b.run(`page='${route}';render()`);const html=b.elements.get('#app').innerHTML;assert(!html.includes('NaN'),route);assert(!html.includes('undefined'),route);}
-  console.log('PASS: configured SDK failures stay signed out, no fake cloud profiles, local backup preservation, all shared views, duplicate writes blocked, failed writes retain data and surface errors.');
+  console.log('PASS: name and password forms without e-mail, waiting screen for pending accounts, leader approval list, configured SDK failures stay signed out, no fake cloud profiles, local backup preservation, all shared views, duplicate writes blocked, failed writes retain data and surface errors.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

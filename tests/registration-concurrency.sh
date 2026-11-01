@@ -5,7 +5,7 @@ case "$TEST_DATABASE_URL" in
   postgresql://*@127.0.0.1:5432/farmcrew_test) ;;
   *) echo 'This test only runs against the disposable localhost farmcrew_test database.' >&2; exit 1 ;;
 esac
-psql "$TEST_DATABASE_URL" -Xq -v ON_ERROR_STOP=1 -f tests/postgres-auth-fixture.sql -f database/schema.sql -f database/registration.sql
+psql "$TEST_DATABASE_URL" -Xq -v ON_ERROR_STOP=1 -f tests/postgres-auth-fixture.sql -f database/schema.sql -f database/registration.sql -f database/name-login.sql
 registration_test_dir=$(mktemp -d)
 trap 'rm -rf "$registration_test_dir"' EXIT
 register_racer() {
@@ -28,9 +28,9 @@ psql "$TEST_DATABASE_URL" -Xq -v ON_ERROR_STOP=1 <<'SQL'
 do $$ begin
   if (select count(*) from farmcrew_private.members)<>2
     or (select count(*) from farmcrew_private.members where role='leader')<>1
-    or (select count(*) from farmcrew_private.members where role='employee')<>1
+    or (select count(*) from farmcrew_private.members where role='employee' and pending and not active)<>1
     or not (select registration_bootstrapped from farmcrew_private.workspace where id)
     then raise exception 'Concurrent first-member registration failed'; end if;
 end; $$;
 SQL
-echo 'PASS: two concurrent verified accounts receive exactly one leader and one employee.'
+echo 'PASS: two concurrent verified accounts receive exactly one leader and one employee waiting for approval.'
