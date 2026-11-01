@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="sk" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#313338">
+  <meta name="description" content="FarmCrew – pracovný priestor vašej farmárskej partie v SeeRPG. Zákazky, kalendár, nacenenie a zárobky na jednom mieste.">
+  <title>FarmCrew · Farmársky panel</title>
+  <script>
+    (()=>{let saved;try{saved=localStorage.getItem('farmcrew_theme_v1');}catch{}const theme=saved==='dark'||saved==='light'?saved:'dark';document.documentElement.dataset.theme=theme;document.documentElement.style.colorScheme=theme;document.querySelector('meta[name="theme-color"]').content=theme==='dark'?'#313338':'#f5f6f3';})();
+  </script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='14' fill='%23232428'/%3E%3Cpath d='M24 37V23M24 26C9 26 10 12 10 12s15-1 14 14m0-5C23 8 38 8 38 8s1 14-14 15' fill='none' stroke='%2357f287' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="overlay-root"></div>
+  <div id="toasts" aria-live="polite"></div>
+</body>
+</html>
