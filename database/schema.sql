@@ -9,7 +9,7 @@ create table farmcrew_private.workspace (
   id boolean primary key default true check (id),
   revision bigint not null default 0,
   next_job integer not null default 1,
-  settings jsonb not null default '{"name":"FarmCrew","server":"SeeRPG","currency":"$","fieldRate":210,"hourRate":1200,"share":80}',
+  settings jsonb not null default '{"name":"FarmCrew","server":"SeeRPG","currency":"Ft","fieldRate":210,"hourRate":1200,"share":80}',
   permissions jsonb not null default '{"leader":["dashboard","jobs","pricing","calendar","team","payouts","reports","settings"],"employee":["calendar","payouts"]}'
 );
 insert into farmcrew_private.workspace default values;

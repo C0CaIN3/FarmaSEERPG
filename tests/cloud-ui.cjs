@@ -11,7 +11,7 @@ function boot(cloud,config){
   return {run,elements,stored,messages};
 }
 const routes=['dashboard','jobs','pricing','calendar','team','payouts','reports','settings'];
-const snapshot={version:3,revision:0,memberId:'member',serverNow:Date.now(),users:[{id:'member',name:'Leader Test',role:'leader',email:'owner@example.test',active:true}],jobs:[],payments:[],settings:{name:'Partia',server:'SeeRPG',currency:'$',fieldRate:210,hourRate:1200,share:80},permissions:{leader:routes,employee:['calendar','payouts']},nextJob:1};
+const snapshot={version:3,revision:0,memberId:'member',serverNow:Date.now(),users:[{id:'member',name:'Leader Test',role:'leader',email:'owner@example.test',active:true}],jobs:[],payments:[],settings:{name:'Partia',server:'SeeRPG',currency:'Ft',fieldRate:210,hourRate:1200,share:80},permissions:{leader:routes,employee:['calendar','payouts']},nextJob:1};
 (async()=>{
   const configured=boot(null,{supabaseUrl:'https://project.supabase.co',publishableKey:'sb_publishable_test'});
   assert.equal(configured.run('session'),null);assert.equal(configured.run('data.jobs.length'),0);assert(configured.elements.get('#app').innerHTML.includes('čaká na dokončenie'));

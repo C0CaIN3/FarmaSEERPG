@@ -6,7 +6,7 @@ const icon=(name,size=18)=>`<svg width="${size}" height="${size}" viewBox="0 0 2
 glyphs.moon='M21 12.8A9 9 0 0 1 11.2 3 9 9 0 1 0 21 12.8';
 const cloud=window.FarmCloud||((window.FARMCREW_CONFIG?.supabaseUrl||window.FARMCREW_CONFIG?.publishableKey)?{configurationError:'Pripojenie sa nenačítalo. Obnov stránku.'}:null);
 let cloudBusy=false,cloudLoading=!!cloud,cloudError='',cloudPending=false,authMode='login',serverOffset=0;
-const emptyCloudData=()=>({version:3,users:[],jobs:[],payments:[],settings:{name:'FarmCrew',server:'SeeRPG',currency:'$'},permissions:{leader:[],employee:[]},nextJob:1});
+const emptyCloudData=()=>({version:3,users:[],jobs:[],payments:[],settings:{name:'FarmCrew',server:'SeeRPG',currency:'Ft'},permissions:{leader:[],employee:[]},nextJob:1});
 const keys={data:'farmcrew_data_v1',session:'farmcrew_session_v1',theme:'farmcrew_theme_v1'};
 function currentTheme(){return document.documentElement.dataset.theme==='dark'?'dark':'light';}
 function themeButton(){const dark=currentTheme()==='dark',label=dark?'Zapnúť svetlý režim':'Zapnúť tmavý režim';return `<button class="icon-button theme-toggle" data-action="toggle-theme" aria-label="${label}" title="${label}" aria-pressed="${dark}">${icon(dark?'sun':'moon',18)}</button>`;}
@@ -97,7 +97,7 @@ function seed(){
     {first:'Filip',last:'Kučera',farm:'1',floor:'2',fields:80,works:['Rylovanie','Polievanie'],crew:['u2','u3'],durationSeconds:3900,time:'17:00',price:14700,status:'planned'}];
   upcoming.forEach((j,i)=>jobs.push({...j,id:'FC-'+(132+i),work:j.works.join(', '),minutes:j.durationSeconds/60,date:offsetDate(i<3?0:i-2),note:i===0?'Zavolať zákazníkovi pred príchodom na farmu.':'',share:80,workerShares:equalShares(j.crew,80)}));
   const payments=users.map((u,i)=>({id:'p'+i,uid:u.id,amount:Math.floor(jobs.filter(j=>j.status==='completed').reduce((a,j)=>a+workerReward(j,u.id),0)*.65/100)*100,date:offsetDate(-3),note:'Priebežná výplata za odpracované zákazky'}));
-  return migrateData({version:2,users,jobs,payments,settings:{name:'FarmCrew',server:'SeeRPG',currency:'$',fieldRate:210,hourRate:1200,share:80},permissions:{leader:Object.keys(routes),employee:['calendar','payouts']},nextJob:137});
+  return migrateData({version:2,users,jobs,payments,settings:{name:'FarmCrew',server:'SeeRPG',currency:'Ft',fieldRate:210,hourRate:1200,share:80},permissions:{leader:Object.keys(routes),employee:['calendar','payouts']},nextJob:137});
 }
 let data;if(cloud)data=emptyCloudData();else try{data=JSON.parse(localStorage.getItem(keys.data));if(!data||![1,2,3].includes(data.version)||!Array.isArray(data.jobs))data=seed();else data=migrateData(data);}catch{data=seed();}
 let session;try{session=localStorage.getItem(keys.session)||'u1';}catch{session='u1';}if(session==='logged-out'||cloud)session=null;
