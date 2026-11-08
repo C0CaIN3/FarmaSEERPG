@@ -1,5 +1,33 @@
 const paths={search:'M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0Zm-2 5 6 6',brand:'M2 10 12 3l10 7M4 12l8-5 8 5M4 15l8-5 8 5M4 18l8-5 8 5M5 21l7-5 7 5',leaf:'M4 20C4 9 11 4 21 3c0 12-6 18-15 15m0 0L17 8',sprout:'M12 21v-9M12 15C4 16 3 11 3 7c6 0 9 3 9 8Zm0-3c0-6 4-9 10-9 0 6-4 10-10 9Z',grid:'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',barn:'M2 11l4-7 6-2 6 2 4 7M4 10v11h16V10M8 21V11h8v10m-8-9 8 8m0-8-8 8',wallet:'M3 7h17v13H3z M3 7V5l14-3v5m3 4h-6v5h6m-4-2.5h.2',bell:'M4 17h16l-2-3V9a6 6 0 0 0-12 0v5Zm6 3a2 2 0 0 0 4 0',settings:'M4 6h8m4 0h4M4 12h2m4 0h10M4 18h10m4 0h2M12 3v6M7 9v6m8 0v6',water:'M12 2C9 7 5 11 5 15a7 7 0 0 0 14 0c0-4-4-8-7-13Z',basket:'M2 10h20l-3 11H5z M6 10l5-7m7 7-5-7m-4 10 1 5m4-5-1 5',pin:'M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 0 1 14 0ZM14 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0',plus:'M12 5v14M5 12h14',right:'m9 5 7 7-7 7',arrow:'M3 12h17m-6-6 6 6-6 6',clock:'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Zm-10-6v6l4 3',history:'M3 11a9 9 0 1 1 1 6M3 4v7h7m2-5v6l4 2',calendar:'M3 5h18v16H3z M3 10h18M7 3v5m10-5v5',user:'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-2a8 8 0 0 1 16 0v2',key:'M14 14a6 6 0 1 0-4-4l-7 7v4h4v-3h3l4-4Z',x:'m6 6 12 12M6 18 18 6',menu:'M3 6h18M3 12h18M3 18h18',chart:'M3 20h18M6 17v-6m6 6V7m6 10V3',work:'M4 19 16 7m-5-4c5-2 10 3 10 8l-5-4Z',log:'M5 3h14v18H5z M8 8h8m-8 4h8m-8 4h5',cash:'M2 5h20v14H2z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',check:'m4 12 5 5L20 6',home:'M2 11 12 3l10 8M5 9v12h14V9'};
 const ic=k=>'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="'+(paths[k]||paths.leaf)+'"/></svg>';
+// Hand-drawn farmer portraits. The same seed (player id or worker name) always gives the same farmer.
+function farmer(seed,size=32,label=''){
+  let h=2166136261;for(const ch of String(seed||'farmár'))h=Math.imul(h^ch.codePointAt(0),16777619)>>>0;
+  const pick=(list,shift)=>list[(h>>>shift)%list.length];
+  const skin=pick(['#f3cfae','#e6b18f','#c98c62','#9a6342','#f6dcc2','#b97a52'],0);
+  const hair=pick(['#3a2a1e','#6b4426','#a8742f','#2b2b2b','#c9c3b8','#8a3f22'],3);
+  const bg=pick(['#2f4b3a','#3a4160','#4c3b2a','#2c4652','#46324c','#4a4426'],6);
+  const shirt=pick(['#c4553f','#4f8fcf','#5aa461','#d6a33c','#9a72c8','#d47a3f'],9);
+  const hatKind=(h>>>12)%3,hatCol=pick(['#d94f3d','#3d7dd9','#3fa35a','#e0a63a','#7a5bd0','#2f2f36'],14);
+  const beard=(h>>>17)%3===0,stache=!beard&&(h>>>19)%2===0;
+  const hat=hatKind===0
+    ?`<path d="M20 22 Q21 7 32 7 Q43 7 44 22Z" fill="#e8c97a"/><rect x="20.5" y="17" width="23" height="4" fill="${hatCol}"/><ellipse cx="32" cy="22" rx="21" ry="5" fill="#ddb862"/><path d="M14 22 Q32 26 50 22" stroke="#c49a45" stroke-width="1" fill="none"/>`
+    :hatKind===1
+    ?`<path d="M19.5 25 Q19.5 9 32 9 Q44.5 9 44.5 25Z" fill="${hatCol}"/><path d="M32 23 Q47 21.5 52 25.5 Q43 27.5 32 25Z" fill="${hatCol}" opacity=".78"/><circle cx="32" cy="9.5" r="1.6" fill="#0003"/><path d="M26 14 Q32 11.5 38 14" stroke="#fff6" stroke-width="1.3" fill="none"/>`
+    :`<path d="M19 25 Q19 8 32 8 Q45 8 45 25Z" fill="${hatCol}"/><rect x="18.5" y="20.5" width="27" height="6" rx="3" fill="${hatCol}" opacity=".75"/><circle cx="32" cy="7.5" r="3.4" fill="#f4efe6"/>`;
+  return `<svg class="farmer" width="${size}" height="${size}" style="width:${size}px;height:${size}px" viewBox="0 0 64 64" role="img" aria-label="${E(label||'Farmár')}" xmlns="http://www.w3.org/2000/svg">
+    <rect width="64" height="64" fill="${bg}"/><path d="M8 64 Q10 45 32 43 Q54 45 56 64Z" fill="${shirt}"/>
+    <path d="M21 64 V52 Q21 49 24 49 H40 Q43 49 43 52 V64Z" fill="#355a86"/><path d="M24 49 L20 44 M40 49 L44 44" stroke="#355a86" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="25" cy="53" r="1.3" fill="#e8c97a"/><circle cx="39" cy="53" r="1.3" fill="#e8c97a"/>
+    <rect x="27" y="37" width="10" height="9" rx="3" fill="${skin}"/><circle cx="20" cy="31" r="3.2" fill="${skin}"/><circle cx="44" cy="31" r="3.2" fill="${skin}"/>
+    <ellipse cx="32" cy="30" rx="12" ry="13" fill="${skin}"/><path d="M20.5 24 V31 M43.5 24 V31" stroke="${hair}" stroke-width="2.6" stroke-linecap="round"/>
+    ${beard?`<path d="M20.5 31 Q21 46.5 32 47 Q43 46.5 43.5 31 Q40 40.5 32 40.5 Q24 40.5 20.5 31Z" fill="${hair}"/>`:''}
+    <circle cx="27" cy="30" r="1.7" fill="#262626"/><circle cx="37" cy="30" r="1.7" fill="#262626"/><circle cx="27.6" cy="29.4" r=".5" fill="#fff"/><circle cx="37.6" cy="29.4" r=".5" fill="#fff"/>
+    <circle cx="24.5" cy="35" r="2.3" fill="#e2725f" opacity=".4"/><circle cx="39.5" cy="35" r="2.3" fill="#e2725f" opacity=".4"/>
+    <path d="M30.8 31.5 Q32 34 33.2 31.5" stroke="#0002" stroke-width="1.2" fill="none"/>
+    ${stache?`<path d="M26.5 36 Q32 33 37.5 36 Q32 37.5 26.5 36Z" fill="${hair}"/>`:''}<path d="M28.5 ${beard?'38.5':'37.5'} Q32 ${beard?'40.5':'40'} 35.5 ${beard?'38.5':'37.5'}" stroke="${beard?'#f3d6c4':'#7a3b2b'}" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    ${hat}</svg>`;
+}
 const $=s=>document.querySelector(s), E=s=>String(s??'').replace(/[&<>"']/g,v=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[v]));
 const H=3600000,D=24*H, now=()=>Date.now(), uid=()=>crypto.randomUUID(), key='farmdesk-sk-v1', names={overview:'Prehľad',farms:'Moje farmy',finance:'Ekonomika',alerts:'Upozornenia',history:'Denník prác',settings:'Nastavenia'};
 const types={own:'Vlastná (od štátu)',player:'Prenajatá od hráča'}, categories={sale:'Tržba',rent:'Nájom',wage:'Mzda',seed:'Osivo',invest:'Investícia',other:'Iný výdavok'};
@@ -447,7 +475,7 @@ function journal() {
   }
   const entries=[...groups].map(([day,logs])=>`<section class="panel jour"><h2>${E(day)}</h2>${logs.map(journalRow).join('')}</section>`).join('');
   const contacts=Object.entries(db.workers||{}).sort((a,b)=>a[0].localeCompare(b[0],'sk'));
-  const book=contacts.length?'<section class="panel jour contacts">'+section('Pracovníci','<span class="total">'+contacts.length+'</span>')+'<div class="contact-list">'+contacts.map(([n,ph])=>'<div class="contact"><span class="ico">'+ic('user')+'</span><div><strong>'+E(n)+'</strong><small>tel. '+E(ph)+'</small></div></div>').join('')+'</div></section>':'';
+  const book=contacts.length?'<section class="panel jour contacts">'+section('Pracovníci','<span class="total">'+contacts.length+'</span>')+'<div class="contact-list">'+contacts.map(([n,ph])=>'<div class="contact">'+farmer('worker:'+n,34,n)+'<div><strong>'+E(n)+'</strong><small>tel. '+E(ph)+'</small></div></div>').join('')+'</div></section>':'';
   return heading('Denník prác','Práca na farmách podľa dátumu.',btn('Zapísať prácu','work','plus','primary'))+book+(entries||'<div class="panel">'+empty('Tu uvidíš prvú zapísanú prácu.')+'</div>');
 }
 function noticesPage() {
@@ -463,7 +491,7 @@ function settings(){return heading('Nastavenia','Kalibrácia odhadov a správa p
 function render(){
  const count=alerts().length;
  const nav=(p,i)=>`<button class="rail-link ${page===p?'active':''}" title="${names[p]}" aria-label="${names[p]}" aria-current="${page===p?'page':'false'}" data-a="go:${p}">${ic(i)}<span>${names[p]}</span></button>`;
- $('#sidebar').innerHTML=`<button class="rail-logo" data-a="go:overview" aria-label="FarmDesk">${ic('brand')}</button><nav>${nav('overview','grid')}${nav('farms','barn')}${nav('finance','chart')}${nav('history','log')}${nav('alerts','bell')}</nav><div class="rail-bottom">${nav('settings','settings')}<div class="rail-avatar" title="${E(CLOUD?myName():'Farmár')}">${E((CLOUD?myName():'F').slice(0,1).toUpperCase())}</div></div>`;
+ $('#sidebar').innerHTML=`<button class="rail-logo" data-a="go:overview" aria-label="FarmDesk">${ic('brand')}</button><nav>${nav('overview','grid')}${nav('farms','barn')}${nav('finance','chart')}${nav('history','log')}${nav('alerts','bell')}</nav><div class="rail-bottom">${nav('settings','settings')}<button class="rail-avatar" data-a="go:settings" title="${E(CLOUD?myName():'Farmár')}">${farmer(CLOUD?me?.user_id:'farmdesk',34,CLOUD?myName():'Farmár')}</button></div>`;
  $('#top').innerHTML=`<div class="top-id"><button class="iconbtn menu" data-a="menu" aria-label="Menu">${ic('menu')}</button><strong>FarmDesk</strong><span class="divider"></span><span class="server-name">SeeRPG</span></div><div class="top-actions"><button class="search-shortcut" data-a="searchfarm">${ic('search')}<span>Vyhľadať farmu</span></button>${db.demo?'<button class="demo" data-a="go:settings">Ukážkové údaje</button>':''}${CLOUD?cloudTopbar():''}<button class="iconbtn" aria-label="Upozornenia" data-a="go:alerts">${ic('bell')}${count?'<i class="dot"></i>':''}</button></div>`;
  $('#main').innerHTML=page==='overview'?home():page==='farms'?heading('Moje farmy','Evidencia prenájmov od štátu a od hráčov.',btn('Pridať farmu','new','plus','primary'))+'<div class="filters"><input id="search" aria-label="Vyhľadať farmu" placeholder="Vyhľadať farmu…" value="'+E(query)+'"></div>'+tabs()+'<div id="matches">'+farmsgrid()+'</div>':page==='finance'?finance():page==='settings'?settings():page==='history'?journal():noticesPage();document.querySelectorAll('canvas').forEach(paint)}
 const field=(l,n,t,v='',attr='')=>'<label class="field">'+l+'<input name="'+n+'" type="'+t+'" value="'+E(v)+'" '+attr+'></label>';
@@ -1082,7 +1110,7 @@ document.addEventListener('focusout',()=>{if(pendingPaint)setTimeout(()=>{if(pen
 function cloudTopbar(){
   const waiting=isLeader()?members.filter(m=>m.status==='pending').length:0;
   return (waiting?'<button class="demo pending-chip" data-a="go:settings">'+waiting+' čaká na schválenie</button>':'')+
-    '<span id="sync" class="sync-dot '+syncState+'" title="'+syncTitle()+'"></span><button class="me-chip" data-a="go:settings" title="Prihlásený hráč">'+ic('user')+'<span>'+E(myName())+'</span></button>';
+    '<span id="sync" class="sync-dot '+syncState+'" title="'+syncTitle()+'"></span><button class="me-chip" data-a="go:settings" title="Prihlásený hráč">'+farmer(me?.user_id,22,myName())+'<span>'+E(myName())+'</span></button>';
 }
 function playerResults(){
   const rows=new Map(),add=uid=>{if(!rows.has(uid))rows.set(uid,{rev:0,cost:0});return rows.get(uid)};
@@ -1090,7 +1118,7 @@ function playerResults(){
   for(const x of db.tx){const r=add(recordMeta('tx',x.id)?.created_by??me?.user_id);if(x.category==='sale')r.rev+=x.amount;else r.cost+=x.amount}
   const list=[...rows].map(([uid,r])=>({uid,...r,profit:r.rev-r.cost})).sort((a,b)=>b.profit-a.profit);
   const tot=list.reduce((t,r)=>({rev:t.rev+r.rev,cost:t.cost+r.cost}),{rev:0,cost:0}),tp=tot.rev-tot.cost;
-  const body=list.map(r=>`<tr><th scope="row">${E(playerName(r.uid))}${r.uid===me?.user_id?' <span class="sub">(ty)</span>':''}</th><td>${money(r.cost)}</td><td>${money(r.rev)}</td><td class="${r.profit<0?'loss':r.profit>0?'gain':''}">${money(r.profit)}</td></tr>`).join('');
+  const body=list.map(r=>`<tr><th scope="row"><span class="player-cell">${farmer(r.uid,24,playerName(r.uid))}${E(playerName(r.uid))}</span>${r.uid===me?.user_id?' <span class="sub">(ty)</span>':''}</th><td>${money(r.cost)}</td><td>${money(r.rev)}</td><td class="${r.profit<0?'loss':r.profit>0?'gain':''}">${money(r.profit)}</td></tr>`).join('');
   return `<section class="panel player-results">${section('Hráči')}<div class="tablewrap"><table><thead><tr><th>Hráč</th><th>Investoval</th><th>Tržby</th><th>Zisk</th></tr></thead><tbody>${body}<tr class="total-row"><th scope="row">Spolu</th><td>${money(tot.cost)}</td><td>${money(tot.rev)}</td><td class="${tp<0?'loss':tp>0?'gain':''}">${money(tp)}</td></tr></tbody></table></div><p class="hint">Platba sa ráta hráčovi, ktorý ju zapísal: nájom farmy, semienka, výplaty pracovníkov aj predaj úrody.</p></section>`;
 }
 function cloudPanels(){
@@ -1099,7 +1127,7 @@ function cloudPanels(){
     const self=m.user_id===me?.user_id;
     const actions=!lead||self?'':m.status==='pending'?btn('Schváliť','member:'+m.user_id+':active','check','primary')+btn('Zamietnuť','member:'+m.user_id+':blocked','x')
       :m.status==='active'?btn('Nastaviť heslo','memberpw:'+m.user_id,'key')+btn('Zablokovať','member:'+m.user_id+':blocked','x','danger'):btn('Odblokovať','member:'+m.user_id+':active','check');
-    return `<div class="agreement-row"><div><strong>${E(m.name)}${self?' (ty)':''}</strong><small>${m.role==='leader'?'Leader · ':''}${status[m.status]}</small></div><div class="actiongrid">${actions}</div></div>`;
+    return `<div class="agreement-row player-row">${farmer(m.user_id,38,m.name)}<div><strong>${E(m.name)}${self?' (ty)':''}</strong><small>${m.role==='leader'?'Leader · ':''}${status[m.status]}</small></div><div class="actiongrid">${actions}</div></div>`;
   }).join('');
   return '<section class="panel">'+section('Hráči',btn('Odhlásiť sa','logout','x'))+'<p>'+(lead?'Nových hráčov schvaľuješ ty. Kým ich neschváliš, nevidia žiadne údaje. ':'Nových hráčov schvaľuje leader. ')+'Každý sa prihlasuje vlastným menom a heslom.</p>'+list+'</section>'+
     '<section class="panel">'+section('Spoločné údaje')+'<p>Farmy, financie, denník a pracovníci sú v spoločnej databáze a vidia ich všetci schválení hráči. Zvuk a oznámenia sa nastavujú pre každý prehliadač zvlášť.</p><div class="actiongrid">'+btn('Export zálohy','backup','log')+(lead?btn('Obnoviť zálohu','restore','history'):'')+'</div></section>';

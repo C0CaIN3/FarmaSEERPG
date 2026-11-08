@@ -56,3 +56,11 @@ body.auth-open>#sidebar,body.auth-open>.workspace{visibility:hidden}
 .pending-chip{background:#403b24;border-color:#7a6a3a;color:#f5d579}
 .player-results{margin-bottom:15px}.player-results tbody th{font-weight:550}.player-results .total-row th,.player-results .total-row td{font-weight:700;background:var(--lift)}.player-results .hint{margin:10px 0 0}
 @media(max-width:640px){.me-chip span{display:none}.me-chip{padding:5px}.pending-chip{font-size:9px}}
+/* Farmer portraits instead of letter avatars */
+svg.farmer{display:block;flex-shrink:0;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1.5px #ffffff1f}
+.rail-avatar{width:36px!important;height:36px!important;padding:0;border:0!important;background:transparent!important;cursor:pointer;display:grid;place-items:center;border-radius:50%}.rail-avatar:hover svg.farmer{box-shadow:0 0 0 2px var(--growth)}
+.me-chip{padding:3px 10px 3px 3px}.me-chip svg.farmer{box-shadow:none}
+.player-row{justify-content:flex-start}.player-row>div:nth-child(2){flex:1;min-width:0}
+.player-cell{display:inline-flex;align-items:center;gap:8px;vertical-align:middle}
+.contact svg.farmer{width:34px;height:34px}
+@media(max-width:640px){.rail-avatar{display:grid!important}.me-chip{padding:3px}}
