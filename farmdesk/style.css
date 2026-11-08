@@ -73,3 +73,11 @@ svg.farmer{display:block;flex-shrink:0;border-radius:50%;overflow:hidden;box-sha
 .farm-journal .activity:first-of-type{border-top:0}.farm-journal h3{display:flex;align-items:center;gap:7px}
 @media(max-width:900px){.farm-page{grid-template-columns:1fr}}
 @media(max-width:640px){.farm-title .actiongrid{width:100%}.farm-hero .detail-size-banner{margin:-14px -14px 12px}}
+/* Settlement between players */
+.settle-box table th,.settle-box table td{padding:7px 5px;font-size:11px}.settle-box thead th{font-size:10px}.settle-box .total-row th,.settle-box .total-row td{font-weight:700;background:var(--lift)}
+.settle-sub{font-size:12px;font-weight:600;margin:14px 0 6px;color:var(--soft)}
+.transfer{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:9px;padding:9px 11px;margin-bottom:6px;border:1px solid #3c5a46;border-radius:9px;background:#1f2e25;font-size:12px}.transfer b{font-size:14px;color:#afe7ae;font-variant-numeric:tabular-nums;white-space:nowrap}
+.settle-done{display:flex;align-items:center;gap:6px;font-size:11px;color:#afe7ae;margin:10px 0}.settle-done svg{width:14px;height:14px}
+.settle-box .auth-msg{font-size:11px;margin:8px 0}.settle-box .actiongrid{margin-top:10px}
+@media(max-width:640px){.transfer{grid-template-columns:auto minmax(0,1fr) auto}.transfer>svg:nth-of-type(2){display:none}}
+.settle-box .account-dates{font-size:11px;color:var(--soft);margin:0 0 10px}

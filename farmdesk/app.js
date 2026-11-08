@@ -721,7 +721,7 @@ function farmPage(){
   const journal='<section class="contract-box farm-journal"><h3>Práce na farme <span class="total">'+history.length+'</span></h3>'+(history.slice(0,12).map(l=>row(l.icon,l.action,withPhone(l.who)+(l.fee>0?' · '+money(l.fee):'')+byLine('log',l.id,'zapísal'),date(l.at),l.icon==='water'?'blue':'')).join('')||empty('Na tejto farme zatiaľ nie je zapísaná práca.'))+(history.length>12?'<p class="hint">Staršie práce nájdeš v Denníku prác.</p>':'')+'</section>';
   return `<div class="pagetitle farm-title"><div><button class="btnlink back-link" data-a="back">${ic('arrow')}Späť</button><h1>${E(f.name)}${f.door?' <span class="door-tag">'+E(doorLabel(f.door))+'</span>':''}</h1><p>${E(placeText(f))} · ${types[f.type]} · ${f.size} polí</p></div>${actions}</div>
   <div class="farm-page"><div class="farm-col"><section class="panel farm-hero"><div class="detail-size-banner size-${f.size}">${capacityGraphic(f.size)}</div><div class="inline"><span class="pill ${cls}"><i></i>${s}</span>${soilPill(f)}${workingPill(f)}</div><div data-farm-timer="${E(f.id)}">${duePanel(f)}</div>${metric('Odhad rastu','sprout',g)}${metric('Odhad vody','water',w,'water')}<div class="details">${props}</div></section>${ongoingBox(f)}${reminderSummary(f)}${agreements(f)}</div>
-  <div class="farm-col">${farmAccounts(f)}${rentSummary(f)}${wagesFor(f)}${journal}</div></div>`;
+  <div class="farm-col">${farmAccounts(f)}${CLOUD?settlementBox(f):''}${rentSummary(f)}${wagesFor(f)}${journal}</div></div>`;
 }
 const jobs={dig:['Kopanie','work'],till:['Rýľovanie','work'],water:['Polievanie','water'],plant:['Sadenie','sprout'],harvest:['Zber','basket']};
 // Shown in work order; saved in game order (a harvest first, so a new crop can follow on the same visit).
@@ -846,7 +846,11 @@ function check(){
 }
 function confirmBox(title,msg,action){modal(title,'<p>'+E(msg)+'</p><div class="actions">'+btn('Zrušiť','close')+btn('Potvrdiť',action,'check','primary')+'</div>')}
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]');if(!b)return;let [a,id]=b.dataset.a.split(':');let f=db.farms.find(x=>x.id===id);
- if(a==='range'){const days=Number(id);if([7,14,30].includes(days)){chartDays=days;render();document.querySelector('[data-a="range:'+days+'"]')?.focus()}}else if(a==='map')modal('Lokality fariem',locationMap(activeFarms()));else if(a==='searchfarm'){go('farms');$('#search').focus()}else if(a==='location')locationDetail(Number(id));else if(a==='newloc'){edit(null);document.querySelector('[name="loc"]').value=id}else if(a==='priority')priorityView(id);else if(a==='back'){if(/^#farma-/.test(location.hash)&&history.length>1)history.back();else go(prevPage||'overview')}else if(a==='waterview')waterView();else if(a==='harvestview')harvestView();else if(a==='go')go(id);else if(a==='menu')document.body.classList.toggle('navopen');else if(a==='close')close();else if(a==='filter'){filter=id;render()}else if(a==='farm')detail(f);else if(a==='archive'){confirmBox(f.archived?'Obnoviť farmu?':'Archivovať farmu?',f.archived?'Farma sa vráti medzi aktívne farmy.':'Farma sa presunie do archívu. História a financie ostanú v evidencii.','archiveok:'+id)}else if(a==='archiveok'){f.archived=!f.archived;f.sample=false;save();close();render()}else if(a==='new')edit(null);else if(a==='edit')edit(f);else if(a==='work')work(id);else if(a==='startwork')work(id,null,null,'ongoing');
+ if(a==='range'){const days=Number(id);if([7,14,30].includes(days)){chartDays=days;render();document.querySelector('[data-a="range:'+days+'"]')?.focus()}}else if(a==='map')modal('Lokality fariem',locationMap(activeFarms()));else if(a==='searchfarm'){go('farms');$('#search').focus()}else if(a==='location')locationDetail(Number(id));else if(a==='newloc'){edit(null);document.querySelector('[name="loc"]').value=id}else if(a==='priority')priorityView(id);
+ else if(a==='settle'&&f){const st=settlementFor(f);if(st)confirmBox('Uzavrieť vyúčtovanie?',(st.transfers.length?st.transfers.map(t=>playerName(t.from)+' pošle '+playerName(t.to)+' '+money(t.amount)).join(' · ')+'. ':'Nikto nikomu nič neposiela. ')+'Po uzavretí sa prevody započítajú hráčom v Ekonomike.','settleok:'+id)}
+ else if(a==='settleok'&&f){closeSettlement(f);save();close();render();toast('Vyúčtovanie je uzavreté.')}
+ else if(a==='settlereopen'&&f)confirmBox('Otvoriť vyúčtovanie znova?','Prevody z tohto vyúčtovania sa prestanú rátať v Ekonomike, kým ho znova neuzavrieš.','settlereopenok:'+id);
+ else if(a==='settlereopenok'&&f){const st=settlementFor(f);if(st?.closed)f.settlements=(f.settlements||[]).filter(x=>x!==st.closed);save();close();render()}else if(a==='back'){if(/^#farma-/.test(location.hash)&&history.length>1)history.back();else go(prevPage||'overview')}else if(a==='waterview')waterView();else if(a==='harvestview')harvestView();else if(a==='go')go(id);else if(a==='menu')document.body.classList.toggle('navopen');else if(a==='close')close();else if(a==='filter'){filter=id;render()}else if(a==='farm')detail(f);else if(a==='archive'){confirmBox(f.archived?'Obnoviť farmu?':'Archivovať farmu?',f.archived?'Farma sa vráti medzi aktívne farmy.':'Farma sa presunie do archívu. História a financie ostanú v evidencii.','archiveok:'+id)}else if(a==='archiveok'){f.archived=!f.archived;f.sample=false;save();close();render()}else if(a==='new')edit(null);else if(a==='edit')edit(f);else if(a==='work')work(id);else if(a==='startwork')work(id,null,null,'ongoing');
  else if(a==='finishwork'){const o=(db.ongoing||[]).find(x=>x.id===id);if(o)work(o.farm,null,o);else toast('Táto práca už bola uzavretá.')}
  else if(a==='cancelwork'){const o=(db.ongoing||[]).find(x=>x.id===id);if(o)confirmBox('Zrušiť prebiehajúcu prácu?',fname(o.farm)+' · '+o.who+' · '+jobNames(o.jobs)+'. Do denníka sa nič nezapíše.','cancelworkok:'+id)}
  else if(a==='cancelworkok'){const o=(db.ongoing||[]).find(x=>x.id===id);db.ongoing=(db.ongoing||[]).filter(x=>x.id!==id);save();if(o&&db.farms.find(f=>f.id===o.farm))detail(db.farms.find(f=>f.id===o.farm));else{close();render()}}else if(a==='agree')agreementForm(f);
@@ -1161,13 +1165,68 @@ function cloudTopbar(){
     '<span id="sync" class="sync-dot '+syncState+'" title="'+syncTitle()+'"></span><button class="me-chip" data-a="go:settings" title="Prihlásený hráč">'+farmer(me?.user_id,22,myName())+'<span>'+E(myName())+'</span></button>';
 }
 function playerResults(){
-  const rows=new Map(),add=uid=>{if(!rows.has(uid))rows.set(uid,{rev:0,cost:0});return rows.get(uid)};
+  const rows=new Map(),add=uid=>{if(!rows.has(uid))rows.set(uid,{rev:0,cost:0,adj:0});return rows.get(uid)};
   for(const m of members)if(m.status==='active')add(m.user_id);
   for(const x of db.tx){const r=add(recordMeta('tx',x.id)?.created_by??me?.user_id);if(x.category==='sale')r.rev+=x.amount;else r.cost+=x.amount}
-  const list=[...rows].map(([uid,r])=>({uid,...r,profit:r.rev-r.cost})).sort((a,b)=>b.profit-a.profit);
+  // Money passed between players in closed settlements moves profit from the seller to the investors.
+  for(const f of db.farms)for(const st of f.settlements||[])for(const t of st.transfers||[]){add(t.from).adj-=t.amount;add(t.to).adj+=t.amount}
+  const list=[...rows].map(([uid,r])=>({uid,...r,profit:r.rev-r.cost+r.adj})).sort((a,b)=>b.profit-a.profit);
   const tot=list.reduce((t,r)=>({rev:t.rev+r.rev,cost:t.cost+r.cost}),{rev:0,cost:0}),tp=tot.rev-tot.cost;
-  const body=list.map(r=>`<tr><th scope="row"><span class="player-cell">${farmer(r.uid,24,playerName(r.uid))}${E(playerName(r.uid))}</span>${r.uid===me?.user_id?' <span class="sub">(ty)</span>':''}</th><td>${money(r.cost)}</td><td>${money(r.rev)}</td><td class="${r.profit<0?'loss':r.profit>0?'gain':''}">${money(r.profit)}</td></tr>`).join('');
-  return `<section class="panel player-results">${section('Hráči')}<div class="tablewrap"><table><thead><tr><th>Hráč</th><th>Investoval</th><th>Tržby</th><th>Zisk</th></tr></thead><tbody>${body}<tr class="total-row"><th scope="row">Spolu</th><td>${money(tot.cost)}</td><td>${money(tot.rev)}</td><td class="${tp<0?'loss':tp>0?'gain':''}">${money(tp)}</td></tr></tbody></table></div><p class="hint">Platba sa ráta hráčovi, ktorý ju zapísal: nájom farmy, semienka, výplaty pracovníkov aj predaj úrody.</p></section>`;
+  const signed=n=>n?(n>0?'+':'')+money(n):'—';
+  const body=list.map(r=>`<tr><th scope="row"><span class="player-cell">${farmer(r.uid,24,playerName(r.uid))}${E(playerName(r.uid))}</span>${r.uid===me?.user_id?' <span class="sub">(ty)</span>':''}</th><td>${money(r.cost)}</td><td>${money(r.rev)}</td><td class="${r.adj<0?'loss':r.adj>0?'gain':''}">${signed(r.adj)}</td><td class="${r.profit<0?'loss':r.profit>0?'gain':''}">${money(r.profit)}</td></tr>`).join('');
+  return `<section class="panel player-results">${section('Hráči')}<div class="tablewrap"><table><thead><tr><th>Hráč</th><th>Investoval</th><th>Prijal z predaja</th><th>Vyúčtovanie</th><th>Zisk</th></tr></thead><tbody>${body}<tr class="total-row"><th scope="row">Spolu</th><td>${money(tot.cost)}</td><td>${money(tot.rev)}</td><td>—</td><td class="${tp<0?'loss':tp>0?'gain':''}">${money(tp)}</td></tr></tbody></table></div><p class="hint">Platba sa ráta hráčovi, ktorý ju zapísal. Stĺpec Vyúčtovanie ukazuje peniaze, ktoré si hráči poslali pri uzavretých vyúčtovaniach fariem (delenie podľa vkladu).</p></section>`;
+}
+// ---- Settlement: the lease's sales are shared in proportion to what each player paid in ----
+const cents=n=>Math.round(n*100)/100;
+function leaseRows(f,period){
+  return db.tx.filter(x=>x.farm===f.id).filter(x=>{const stamp=x.category==='rent'?(x.rentStart??x.at):x.at;return stamp>=period.start&&stamp<period.end});
+}
+function settlementFor(f){
+  const rows=db.tx.filter(x=>x.farm===f.id),period=farmLeasePeriod(f,rows);
+  if(!period)return null;
+  const per=new Map(),add=uid=>{if(!per.has(uid))per.set(uid,{uid,invested:0,received:0});return per.get(uid)};
+  for(const x of leaseRows(f,period)){const p=add(recordMeta('tx',x.id)?.created_by??me?.user_id);if(x.category==='sale')p.received+=x.amount;else p.invested+=x.amount}
+  const people=[...per.values()].filter(p=>p.invested||p.received);
+  const invested=people.reduce((n,p)=>n+p.invested,0),revenue=people.reduce((n,p)=>n+p.received,0);
+  for(const p of people){p.share=invested?p.invested/invested:0;p.due=cents(revenue*p.share);p.profit=cents(p.due-p.invested);p.balance=cents(p.due-p.received)}
+  // Who sends money to whom: largest debts paid to largest claims first.
+  const transfers=[];
+  if(invested>0){
+    const owe=people.filter(p=>p.balance<0).map(p=>({uid:p.uid,left:-p.balance})).sort((a,b)=>b.left-a.left);
+    const get=people.filter(p=>p.balance>0).map(p=>({uid:p.uid,left:p.balance})).sort((a,b)=>b.left-a.left);
+    for(const o of owe)for(const g of get){
+      const amount=cents(Math.min(o.left,g.left));
+      if(amount>=0.01){transfers.push({from:o.uid,to:g.uid,amount});o.left=cents(o.left-amount);g.left=cents(g.left-amount)}
+      if(o.left<0.01)break;
+    }
+  }
+  const closed=(f.settlements||[]).find(st=>st.start===period.start&&st.end===period.end)||null;
+  return {period,people,invested,revenue,transfers,closed};
+}
+function settlementBox(f){
+  const st=settlementFor(f);
+  if(!st)return '';
+  const {period,people,invested,revenue,transfers,closed}=st;
+  const head=`<section class="contract-box settle-box"><h3>Vyúčtovanie hráčov</h3><p class="account-dates">Nájom ${date(period.start)} – ${date(period.end)} · delí sa podľa vkladu</p>`;
+  if(!people.length)return head+empty('V tomto nájme zatiaľ nikto nič nezaplatil ani nepredal.')+'</section>';
+  const table=`<div class="tablewrap"><table><thead><tr><th>Hráč</th><th>Vložil</th><th>Podiel</th><th>Má dostať</th><th>Zisk</th></tr></thead><tbody>${people.sort((a,b)=>b.invested-a.invested).map(p=>`<tr><th scope="row"><span class="player-cell">${farmer(p.uid,22,playerName(p.uid))}${E(playerName(p.uid))}</span></th><td>${money(p.invested)}</td><td>${invested?fmt(Math.round(p.share*1000)/10)+' %':'—'}</td><td>${money(p.due)}</td><td class="${p.profit<0?'loss':p.profit>0?'gain':''}">${money(p.profit)}</td></tr>`).join('')}<tr class="total-row"><th scope="row">Spolu</th><td>${money(invested)}</td><td>100 %</td><td>${money(revenue)}</td><td class="${revenue-invested<0?'loss':revenue-invested>0?'gain':''}">${money(cents(revenue-invested))}</td></tr></tbody></table></div>`;
+  if(!invested)return head+table+'<p class="hint">Nikto zatiaľ nič nevložil, takže nie je podľa čoho deliť. Zapíš nájom, semienka alebo výplatu pracovníka.</p></section>';
+  if(!revenue)return head+table+'<p class="hint">Po predaji úrody tu uvidíš, kto komu koľko pošle. Kto predá, zapíše predaj na tejto farme.</p></section>';
+  const transferRows=list=>list.length?list.map(t=>`<div class="transfer">${farmer(t.from,26,playerName(t.from))}<span><strong>${E(playerName(t.from))}</strong> pošle <strong>${E(playerName(t.to))}</strong></span>${farmer(t.to,26,playerName(t.to))}<b>${money(t.amount)}</b></div>`).join(''):'<p class="hint">Peniaze sú už rozdelené správne, nikto nikomu nič neposiela.</p>';
+  if(closed){
+    const changed=cents(closed.revenue)!==cents(revenue)||cents(closed.invested)!==cents(invested);
+    return head+table+'<h4 class="settle-sub">Poslané pri uzavretí</h4>'+transferRows(closed.transfers||[])+
+      `<p class="settle-done">${ic('check')}Uzavreté ${date(closed.closedAt)} · ${E(playerName(closed.closedBy))}</p>`+
+      (changed?'<p class="auth-msg">Po uzavretí pribudli alebo sa zmenili platby v tomto nájme. Otvor vyúčtovanie znova a uzavri ho s novými číslami.</p>':'')+
+      '<div class="actiongrid">'+btn('Otvoriť znova','settlereopen:'+f.id,'history')+'</div></section>';
+  }
+  return head+table+'<h4 class="settle-sub">Kto komu pošle</h4>'+transferRows(transfers)+'<div class="actiongrid">'+btn('Uzavrieť vyúčtovanie','settle:'+f.id,'check','primary')+'</div></section>';
+}
+function closeSettlement(f){
+  const st=settlementFor(f);
+  if(!st||!st.revenue||!st.invested||st.closed)return;
+  f.settlements=[...(f.settlements||[]),{start:st.period.start,end:st.period.end,closedAt:now(),closedBy:me?.user_id||null,invested:cents(st.invested),revenue:cents(st.revenue),
+    shares:st.people.map(p=>({uid:p.uid,invested:cents(p.invested),received:cents(p.received),due:p.due})),transfers:st.transfers}];
 }
 function cloudPanels(){
   const lead=isLeader(),status={active:'Aktívny',pending:'Čaká na schválenie',blocked:'Zablokovaný'};
