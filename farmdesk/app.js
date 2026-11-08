@@ -96,15 +96,8 @@ const go=p=>{page=p;query='';filter='all';document.body.classList.remove('navope
 const btn=(label,action,icon='',style='')=>'<button type="button" class="btn '+style+'" data-a="'+action+'">'+(icon?ic(icon):'')+label+'</button>';
 const link=(label,action)=>'<button class="btnlink" data-a="'+action+'">'+label+ic('arrow')+'</button>';
 const melon='Vodný melón';
-// In-game screenshots of a watermelon (bar width 246 px), hours after planting and first watering:
-//   18 h 24 min: growth 103 px, moisture 119 px (no watering since planting)
-//   23 h 39 min: growth 129 px (moisture 212 px after a later watering)
-// Growth is a straight line through both points; it starts a little above zero at planting.
-const melonSamples=[{h:18+24/60,growth:103/246},{h:23+39/60,growth:129/246}];
-const melonRate=(melonSamples[1].growth-melonSamples[0].growth)/(melonSamples[1].h-melonSamples[0].h);
-const melonStart=melonSamples[0].growth-melonRate*melonSamples[0].h;
-const melonMeasurementHours=melonSamples[0].h;
-const measuredMelonHours=Number(((1-melonStart)/melonRate).toFixed(2));
+const melonMeasurementHours=18+24/60;
+const measuredMelonHours=Math.round(melonMeasurementHours/(103/246));
 // 119 of 246 moisture pixels remained after one uninterrupted drying interval.
 const measuredMelonDryHours=Number((melonMeasurementHours/(1-119/246)).toFixed(2));
 function dryingHours(f){return f.crop===melon?(db.melonDryHours??measuredMelonDryHours):db.dry}
@@ -116,8 +109,8 @@ function growthProfile(crop){
   ],crop===melon?melon:'Úroda');
 }
 function progress(f,t=now()){
-  const percent=(stamp,hours,start=0)=>Math.max(0,Math.min(100,start+(100-start)*(t-stamp)/(hours*H)));
-  const growth=f.planted?percent(f.planted,growthHours(f),f.crop===melon?melonStart*100:0):0;
+  const percent=(stamp,hours)=>Math.max(0,Math.min(100,(t-stamp)/(hours*H)*100));
+  const growth=f.planted?percent(f.planted,growthHours(f)):0;
   const g=f.crop===melon&&growth<100?Math.min(99,Math.round(growth)):Math.floor(growth);
   const remaining=f.watered?100-percent(f.watered,dryingHours(f)):0;
   const w=f.crop===melon&&remaining>0?Math.max(1,Math.round(remaining)):Math.ceil(remaining);
@@ -511,7 +504,7 @@ function noticesPage() {
   }).join('');
   return heading('Upozornenia','Zber, polievanie a blížiace sa termíny.',btn('Nastavenia','go:settings','settings'))+'<div class="noticesgrid">'+panels+'</div>';
 }
-function settings(){return heading('Nastavenia','Kalibrácia odhadov a správa pracovného priestoru.')+'<div class="settings"><section class="panel">'+section('Časy pestovania')+'<p>Rast a úbytok vody sa počítajú rovnomerne od posledného sadenia a poliatia. Zadaj časy odmerané v hre. Zmena prepočíta aj rozbehnuté cykly.</p><form id="timing"><div class="formgrid">'+field('Všeobecný rast do zberu (hodiny)','growth','number',db.growth,'required min=".01" max="8760" step=".01"')+field('Vodný melón – rast (hodiny)','melonHours','number',growthHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Vodný melón – vyschnutie zo 100 % (hodiny)','melonDryHours','number',dryingHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Všeobecné vyschnutie zo 100 % (hodiny)','dry','number',db.dry,'required min=".01" max="8760" step=".01"')+'</div><button class="btn primary">Uložiť časy</button></form><p><strong>Merania vodného melóna</strong><br>Po 18 h 24 min: rast 41,9 %, vlhkosť 48,4 % (bez ďalšieho poliatia).<br>Po 23 h 39 min: rast 52,4 %.<br>Rast pribúda asi 2,01 % za hodinu a hneď po zasadení začína na približne 4,8 %. Zber (100 %) teda vychádza asi 47 h 16 min po zasadení. Vlhkosť klesá asi 2,8 % za hodinu, takže z plného poliatia vyschne asi za 35 h 40 min.</p></section><section class="panel">'+section('Upozornenia na termíny')+'<p>Pri otvorenej aplikácii dostaneš pripomienku dva dni pred termínom, deň pred ním a v deň termínu, vždy v jeho miestnom čase. Pre pripomienky pri zatvorenej aplikácii importuj termíny do kalendára s povolenými upozorneniami. Po zmene termínu aktualizuj jeho záznam aj v kalendári.</p><div class="actiongrid">'+btn(db.sound?'Vypnúť zvuk':'Zapnúť zvuk','sound','bell')+btn(db.notices?'Vypnúť oznámenia':'Povoliť oznámenia','notify','bell')+btn('Export termínov (.ics)','ics','calendar')+'</div></section>'+(CLOUD?cloudPanels():'<section class="panel">'+section('Údaje v tomto prehliadači')+'<p>'+ (db.demo?'Pracuješ s ukážkovými údajmi. Pred prvým vlastným zápisom môžeš začať s prázdnou evidenciou. ':'')+'Záloha obsahuje farmy, kontakty, denník, financie a nastavenia.</p><div class="actiongrid">'+btn('Export zálohy','backup','log')+btn('Obnoviť zálohu','restore','history')+(db.demo?btn('Odstrániť ukážkové údaje','clear','','danger'):'')+'</div></section>')+'<input type="file" hidden id="file" accept=".json,application/json"></div>'}
+function settings(){return heading('Nastavenia','Kalibrácia odhadov a správa pracovného priestoru.')+'<div class="settings"><section class="panel">'+section('Časy pestovania')+'<p>Rast a úbytok vody sa počítajú rovnomerne od posledného sadenia a poliatia. Zadaj časy odmerané v hre. Zmena prepočíta aj rozbehnuté cykly.</p><form id="timing"><div class="formgrid">'+field('Všeobecný rast do zberu (hodiny)','growth','number',db.growth,'required min=".01" max="8760" step=".01"')+field('Vodný melón – rast (hodiny)','melonHours','number',growthHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Vodný melón – vyschnutie zo 100 % (hodiny)','melonDryHours','number',dryingHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Všeobecné vyschnutie zo 100 % (hodiny)','dry','number',db.dry,'required min=".01" max="8760" step=".01"')+'</div><button class="btn primary">Uložiť časy</button></form><p><strong>Meranie melóna po 18 h 24 min</strong><br>Rast ≈ 42 %, vlhkosť ≈ 48 %, stav ≈ 100 %. Z jedného merania vychádza pri rovnomernom raste odhad približne 44 hodín od zasadenia po zber. Vlhkosť začala na 100 % a bez ďalšieho poliatia klesla na približne 48 %. Pri rovnomernom úbytku vychádza vyschnutie asi po 35 h 40 min od plného poliatia.</p></section><section class="panel">'+section('Upozornenia na termíny')+'<p>Pri otvorenej aplikácii dostaneš pripomienku dva dni pred termínom, deň pred ním a v deň termínu, vždy v jeho miestnom čase. Pre pripomienky pri zatvorenej aplikácii importuj termíny do kalendára s povolenými upozorneniami. Po zmene termínu aktualizuj jeho záznam aj v kalendári.</p><div class="actiongrid">'+btn(db.sound?'Vypnúť zvuk':'Zapnúť zvuk','sound','bell')+btn(db.notices?'Vypnúť oznámenia':'Povoliť oznámenia','notify','bell')+btn('Export termínov (.ics)','ics','calendar')+'</div></section>'+(CLOUD?cloudPanels():'<section class="panel">'+section('Údaje v tomto prehliadači')+'<p>'+ (db.demo?'Pracuješ s ukážkovými údajmi. Pred prvým vlastným zápisom môžeš začať s prázdnou evidenciou. ':'')+'Záloha obsahuje farmy, kontakty, denník, financie a nastavenia.</p><div class="actiongrid">'+btn('Export zálohy','backup','log')+btn('Obnoviť zálohu','restore','history')+(db.demo?btn('Odstrániť ukážkové údaje','clear','','danger'):'')+'</div></section>')+'<input type="file" hidden id="file" accept=".json,application/json"></div>'}
 function render(){
  const count=alerts().length;
  const nav=(p,i)=>`<button class="rail-link ${page===p?'active':''}" title="${names[p]}" aria-label="${names[p]}" aria-current="${page===p?'page':'false'}" data-a="go:${p}">${ic(i)}<span>${names[p]}</span></button>`;
