@@ -10,6 +10,7 @@ FarmDesk je samostatná appka vedľa FarmCrew. Má vlastný Supabase projekt **F
 - **Prvý registrovaný hráč je leader.** Každý ďalší čaká na schválenie a dovtedy nevidí žiadne údaje. Leader v Nastaveniach schvaľuje, blokuje a nastavuje zabudnuté heslá.
 - Farmy, pohyby na účte, denník prác, prebiehajúce práce, telefóny pracovníkov a časy pestovania sú spoločné pre všetkých schválených hráčov. Zmeny sa ukazujú živo.
 - **Server** zapisuje pri každom zázname, kto ho vytvoril a kto ho naposledy zmenil. Prehliadač to nedokáže sfalšovať. Ekonomika z toho počíta, kto koľko investoval a zarobil.
+- **Vyúčtovanie farmy** (za jeden nájom) delí tržby podľa vkladu. Vklad tvoria peniaze, ktoré hráč zapísal, a vlastná práca: keď prácu spravia hráči sami, má cenu podľa *Nastavenia → Cena vlastnej práce* (za 40 políčok, väčšia farma 2× / 3×) a delí sa rovným dielom medzi hráčov, ktorí na nej robili.
 - Zvuk, oznámenia a odoslané pripomienky sú osobné nastavenia prehliadača.
 - FarmDesk sa dá **nainštalovať ako appka** (PWA): na Androide v Chrome cez *Inštalovať aplikáciu*, na iPhone v Safari cez *Zdieľať → Pridať na plochu*. `sw.js` načítava súbory vždy najprv zo siete a uloženú kópiu použije, len keď spojenie chýba. K databáze nesiaha.
 - Farmy rozrobené pred appkou: pri **Pridať farmu** sa zadá *Začiatok nájmu* v minulosti a pri **Zapísať prácu** sa dá rozbaliť *Práca bola spravená skôr?* s časom v minulosti.

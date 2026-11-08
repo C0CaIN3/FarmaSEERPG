@@ -504,7 +504,7 @@ function noticesPage() {
   }).join('');
   return heading('Upozornenia','Zber, polievanie a blížiace sa termíny.',btn('Nastavenia','go:settings','settings'))+'<div class="noticesgrid">'+panels+'</div>';
 }
-function settings(){return heading('Nastavenia','Kalibrácia odhadov a správa pracovného priestoru.')+'<div class="settings">'+(CLOUD?installPanel():'')+'<section class="panel">'+section('Časy pestovania')+'<p>Rast a úbytok vody sa počítajú rovnomerne od posledného sadenia a poliatia. Zadaj časy odmerané v hre. Zmena prepočíta aj rozbehnuté cykly.</p><form id="timing"><div class="formgrid">'+field('Všeobecný rast do zberu (hodiny)','growth','number',db.growth,'required min=".01" max="8760" step=".01"')+field('Vodný melón – rast (hodiny)','melonHours','number',growthHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Vodný melón – vyschnutie zo 100 % (hodiny)','melonDryHours','number',dryingHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Všeobecné vyschnutie zo 100 % (hodiny)','dry','number',db.dry,'required min=".01" max="8760" step=".01"')+'</div><button class="btn primary">Uložiť časy</button></form><p><strong>Meranie melóna po 18 h 24 min</strong><br>Rast ≈ 42 %, vlhkosť ≈ 48 %, stav ≈ 100 %. Z jedného merania vychádza pri rovnomernom raste odhad približne 44 hodín od zasadenia po zber. Vlhkosť začala na 100 % a bez ďalšieho poliatia klesla na približne 48 %. Pri rovnomernom úbytku vychádza vyschnutie asi po 35 h 40 min od plného poliatia.</p></section><section class="panel">'+section('Upozornenia na termíny')+'<p>Pri otvorenej aplikácii dostaneš pripomienku dva dni pred termínom, deň pred ním a v deň termínu, vždy v jeho miestnom čase. Pre pripomienky pri zatvorenej aplikácii importuj termíny do kalendára s povolenými upozorneniami. Po zmene termínu aktualizuj jeho záznam aj v kalendári.</p><div class="actiongrid">'+btn(db.sound?'Vypnúť zvuk':'Zapnúť zvuk','sound','bell')+btn(db.notices?'Vypnúť oznámenia':'Povoliť oznámenia','notify','bell')+btn('Export termínov (.ics)','ics','calendar')+'</div></section>'+(CLOUD?cloudPanels():'<section class="panel">'+section('Údaje v tomto prehliadači')+'<p>'+ (db.demo?'Pracuješ s ukážkovými údajmi. Pred prvým vlastným zápisom môžeš začať s prázdnou evidenciou. ':'')+'Záloha obsahuje farmy, kontakty, denník, financie a nastavenia.</p><div class="actiongrid">'+btn('Export zálohy','backup','log')+btn('Obnoviť zálohu','restore','history')+(db.demo?btn('Odstrániť ukážkové údaje','clear','','danger'):'')+'</div></section>')+'<input type="file" hidden id="file" accept=".json,application/json"></div>'}
+function settings(){return heading('Nastavenia','Kalibrácia odhadov a správa pracovného priestoru.')+'<div class="settings">'+(CLOUD?installPanel()+workPricePanel():'')+'<section class="panel">'+section('Časy pestovania')+'<p>Rast a úbytok vody sa počítajú rovnomerne od posledného sadenia a poliatia. Zadaj časy odmerané v hre. Zmena prepočíta aj rozbehnuté cykly.</p><form id="timing"><div class="formgrid">'+field('Všeobecný rast do zberu (hodiny)','growth','number',db.growth,'required min=".01" max="8760" step=".01"')+field('Vodný melón – rast (hodiny)','melonHours','number',growthHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Vodný melón – vyschnutie zo 100 % (hodiny)','melonDryHours','number',dryingHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Všeobecné vyschnutie zo 100 % (hodiny)','dry','number',db.dry,'required min=".01" max="8760" step=".01"')+'</div><button class="btn primary">Uložiť časy</button></form><p><strong>Meranie melóna po 18 h 24 min</strong><br>Rast ≈ 42 %, vlhkosť ≈ 48 %, stav ≈ 100 %. Z jedného merania vychádza pri rovnomernom raste odhad približne 44 hodín od zasadenia po zber. Vlhkosť začala na 100 % a bez ďalšieho poliatia klesla na približne 48 %. Pri rovnomernom úbytku vychádza vyschnutie asi po 35 h 40 min od plného poliatia.</p></section><section class="panel">'+section('Upozornenia na termíny')+'<p>Pri otvorenej aplikácii dostaneš pripomienku dva dni pred termínom, deň pred ním a v deň termínu, vždy v jeho miestnom čase. Pre pripomienky pri zatvorenej aplikácii importuj termíny do kalendára s povolenými upozorneniami. Po zmene termínu aktualizuj jeho záznam aj v kalendári.</p><div class="actiongrid">'+btn(db.sound?'Vypnúť zvuk':'Zapnúť zvuk','sound','bell')+btn(db.notices?'Vypnúť oznámenia':'Povoliť oznámenia','notify','bell')+btn('Export termínov (.ics)','ics','calendar')+'</div></section>'+(CLOUD?cloudPanels():'<section class="panel">'+section('Údaje v tomto prehliadači')+'<p>'+ (db.demo?'Pracuješ s ukážkovými údajmi. Pred prvým vlastným zápisom môžeš začať s prázdnou evidenciou. ':'')+'Záloha obsahuje farmy, kontakty, denník, financie a nastavenia.</p><div class="actiongrid">'+btn('Export zálohy','backup','log')+btn('Obnoviť zálohu','restore','history')+(db.demo?btn('Odstrániť ukážkové údaje','clear','','danger'):'')+'</div></section>')+'<input type="file" hidden id="file" accept=".json,application/json"></div>'}
 function render(){
  const count=alerts().length;
  const nav=(p,i)=>`<button class="rail-link ${page===p||page==='farm'&&p==='farms'?'active':''}" title="${names[p]}" aria-label="${names[p]}" aria-current="${page===p?'page':'false'}" data-a="go:${p}">${ic(i)}<span>${names[p]}</span></button>`;
@@ -775,9 +775,10 @@ function work(id,assignment=null,ongoing=null,mode='done'){
   if(!activeFarms().length){toast('Najprv pridaj farmu.');return}
   const f=activeFarms().find(f=>f.id===id)||activeFarms()[0];
   const job=assignment?.job||(f.planted?(progress(f).g===100?'harvest':'water'):'dig');
-  const worker=ongoing?.who||assignment?.who||(f.planted?f.worker||'Ja':'Ja');
+  const plantedByHire=f.planted&&(f.workerHired??(!!f.worker&&f.worker!=='Ja'&&!f.crew));
+  const worker=ongoing?.who||assignment?.who||(plantedByHire?f.worker:'Ja');
   const people=[...new Set([...db.logs.map(l=>l.who),...db.farms.map(f=>f.worker),...Object.keys(db.workers||{})].filter(n=>n&&n!=='Ja'))];
-  const hire=ongoing?ongoing.performer==='hired':!!assignment||worker!=='Ja';
+  const hire=ongoing?ongoing.performer==='hired':!!assignment||!!plantedByHire;
   const fixedFarm=assignment||ongoing;
   const title=ongoing?'Dokončiť prácu':assignment?'Dokončiť dohodnutú prácu':mode==='ongoing'?'Poslať na prácu':'Zapísať prácu';
   modal(title,form('workform',
@@ -787,7 +788,8 @@ function work(id,assignment=null,ongoing=null,mode='done'){
     jobPicker(f,ongoing?ongoing.jobs:[job],assignment?.job)+
     '<div id="crop-profile" class="wide" '+((ongoing?ongoing.jobs.includes('plant'):job==='plant')?'':'hidden')+'>'+growthProfile(ongoing?.crop||'Úroda')+'</div>'+
     (fixedFarm?'':'<div class="wide">'+select('Stav práce','status',[['done','Hotová – zapísať do denníka'],['ongoing','Prebieha – pracovník práve začal']],mode)+'</div>')+
-    '<div class="wide">'+select('Kto vykonal prácu?','performer',[['self','Ja'],['hired','Najatý pracovník']],hire?'hired':'self')+'</div>'+
+    '<div class="wide">'+select('Kto vykonal prácu?','performer',[['self',CLOUD?'My, hráči sami':'Ja'],['hired','Najatý pracovník']],hire?'hired':'self')+'</div>'+
+    (CLOUD?crewPicker(ongoing?.players||[me?.user_id],hire):'')+
     (ongoing?'':'<p class="wide hint worktime">'+ic('clock')+'Dátum a čas sa zapíšu automaticky pri stlačení Zapísať. Pri prebiehajúcej práci ako čas začiatku.</p>'+
       '<details class="wide past-time"><summary>Práca bola spravená skôr?</summary><p class="hint">Pre farmy rozrobené pred appkou alebo zabudnutý zápis. Rast a voda sa potom počítajú od tohto času.</p>'+field('Kedy bola práca spravená','at','datetime-local','','max="'+local(now())+'"')+'</details>')+
     '<fieldset id="hire-fields" class="wide formgrid hire-fields" '+(hire?'':'hidden disabled')+'><legend>Dohoda za túto prácu</legend>'+
@@ -927,7 +929,9 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
    const assignment=d.assignment&&f.assignments?.find(a=>a.id===d.assignment&&selected.includes(a.job));
    if(d.assignment&&!assignment){toast('Dohoda už bola dokončená alebo zrušená.');return}
    const hired=d.performer==='hired';
-   const who=hired?(d.who||'').trim():(d.performer?'Ja':(d.who||'Ja').trim());
+   const crew=!hired&&CLOUD?[...new FormData(e.target).getAll('players')].filter(id=>members.some(m=>m.user_id===id&&m.status==='active')):[];
+   if(!hired&&CLOUD&&!crew.length){toast('Vyber, ktorí hráči na práci robili.');return}
+   const who=hired?(d.who||'').trim():CLOUD?crew.map(playerName).join(', '):(d.performer?'Ja':(d.who||'Ja').trim());
    const fee=hired?Number(ungroupAmount(d.fee)):0;
    if(!who||!isAmount(fee)||(hired&&(d.fee==null||d.fee===''))){toast('Doplň meno pracovníka a dohodnutú odmenu.');return}
    if(hired)rememberWorker(who,d.workerPhone);
@@ -947,7 +951,7 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
      if(j==='plant')planted=true;
    }
    if(d.status==='ongoing'&&!d.ongoing){
-     (db.ongoing??=[]).push({id:uid(),farm:f.id,jobs:selected,who,performer:hired?'hired':'self',fee,settlement:d.settlement||'pending',crop:d.crop===melon?melon:'Úroda',startedAt:at});
+     (db.ongoing??=[]).push({id:uid(),farm:f.id,jobs:selected,who,performer:hired?'hired':'self',...(crew.length?{players:crew}:{}),fee,settlement:d.settlement||'pending',crop:d.crop===melon?melon:'Úroda',startedAt:at});
      activeFarm=f.id;
    }else{
    const batchLabel=selected.length>1?selected.map(j=>jobs[j][0]).join(', '):undefined;
@@ -955,11 +959,12 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
    selected.forEach((j,i)=>{
      const stamp=at+i,cycleAt=j==='plant'?stamp:f.planted;
      if(j==='harvest'){f.crop='Úroda';f.planted=null;f.watered=null}
-     if(j==='plant'){f.crop=d.crop===melon?melon:'Úroda';f.planted=stamp;f.worker=who;if(!f.watered)f.watered=stamp}
+     if(j==='plant'){f.crop=d.crop===melon?melon:'Úroda';f.planted=stamp;f.worker=who;f.workerHired=hired;if(crew.length)f.crew=crew;else delete f.crew;if(!f.watered)f.watered=stamp}
      if(j==='water')f.watered=stamp;
      const [action,icon]=jobs[j];
      // The agreed fee covers the whole visit, so it is booked once, on the first entry.
      const log={id:uid(),farm:f.id,action,icon,who,at:stamp,fee:i?0:fee,cycleAt,performer:hired?'hired':'self'};
+     if(crew.length)log.players=crew;
      if(!i&&batchLabel)log.batchLabel=batchLabel;
      db.logs.push(log);created.push(log);
    });
@@ -981,6 +986,10 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
      if(!saveRent(f,d,at,amount))return;
    }else db.tx.push({id:uid(),category:d.category,farm:d.farm,desc:d.desc||'',amount,at});
  }
+ else if(id==='workprices'){
+   const prices={};
+   for(const k of jobShown){const n=Number(ungroupAmount(d['price_'+k]||'0'));if(!isAmount(n)){toast('Skontroluj cenu práce '+jobs[k][0]+'.');return}prices[k]=n}
+   db.workPrices=prices;save();render();toast('Ceny vlastnej práce sú uložené.');return}
  else if(id==='timing'){db.growth=+d.growth;db.dry=+d.dry;if(d.melonHours)db.melonHours=+d.melonHours;if(d.melonDryHours)db.melonDryHours=+d.melonDryHours;save();render();toast('Časy pestovania boli uložené.');return}else return;
  save();close();render();if(id==='workform'||id==='agreementform')detail(f);else if(id==='farmform'||id==='payform')detail(db.farms.find(x=>x.id===activeFarm));else if(id==='txform'&&(d.fromFarm||d.category==='rent')&&f)detail(f);toast('Záznam bol uložený.')});
 document.addEventListener('input',e=>{if(e.target.name==='who'&&e.target.form?.elements.workerPhone){const known=workerPhone(e.target.value);if(known)e.target.form.elements.workerPhone.value=known}if(e.target.hasAttribute('data-forint'))updateAmountInput(e.target,e.inputType==='insertFromPaste');if(e.target.id==='search'){query=e.target.value;$('#matches').innerHTML=farmsgrid();$('#matches').querySelectorAll('canvas').forEach(paint)}if(e.target.closest('#calcform'))calculate()});
@@ -1009,7 +1018,7 @@ document.addEventListener('change',async e=>{let el=e.target;if(el.name==='type'
      const farm=db.farms.find(x=>x.id===el.value);
      const pick=farm.planted?(progress(farm).g===100?'harvest':'water'):'dig';
      el.form.querySelectorAll('input[type="checkbox"][name="job"]').forEach(b=>b.checked=b.value===pick);
-     fields.performer.value=farm.planted&&farm.worker&&farm.worker!=='Ja'?'hired':'self';
+     fields.performer.value=farm.planted&&(farm.workerHired??(!!farm.worker&&farm.worker!=='Ja'&&!farm.crew))?'hired':'self';
      fields.who.value=fields.performer.value==='hired'?farm.worker:'';
      fields.workerPhone.value=workerPhone(fields.who.value);
      fields.fee.value='';fields.settlement.value='pending';
@@ -1018,6 +1027,7 @@ document.addEventListener('change',async e=>{let el=e.target;if(el.name==='type'
    if(['farm','job','alljobs'].includes(el.name))syncJobPicker(el.form,db.farms.find(x=>x.id===fields.farm.value));
    if(el.name==='farm'||el.name==='performer'){
      const box=$('#hire-fields');box.hidden=box.disabled=fields.performer.value!=='hired';
+     const crewBox=$('#crew-fields');if(crewBox)crewBox.hidden=crewBox.disabled=fields.performer.value==='hired';
    }
  }
  if(el.closest('#txform')&&(el.name==='farm'||el.name==='category')){
@@ -1070,6 +1080,7 @@ function recordList(state=db){
   for(const o of state.ongoing||[])out.push({kind:'ongoing',id:o.id,data:o});
   for(const [name,phone] of Object.entries(state.workers||{}))out.push({kind:'worker',id:name,data:{name,phone}});
   const st={growth:state.growth,dry:state.dry};
+  if(state.workPrices)st.workPrices=state.workPrices;
   if(state.melonHours!=null)st.melonHours=state.melonHours;
   if(state.melonDryHours!=null)st.melonDryHours=state.melonDryHours;
   out.push({kind:'settings',id:'main',data:st});
@@ -1088,6 +1099,7 @@ function applyRecords(list){
     else if(r.kind==='settings'){
       if(+d.growth>0)next.growth=+d.growth;if(+d.dry>0)next.dry=+d.dry;
       if(+d.melonHours>0)next.melonHours=+d.melonHours;if(+d.melonDryHours>0)next.melonDryHours=+d.melonDryHours;
+      if(d.workPrices&&typeof d.workPrices==='object')next.workPrices=d.workPrices;
     }
   }
   db=next;
@@ -1195,52 +1207,81 @@ const cents=n=>Math.round(n*100)/100;
 function leaseRows(f,period){
   return db.tx.filter(x=>x.farm===f.id).filter(x=>{const stamp=x.category==='rent'?(x.rentStart??x.at):x.at;return stamp>=period.start&&stamp<period.end});
 }
+// ---- Own work: a job the players did themselves counts as a stake, priced like a hired worker ----
+const DEFAULT_WORK_PRICES={dig:100000,till:100000,plant:100000,water:100000,harvest:100000};
+const workPrices=()=>({...DEFAULT_WORK_PRICES,...(db.workPrices||{})});
+const jobKeyOf=action=>Object.keys(jobs).find(k=>jobs[k][0]===action);
+// Prices are for a 40-field farm; bigger farms are more work.
+const jobValue=(f,action)=>{const k=jobKeyOf(action);return k?cents((workPrices()[k]||0)*(f.size||40)/40):0};
+function crewPicker(selected,hidden){
+  const list=members.filter(m=>m.status==='active');
+  return '<fieldset id="crew-fields" class="wide hire-fields crew-fields" '+(hidden?'hidden disabled':'')+'><legend>Kto z vás robil</legend><div class="jobchips">'+
+    list.map(m=>'<label class="jobchip crew-chip"><input type="checkbox" name="players" value="'+E(m.user_id)+'" '+(selected.includes(m.user_id)?'checked':'')+'>'+farmer(m.user_id,20,m.name)+E(m.name)+'</label>').join('')+
+    '</div><p class="hint">Hodnota práce sa rozdelí rovným dielom medzi vybraných hráčov a ráta sa im do vkladu vo vyúčtovaní.</p></fieldset>';
+}
+function workPricePanel(){
+  const p=workPrices();
+  return '<section class="panel">'+section('Cena vlastnej práce')+'<p>Keď prácu spravíte sami namiesto najatého pracovníka, ráta sa ako váš vklad do farmy, akoby ste za ňu zaplatili. Ceny sú za farmu so 40 políčkami; farma s 80 políčkami má prácu 2× drahšiu, so 120 políčkami 3×. Keď robia dvaja, každý dostane polovicu.</p><form id="workprices"><div class="formgrid">'+
+    jobShown.map(k=>forintField(jobs[k][0],'price_'+k,p[k])).join('')+'</div><button class="btn primary">Uložiť ceny</button></form></section>';
+}
+function laborRows(f,period){
+  return db.logs.filter(l=>l.farm===f.id&&l.at>=period.start&&l.at<period.end&&l.performer!=='hired'&&!(l.performer==null&&l.who&&l.who!=='Ja'&&!l.players));
+}
 function settlementFor(f){
   const rows=db.tx.filter(x=>x.farm===f.id),period=farmLeasePeriod(f,rows);
   if(!period)return null;
-  const per=new Map(),add=uid=>{if(!per.has(uid))per.set(uid,{uid,invested:0,received:0});return per.get(uid)};
+  const per=new Map(),add=uid=>{if(!per.has(uid))per.set(uid,{uid,invested:0,labor:0,jobs:0,received:0});return per.get(uid)};
   for(const x of leaseRows(f,period)){const p=add(recordMeta('tx',x.id)?.created_by??me?.user_id);if(x.category==='sale')p.received+=x.amount;else p.invested+=x.amount}
-  const people=[...per.values()].filter(p=>p.invested||p.received);
-  const invested=people.reduce((n,p)=>n+p.invested,0),revenue=people.reduce((n,p)=>n+p.received,0);
-  for(const p of people){p.share=invested?p.invested/invested:0;p.due=cents(revenue*p.share);p.profit=cents(p.due-p.invested);p.balance=cents(p.due-p.received)}
+  for(const l of laborRows(f,period)){
+    const value=jobValue(f,l.action),crew=l.players?.length?l.players:[recordMeta('log',l.id)?.created_by??me?.user_id];
+    for(const uid of crew){const p=add(uid);p.labor=cents(p.labor+value/crew.length);p.jobs+=1/crew.length}
+  }
+  const people=[...per.values()].filter(p=>p.invested||p.received||p.labor);
+  const invested=people.reduce((n,p)=>n+p.invested,0),labor=people.reduce((n,p)=>n+p.labor,0),revenue=people.reduce((n,p)=>n+p.received,0);
+  const stakes=invested+labor;
+  for(const p of people){p.stake=p.invested+p.labor;p.share=stakes?p.stake/stakes:0;p.due=Math.round(revenue*p.share)}
+  if(people.length&&stakes){const top=people.reduce((a,b)=>b.share>a.share?b:a);top.due+=Math.round(revenue)-people.reduce((n,p)=>n+p.due,0)}
+  for(const p of people){p.profit=cents(p.due-p.invested);p.balance=cents(p.due-p.received)}
   // Who sends money to whom: largest debts paid to largest claims first.
   const transfers=[];
-  if(invested>0){
+  if(stakes>0){
     const owe=people.filter(p=>p.balance<0).map(p=>({uid:p.uid,left:-p.balance})).sort((a,b)=>b.left-a.left);
     const get=people.filter(p=>p.balance>0).map(p=>({uid:p.uid,left:p.balance})).sort((a,b)=>b.left-a.left);
     for(const o of owe)for(const g of get){
       const amount=cents(Math.min(o.left,g.left));
-      if(amount>=0.01){transfers.push({from:o.uid,to:g.uid,amount});o.left=cents(o.left-amount);g.left=cents(g.left-amount)}
+      if(amount>=1){transfers.push({from:o.uid,to:g.uid,amount});o.left=cents(o.left-amount);g.left=cents(g.left-amount)}
       if(o.left<0.01)break;
     }
   }
   const closed=(f.settlements||[]).find(st=>st.start===period.start&&st.end===period.end)||null;
-  return {period,people,invested,revenue,transfers,closed};
+  return {period,people,invested,labor,stakes,revenue,transfers,closed};
 }
 function settlementBox(f){
   const st=settlementFor(f);
   if(!st)return '';
-  const {period,people,invested,revenue,transfers,closed}=st;
-  const head=`<section class="contract-box settle-box"><h3>Vyúčtovanie hráčov</h3><p class="account-dates">Nájom ${date(period.start)} – ${date(period.end)} · delí sa podľa vkladu</p>`;
-  if(!people.length)return head+empty('V tomto nájme zatiaľ nikto nič nezaplatil ani nepredal.')+'</section>';
-  const table=`<div class="tablewrap"><table><thead><tr><th>Hráč</th><th>Vložil</th><th>Podiel</th><th>Má dostať</th><th>Zisk</th></tr></thead><tbody>${people.sort((a,b)=>b.invested-a.invested).map(p=>`<tr><th scope="row"><span class="player-cell">${farmer(p.uid,22,playerName(p.uid))}${E(playerName(p.uid))}</span></th><td>${money(p.invested)}</td><td>${invested?fmt(Math.round(p.share*1000)/10)+' %':'—'}</td><td>${money(p.due)}</td><td class="${p.profit<0?'loss':p.profit>0?'gain':''}">${money(p.profit)}</td></tr>`).join('')}<tr class="total-row"><th scope="row">Spolu</th><td>${money(invested)}</td><td>100 %</td><td>${money(revenue)}</td><td class="${revenue-invested<0?'loss':revenue-invested>0?'gain':''}">${money(cents(revenue-invested))}</td></tr></tbody></table></div>`;
-  if(!invested)return head+table+'<p class="hint">Nikto zatiaľ nič nevložil, takže nie je podľa čoho deliť. Zapíš nájom, semienka alebo výplatu pracovníka.</p></section>';
-  if(!revenue)return head+table+'<p class="hint">Po predaji úrody tu uvidíš, kto komu koľko pošle. Kto predá, zapíše predaj na tejto farme.</p></section>';
+  const {period,people,invested,labor,stakes,revenue,transfers,closed}=st;
+  const head=`<section class="contract-box settle-box"><h3>Vyúčtovanie hráčov</h3><p class="account-dates">Nájom ${date(period.start)} – ${date(period.end)} · delí sa podľa peňazí a vlastnej práce</p>`;
+  if(!people.length)return head+empty('V tomto nájme zatiaľ nikto nič nezaplatil, neodpracoval ani nepredal.')+'</section>';
+  const signed=n=>n?money(n):'—';
+  const table=`<div class="tablewrap"><table><thead><tr><th>Hráč</th><th>Peniaze</th><th>Práca</th><th>Podiel</th><th>Má dostať</th><th>Zisk</th></tr></thead><tbody>${people.sort((a,b)=>b.stake-a.stake).map(p=>`<tr><th scope="row"><span class="player-cell">${farmer(p.uid,22,playerName(p.uid))}${E(playerName(p.uid))}</span></th><td>${signed(p.invested)}</td><td title="${fmt(Math.round(p.jobs*10)/10)} prác">${signed(p.labor)}</td><td>${stakes?fmt(Math.round(p.share*1000)/10)+' %':'—'}</td><td>${money(p.due)}</td><td class="${p.profit<0?'loss':p.profit>0?'gain':''}">${money(p.profit)}</td></tr>`).join('')}<tr class="total-row"><th scope="row">Spolu</th><td>${money(invested)}</td><td>${money(labor)}</td><td>100 %</td><td>${money(revenue)}</td><td class="${revenue-invested<0?'loss':revenue-invested>0?'gain':''}">${money(cents(revenue-invested))}</td></tr></tbody></table></div>`;
+  const note='<p class="hint">Práca = hodnota prác, ktoré ste spravili sami (ceny v Nastaveniach). Zisk = čo má hráč dostať mínus peniaze, ktoré vložil.</p>';
+  if(!stakes)return head+table+'<p class="hint">Nikto zatiaľ nič nevložil ani neodpracoval, takže nie je podľa čoho deliť.</p></section>';
+  if(!revenue)return head+table+note+'<p class="hint">Po predaji úrody tu uvidíš, kto komu koľko pošle. Kto predá, zapíše predaj na tejto farme.</p></section>';
   const transferRows=list=>list.length?list.map(t=>`<div class="transfer">${farmer(t.from,26,playerName(t.from))}<span><strong>${E(playerName(t.from))}</strong> pošle <strong>${E(playerName(t.to))}</strong></span>${farmer(t.to,26,playerName(t.to))}<b>${money(t.amount)}</b></div>`).join(''):'<p class="hint">Peniaze sú už rozdelené správne, nikto nikomu nič neposiela.</p>';
   if(closed){
-    const changed=cents(closed.revenue)!==cents(revenue)||cents(closed.invested)!==cents(invested);
-    return head+table+'<h4 class="settle-sub">Poslané pri uzavretí</h4>'+transferRows(closed.transfers||[])+
+    const changed=cents(closed.revenue)!==cents(revenue)||cents(closed.invested)!==cents(invested)||cents(closed.labor||0)!==cents(labor);
+    return head+table+note+'<h4 class="settle-sub">Poslané pri uzavretí</h4>'+transferRows(closed.transfers||[])+
       `<p class="settle-done">${ic('check')}Uzavreté ${date(closed.closedAt)} · ${E(playerName(closed.closedBy))}</p>`+
-      (changed?'<p class="auth-msg">Po uzavretí pribudli alebo sa zmenili platby v tomto nájme. Otvor vyúčtovanie znova a uzavri ho s novými číslami.</p>':'')+
+      (changed?'<p class="auth-msg">Po uzavretí pribudli alebo sa zmenili platby či práce v tomto nájme. Otvor vyúčtovanie znova a uzavri ho s novými číslami.</p>':'')+
       '<div class="actiongrid">'+btn('Otvoriť znova','settlereopen:'+f.id,'history')+'</div></section>';
   }
-  return head+table+'<h4 class="settle-sub">Kto komu pošle</h4>'+transferRows(transfers)+'<div class="actiongrid">'+btn('Uzavrieť vyúčtovanie','settle:'+f.id,'check','primary')+'</div></section>';
+  return head+table+note+'<h4 class="settle-sub">Kto komu pošle</h4>'+transferRows(transfers)+'<div class="actiongrid">'+btn('Uzavrieť vyúčtovanie','settle:'+f.id,'check','primary')+'</div></section>';
 }
 function closeSettlement(f){
   const st=settlementFor(f);
-  if(!st||!st.revenue||!st.invested||st.closed)return;
-  f.settlements=[...(f.settlements||[]),{start:st.period.start,end:st.period.end,closedAt:now(),closedBy:me?.user_id||null,invested:cents(st.invested),revenue:cents(st.revenue),
-    shares:st.people.map(p=>({uid:p.uid,invested:cents(p.invested),received:cents(p.received),due:p.due})),transfers:st.transfers}];
+  if(!st||!st.revenue||!st.stakes||st.closed)return;
+  f.settlements=[...(f.settlements||[]),{start:st.period.start,end:st.period.end,closedAt:now(),closedBy:me?.user_id||null,invested:cents(st.invested),labor:cents(st.labor),revenue:cents(st.revenue),
+    shares:st.people.map(p=>({uid:p.uid,invested:cents(p.invested),labor:cents(p.labor),received:cents(p.received),due:p.due})),transfers:st.transfers}];
 }
 // ---- Install as a phone/desktop app (PWA) ----
 let installPrompt=null;
