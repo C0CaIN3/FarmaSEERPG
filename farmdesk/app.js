@@ -504,7 +504,7 @@ function noticesPage() {
   }).join('');
   return heading('Upozornenia','Zber, polievanie a blížiace sa termíny.',btn('Nastavenia','go:settings','settings'))+'<div class="noticesgrid">'+panels+'</div>';
 }
-function settings(){return heading('Nastavenia','Kalibrácia odhadov a správa pracovného priestoru.')+'<div class="settings"><section class="panel">'+section('Časy pestovania')+'<p>Rast a úbytok vody sa počítajú rovnomerne od posledného sadenia a poliatia. Zadaj časy odmerané v hre. Zmena prepočíta aj rozbehnuté cykly.</p><form id="timing"><div class="formgrid">'+field('Všeobecný rast do zberu (hodiny)','growth','number',db.growth,'required min=".01" max="8760" step=".01"')+field('Vodný melón – rast (hodiny)','melonHours','number',growthHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Vodný melón – vyschnutie zo 100 % (hodiny)','melonDryHours','number',dryingHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Všeobecné vyschnutie zo 100 % (hodiny)','dry','number',db.dry,'required min=".01" max="8760" step=".01"')+'</div><button class="btn primary">Uložiť časy</button></form><p><strong>Meranie melóna po 18 h 24 min</strong><br>Rast ≈ 42 %, vlhkosť ≈ 48 %, stav ≈ 100 %. Z jedného merania vychádza pri rovnomernom raste odhad približne 44 hodín od zasadenia po zber. Vlhkosť začala na 100 % a bez ďalšieho poliatia klesla na približne 48 %. Pri rovnomernom úbytku vychádza vyschnutie asi po 35 h 40 min od plného poliatia.</p></section><section class="panel">'+section('Upozornenia na termíny')+'<p>Pri otvorenej aplikácii dostaneš pripomienku dva dni pred termínom, deň pred ním a v deň termínu, vždy v jeho miestnom čase. Pre pripomienky pri zatvorenej aplikácii importuj termíny do kalendára s povolenými upozorneniami. Po zmene termínu aktualizuj jeho záznam aj v kalendári.</p><div class="actiongrid">'+btn(db.sound?'Vypnúť zvuk':'Zapnúť zvuk','sound','bell')+btn(db.notices?'Vypnúť oznámenia':'Povoliť oznámenia','notify','bell')+btn('Export termínov (.ics)','ics','calendar')+'</div></section>'+(CLOUD?cloudPanels():'<section class="panel">'+section('Údaje v tomto prehliadači')+'<p>'+ (db.demo?'Pracuješ s ukážkovými údajmi. Pred prvým vlastným zápisom môžeš začať s prázdnou evidenciou. ':'')+'Záloha obsahuje farmy, kontakty, denník, financie a nastavenia.</p><div class="actiongrid">'+btn('Export zálohy','backup','log')+btn('Obnoviť zálohu','restore','history')+(db.demo?btn('Odstrániť ukážkové údaje','clear','','danger'):'')+'</div></section>')+'<input type="file" hidden id="file" accept=".json,application/json"></div>'}
+function settings(){return heading('Nastavenia','Kalibrácia odhadov a správa pracovného priestoru.')+'<div class="settings">'+(CLOUD?installPanel():'')+'<section class="panel">'+section('Časy pestovania')+'<p>Rast a úbytok vody sa počítajú rovnomerne od posledného sadenia a poliatia. Zadaj časy odmerané v hre. Zmena prepočíta aj rozbehnuté cykly.</p><form id="timing"><div class="formgrid">'+field('Všeobecný rast do zberu (hodiny)','growth','number',db.growth,'required min=".01" max="8760" step=".01"')+field('Vodný melón – rast (hodiny)','melonHours','number',growthHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Vodný melón – vyschnutie zo 100 % (hodiny)','melonDryHours','number',dryingHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Všeobecné vyschnutie zo 100 % (hodiny)','dry','number',db.dry,'required min=".01" max="8760" step=".01"')+'</div><button class="btn primary">Uložiť časy</button></form><p><strong>Meranie melóna po 18 h 24 min</strong><br>Rast ≈ 42 %, vlhkosť ≈ 48 %, stav ≈ 100 %. Z jedného merania vychádza pri rovnomernom raste odhad približne 44 hodín od zasadenia po zber. Vlhkosť začala na 100 % a bez ďalšieho poliatia klesla na približne 48 %. Pri rovnomernom úbytku vychádza vyschnutie asi po 35 h 40 min od plného poliatia.</p></section><section class="panel">'+section('Upozornenia na termíny')+'<p>Pri otvorenej aplikácii dostaneš pripomienku dva dni pred termínom, deň pred ním a v deň termínu, vždy v jeho miestnom čase. Pre pripomienky pri zatvorenej aplikácii importuj termíny do kalendára s povolenými upozorneniami. Po zmene termínu aktualizuj jeho záznam aj v kalendári.</p><div class="actiongrid">'+btn(db.sound?'Vypnúť zvuk':'Zapnúť zvuk','sound','bell')+btn(db.notices?'Vypnúť oznámenia':'Povoliť oznámenia','notify','bell')+btn('Export termínov (.ics)','ics','calendar')+'</div></section>'+(CLOUD?cloudPanels():'<section class="panel">'+section('Údaje v tomto prehliadači')+'<p>'+ (db.demo?'Pracuješ s ukážkovými údajmi. Pred prvým vlastným zápisom môžeš začať s prázdnou evidenciou. ':'')+'Záloha obsahuje farmy, kontakty, denník, financie a nastavenia.</p><div class="actiongrid">'+btn('Export zálohy','backup','log')+btn('Obnoviť zálohu','restore','history')+(db.demo?btn('Odstrániť ukážkové údaje','clear','','danger'):'')+'</div></section>')+'<input type="file" hidden id="file" accept=".json,application/json"></div>'}
 function render(){
  const count=alerts().length;
  const nav=(p,i)=>`<button class="rail-link ${page===p||page==='farm'&&p==='farms'?'active':''}" title="${names[p]}" aria-label="${names[p]}" aria-current="${page===p?'page':'false'}" data-a="go:${p}">${ic(i)}<span>${names[p]}</span></button>`;
@@ -560,6 +560,7 @@ function edit(f){
     select('Budova (farma)','loc',seq(7),f?.loc||1)+select('Poschodie','floor',seq(15),f?.floor||1)+
     select('Dohodnutá doba prenájmu','leaseDays',seq(30).map(([n])=>[n,dayLabel(n)]),leaseDays(f))+
     forintField('Dohodnuté nájomné za celé obdobie','rentAmount',agreedRent(f)??'')+
+    (f?'':field('Začiatok nájmu','startedAt','datetime-local',local(now()),'required max="'+local(now())+'"')+'<p class="hint lease-hint">Pri farme, ktorú máte už dlhšie, zadaj, kedy začal aktuálny nájom. Od toho sa počíta koniec nájmu.</p>')+
     (f?'':'<label class="checkline wide"><input type="checkbox" name="rentPaid" checked><span><strong>Nájom je už zaplatený</strong><small>Zapíše sa ako náklad farmy'+(CLOUD?', zaplatil '+E(myName()):'')+'. Ráta sa do vkladu vo vyúčtovaní.</small></span></label>')+
     playerFields+editingFields+(f?.planted?growthProfile(f.crop):''),f?'Uložiť':'Pridať farmu'));
 }
@@ -787,7 +788,8 @@ function work(id,assignment=null,ongoing=null,mode='done'){
     '<div id="crop-profile" class="wide" '+((ongoing?ongoing.jobs.includes('plant'):job==='plant')?'':'hidden')+'>'+growthProfile(ongoing?.crop||'Úroda')+'</div>'+
     (fixedFarm?'':'<div class="wide">'+select('Stav práce','status',[['done','Hotová – zapísať do denníka'],['ongoing','Prebieha – pracovník práve začal']],mode)+'</div>')+
     '<div class="wide">'+select('Kto vykonal prácu?','performer',[['self','Ja'],['hired','Najatý pracovník']],hire?'hired':'self')+'</div>'+
-    (ongoing?'':'<p class="wide hint worktime">'+ic('clock')+'Dátum a čas sa zapíšu automaticky pri stlačení Zapísať. Pri prebiehajúcej práci ako čas začiatku.</p>')+
+    (ongoing?'':'<p class="wide hint worktime">'+ic('clock')+'Dátum a čas sa zapíšu automaticky pri stlačení Zapísať. Pri prebiehajúcej práci ako čas začiatku.</p>'+
+      '<details class="wide past-time"><summary>Práca bola spravená skôr?</summary><p class="hint">Pre farmy rozrobené pred appkou alebo zabudnutý zápis. Rast a voda sa potom počítajú od tohto času.</p>'+field('Kedy bola práca spravená','at','datetime-local','','max="'+local(now())+'"')+'</details>')+
     '<fieldset id="hire-fields" class="wide formgrid hire-fields" '+(hire?'':'hidden disabled')+'><legend>Dohoda za túto prácu</legend>'+
     field('Meno pracovníka','who','text',hire?worker:'','required maxlength="80" list="workers"')+
     phoneField(hire?worker:'')+
@@ -848,6 +850,7 @@ function check(){
 function confirmBox(title,msg,action){modal(title,'<p>'+E(msg)+'</p><div class="actions">'+btn('Zrušiť','close')+btn('Potvrdiť',action,'check','primary')+'</div>')}
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]');if(!b)return;let [a,id]=b.dataset.a.split(':');let f=db.farms.find(x=>x.id===id);
  if(a==='range'){const days=Number(id);if([7,14,30].includes(days)){chartDays=days;render();document.querySelector('[data-a="range:'+days+'"]')?.focus()}}else if(a==='map')modal('Lokality fariem',locationMap(activeFarms()));else if(a==='searchfarm'){go('farms');$('#search').focus()}else if(a==='location')locationDetail(Number(id));else if(a==='newloc'){edit(null);document.querySelector('[name="loc"]').value=id}else if(a==='priority')priorityView(id);
+ else if(a==='install'&&installPrompt){installPrompt.prompt();installPrompt.userChoice.finally(()=>{installPrompt=null;render()})}
  else if(a==='settle'&&f){const st=settlementFor(f);if(st)confirmBox('Uzavrieť vyúčtovanie?',(st.transfers.length?st.transfers.map(t=>playerName(t.from)+' pošle '+playerName(t.to)+' '+money(t.amount)).join(' · ')+'. ':'Nikto nikomu nič neposiela. ')+'Po uzavretí sa prevody započítajú hráčom v Ekonomike.','settleok:'+id)}
  else if(a==='settleok'&&f){closeSettlement(f);save();close();render();toast('Vyúčtovanie je uzavreté.')}
  else if(a==='settlereopen'&&f)confirmBox('Otvoriť vyúčtovanie znova?','Prevody z tohto vyúčtovania sa prestanú rátať v Ekonomike, kým ho znova neuzavrieš.','settlereopenok:'+id);
@@ -874,7 +877,8 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
    if(!d.name.trim()){toast('Zadaj názov farmy.');return}
    if(!Object.hasOwn(types,d.type)){toast('Vyber typ prenájmu.');return}
    const old=db.farms.find(x=>x.id===activeFarm);
-   let createdAt=old ? old.createdAt??null : now();
+   let createdAt=old ? old.createdAt??null : (d.startedAt?new Date(d.startedAt).getTime():now());
+   if(!old&&(!Number.isFinite(createdAt)||createdAt>now()+60000)){toast('Začiatok nájmu nemôže byť v budúcnosti.');return}
    if(old && d.createdAt && d.createdAt!==local(createdAt)){
      createdAt=new Date(d.createdAt).getTime();
      if(!Number.isFinite(createdAt)||createdAt<=0){toast('Zadaj platný dátum a čas pridania.');return}
@@ -896,6 +900,7 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
      rentAmount:rentPrice,
      term:old&&d.term?d.term:d.type==='player'?weeklyTerm:'Koniec nájmu',
      createdAt,name:d.name.trim(),loc:+d.loc,floor:+d.floor,door:d.door?+d.door:null,size:+d.size,leaseDays:days,due,dueFromEntry,sample:false};
+   delete entry.startedAt;delete entry.rentPaid;
    if(d.ownerFirst!==undefined)entry.owner=[d.ownerFirst.trim(),(d.ownerLast||'').trim()].filter(Boolean).join(' ');
    if(old)Object.assign(old,entry);else db.farms.push(entry);
    // A new farm whose lease is already paid books the rent right away, for the lease it starts.
@@ -927,8 +932,10 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
    if(!who||!isAmount(fee)||(hired&&(d.fee==null||d.fee===''))){toast('Doplň meno pracovníka a dohodnutú odmenu.');return}
    if(hired)rememberWorker(who,d.workerPhone);
    if(d.ongoing&&!(db.ongoing||[]).some(o=>o.id===d.ongoing)){toast('Táto práca už bola uzavretá.');return}
-   // The work is stamped with the moment it is saved.
-   const at=now();
+   // The work is stamped with the moment it is saved, unless an earlier time was entered.
+   const at=d.at?new Date(d.at).getTime():now();
+   if(!Number.isFinite(at)){toast('Skontroluj zadaný čas práce.');return}
+   if(at>now()+60000){toast('Čas práce nemôže byť v budúcnosti.');return}
    const previous=db.logs.filter(x=>x.farm===f.id&&['Sadenie','Zber','Polievanie'].includes(x.action));
    if(selected.some(j=>['plant','water','harvest'].includes(j))&&previous.some(l=>l.at>at+59999)){toast('Zadaj čas po poslednej práci, ktorá zmenila stav farmy.');return}
    if(selected.some(j=>j==='water'||j==='harvest')&&f.planted&&at+59999<f.planted){toast('Čas práce musí byť po zasadení.');return}
@@ -940,7 +947,7 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
      if(j==='plant')planted=true;
    }
    if(d.status==='ongoing'&&!d.ongoing){
-     (db.ongoing??=[]).push({id:uid(),farm:f.id,jobs:selected,who,performer:hired?'hired':'self',fee,settlement:d.settlement||'pending',crop:d.crop===melon?melon:'Úroda',startedAt:now()});
+     (db.ongoing??=[]).push({id:uid(),farm:f.id,jobs:selected,who,performer:hired?'hired':'self',fee,settlement:d.settlement||'pending',crop:d.crop===melon?melon:'Úroda',startedAt:at});
      activeFarm=f.id;
    }else{
    const batchLabel=selected.length>1?selected.map(j=>jobs[j][0]).join(', '):undefined;
@@ -1234,6 +1241,20 @@ function closeSettlement(f){
   if(!st||!st.revenue||!st.invested||st.closed)return;
   f.settlements=[...(f.settlements||[]),{start:st.period.start,end:st.period.end,closedAt:now(),closedBy:me?.user_id||null,invested:cents(st.invested),revenue:cents(st.revenue),
     shares:st.people.map(p=>({uid:p.uid,invested:cents(p.invested),received:cents(p.received),due:p.due})),transfers:st.transfers}];
+}
+// ---- Install as a phone/desktop app (PWA) ----
+let installPrompt=null;
+const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const isIOS=()=>/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+if(CLOUD&&'serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;if(page==='settings'&&!$('#modal').open)render()});
+window.addEventListener('appinstalled',()=>{installPrompt=null;toast('FarmDesk je nainštalovaný. Nájdeš ho medzi aplikáciami.');if(page==='settings')render()});
+function installPanel(){
+  if(isStandalone())return '<section class="panel">'+section('Appka v telefóne')+'<p>FarmDesk beží ako nainštalovaná aplikácia.</p></section>';
+  const how=installPrompt?'<div class="actiongrid">'+btn('Nainštalovať FarmDesk','install','plus','primary')+'</div>'
+    :isIOS()?'<ol class="install-steps"><li>Otvor túto stránku v <strong>Safari</strong>.</li><li>Ťukni na <strong>Zdieľať</strong> (štvorec so šípkou hore).</li><li>Vyber <strong>Pridať na plochu</strong> a potvrď <strong>Pridať</strong>.</li></ol>'
+    :'<ol class="install-steps"><li>Otvor stránku v <strong>Chrome</strong> (Android) alebo Chrome / Edge na počítači.</li><li>V menu <strong>⋮</strong> vyber <strong>Inštalovať aplikáciu</strong> alebo <strong>Pridať na plochu</strong>.</li></ol>';
+  return '<section class="panel">'+section('Appka v telefóne')+'<p>FarmDesk si môžeš dať na plochu ako aplikáciu: vlastná ikona, celá obrazovka, bez panela prehliadača. Prihlásenie a údaje ostávajú rovnaké.</p>'+how+'</section>';
 }
 function cloudPanels(){
   const lead=isLeader(),status={active:'Aktívny',pending:'Čaká na schválenie',blocked:'Zablokovaný'};
