@@ -22,3 +22,16 @@ for (const name of ['styles.css', 'config.js', 'cloud-client.js', 'app.js']) {
   page = page.replace(tag, () => tag.replace(name, `${name}?v=${v}`));
 }
 await writeFile('_site/index.html', page);
+
+// FarmDesk (shared farm tracker) lives in its own folder with its own Supabase project.
+await mkdir('_site/farmdesk/assets', { recursive: true });
+await build({ entryPoints: ['farmdesk/cloud.mjs'], bundle: true, minify: true, format: 'iife', target: ['es2022'], outfile: '_site/farmdesk/cloud.js', legalComments: 'eof' });
+for (const name of ['app.js', 'art.js', 'style.css', 'config.js', 'assets/mark.svg']) await copyFile(`farmdesk/${name}`, `_site/farmdesk/${name}`);
+let desk = await readFile('farmdesk/index.html', 'utf8');
+for (const name of ['style.css', 'config.js', 'cloud.js', 'art.js', 'app.js']) {
+  const tag = name.endsWith('.css') ? `href="${name}"` : `src="${name}"`;
+  if (!desk.includes(tag)) throw new Error(`farmdesk/index.html does not reference ${name}`);
+  const v = await version(`farmdesk/${name}`);
+  desk = desk.replace(tag, () => tag.replace(name, `${name}?v=${v}`));
+}
+await writeFile('_site/farmdesk/index.html', desk);

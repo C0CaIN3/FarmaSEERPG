@@ -2,6 +2,8 @@
 
 Farmársky panel v slovenčine. [Verejný web](https://c0cain3.github.io/FarmaSEERPG/) beží na GitHub Pages.
 
+V priečinku [`farmdesk/`](farmdesk/README.md) je samostatná appka **FarmDesk** (spoločná evidencia fariem pre viacerých hráčov) s vlastnou databázou: <https://c0cain3.github.io/FarmaSEERPG/farmdesk/>.
+
 ## Stav databázy
 
 Panel je pripojený k samostatnému Supabase projektu **FarmCrew** (`yonjpqthjjnkfuicrcpi`, Frankfurt). Databáza je nainštalovaná, bez ukážkových zákaziek a výplat. Registrácia aj prihlásenie sú iba cez **meno a priezvisko a heslo**, bez e-mailu. Prvý člen, ktorý sa zaregistruje, automaticky získa plné práva leadera. Ďalšie účty čakajú na schválenie leaderom a potom sa pridajú ako zamestnanci s kalendárom a vlastnými odmenami. Zabudnuté heslo nastaví členovi leader v časti Tím.
