@@ -221,9 +221,21 @@ function tabs(){let fs=activeFarms();return '<div class="tabs">'+[['all','Všetk
 function farmsgrid(){let fs=db.farms.filter(f=>(filter==='archive'?f.archived:!f.archived&&(filter==='all'||f.type===filter||filter==='working'&&ongoingOn(f).length))&&(f.name+' '+placeCode(f)+' '+placeText(f)).toLocaleLowerCase('sk').includes(query.toLocaleLowerCase('sk')));return fs.length?'<div class="farmgrid">'+fs.map(card).join('')+'</div>':empty('Žiadne farmy v tomto výbere.')}
 const pad=n=>String(n).padStart(2,'0');
 // A farm is found by building (1–7), floor (1–15) and door number (1–11 on each floor).
-const DOORS=11;
-const placeCode=f=>'F'+pad(f.loc)+' / P'+pad(f.floor)+(f.door?' / D'+pad(f.door):'');
-const placeText=f=>'Budova '+f.loc+' · '+f.floor+'. poschodie'+(f.door?' · dvere č. '+f.door:'');
+// Each floor has 11 doors in three rows: left 1–4, middle 1–3, right 1–4 (stored as 1–11).
+const DOORS=11,doorSides=[['Ľavé',4],['Stredné',3],['Pravé',4]];
+function doorLabel(n){
+  n=+n;let start=0;
+  for(const [side,count] of doorSides){if(n>start&&n<=start+count)return side+' '+(n-start);start+=count}
+  return '';
+}
+const doorText=n=>doorLabel(n).toLocaleLowerCase('sk').replace(/ (\d+)$/,' dvere $1');
+function doorSelect(value){
+  let n=0;
+  const groups=doorSides.map(([side,count])=>'<optgroup label="'+side+'">'+Array.from({length:count},(_,i)=>{n++;return '<option value="'+n+'" '+(String(value)===String(n)?'selected':'')+'>'+side+' '+(i+1)+'</option>'}).join('')+'</optgroup>').join('');
+  return '<label class="field">Dvere<select name="door"><option value="">–</option>'+groups+'</select></label>';
+}
+const placeCode=f=>'F'+pad(f.loc)+' / P'+pad(f.floor)+(f.door?' / '+doorLabel(f.door):'');
+const placeText=f=>'Budova '+f.loc+' · '+f.floor+'. poschodie'+(f.door?' · '+doorText(f.door):'');
 const sameDoor=(a,b)=>a.id!==b.id&&!a.archived&&!b.archived&&a.door&&a.loc===b.loc&&a.floor===b.floor&&a.door===b.door;
 const locations=[[.14,.41],[.36,.23],[.31,.72],[.53,.49],[.71,.26],[.69,.78],[.88,.56]];
 function locationMap(fs) {
@@ -238,7 +250,7 @@ function locationMap(fs) {
 }
 function locationDetail(loc) {
   const farms=activeFarms().filter(f=>f.loc===loc).sort((a,b)=>a.floor-b.floor||(a.door||99)-(b.door||99));
-  const content=farms.map(f=>`<button class="location-farm" data-a="farm:${f.id}">${capacityGraphic(f.size,true)}<span><strong>${E(f.name)}</strong><small>${f.floor}. poschodie${f.door?' · dvere '+f.door:''} · ${stage(f)[0]}</small></span>${ic('right')}</button>`).join('');
+  const content=farms.map(f=>`<button class="location-farm" data-a="farm:${f.id}">${capacityGraphic(f.size,true)}<span><strong>${E(f.name)}</strong><small>${f.floor}. poschodie${f.door?' · '+doorText(f.door):''} · ${stage(f)[0]}</small></span>${ic('right')}</button>`).join('');
   modal('Lokalita '+pad(loc),(content||empty('Na tejto lokalite zatiaľ neeviduješ farmu.'))+'<div class="actions">'+btn('Pridať farmu na lokalite','newloc:'+loc,'plus','primary')+'</div>');
 }
 // Most urgent farms first: work in progress, overdue lease, ripe crop, dry soil, lease due soon.
@@ -542,7 +554,7 @@ function edit(f){
     person+field('Herné telefónne číslo','phone','tel',f?.phone,'maxlength="50"')+
     field('Herné číslo účtu','account','text',f?.account,'maxlength="80"')+'</fieldset>';
   modal(f?'Upraviť farmu':'Pridať farmu',form('farmform',
-    '<div class="wide name-door">'+field('Názov farmy','name','text',f?.name,'required maxlength="70"')+select('Č. dverí','door',[['','–'],...seq(DOORS)],f?.door||'')+'</div>'+
+    '<div class="wide name-door">'+field('Názov farmy','name','text',f?.name,'required maxlength="70"')+doorSelect(f?.door||'')+'</div>'+
     select('Typ prenájmu','type',Object.entries(types),f?.type||'own')+
     select('Počet polí','size',[[40,40],[80,80],[120,120]],f?.size||40)+
     select('Budova (farma)','loc',seq(7),f?.loc||1)+select('Poschodie','floor',seq(15),f?.floor||1)+
@@ -683,7 +695,7 @@ function farmAccounts(f){
     </tbody></table></div><div class="actiongrid">${btn('Nákup semienok','seed:'+f.id,'sprout')}${btn('Predaj úrody','sale:'+f.id,'cash')}</div></section>`;
 }
 
-function detail(f){activeFarm=f.id;let {g,w}=progress(f),[s,cls]=stage(f);let prop=(l,v)=>'<div><small>'+l+'</small>'+E(v)+'</div>';modal(f.name+(f.door?' · dvere č. '+f.door:''),'<div class="detail-size-banner size-'+f.size+'">'+capacityGraphic(f.size)+'</div><div class="inline"><span class="pill '+cls+'"><i></i>'+s+'</span>'+soilPill(f)+workingPill(f)+'<span class="sub">'+types[f.type]+' · '+f.size+' polí</span></div><div data-farm-timer="'+E(f.id)+'">'+duePanel(f)+'</div>'+farmAccounts(f)+metric('Odhad rastu','sprout',g)+metric('Odhad vody','water',w,'water')+'<div class="details">'+prop('Umiestnenie',placeText(f))+prop('Výsadbu má na starosti',f.planted?withPhone(f.worker||'Ja'):'Podľa novej dohody')+prop('Dohodnutá doba prenájmu',dayLabel(leaseDays(f)))+prop('Pridaná do evidencie',(f.createdAt?date(f.createdAt):'Dátum neuvedený')+(CLOUD?byLine('farm',f.id,'pridal'):''))+(f.planted?prop('Odhad pre výsadbu',(f.crop===melon?melon:'Všeobecný')+' · '+fmt(growthHours(f))+' h'):'')+prop('Zasadené',f.planted?date(f.planted):'—')+prop('Predpokladaný zber',f.planted?date(f.planted+growthHours(f)*H):'—')+prop('Posledné polievanie',f.watered?date(f.watered):'—')+(f.archived?prop(f.term,f.due?date(f.due):'Bez termínu'):'')+(f.type==='player'?prop('Prenajímateľ',f.owner||'—')+prop('Telefón',f.phone||'—')+prop('Účet na nájomné',f.account||'—'):'')+'</div>'+ongoingBox(f)+reminderSummary(f)+rentSummary(f)+agreements(f)+wagesFor(f)+'<div class="actiongrid">'+(f.archived?'':btn('Zapísať prácu','work:'+f.id,'work','primary'))+btn('Pridať pohyb','tx:'+f.id,'wallet')+btn('Upraviť','edit:'+f.id,'settings')+btn(f.archived?'Obnoviť farmu':'Archivovať','archive:'+f.id,'log')+'</div>')}
+function detail(f){activeFarm=f.id;let {g,w}=progress(f),[s,cls]=stage(f);let prop=(l,v)=>'<div><small>'+l+'</small>'+E(v)+'</div>';modal(f.name+(f.door?' · '+doorText(f.door):''),'<div class="detail-size-banner size-'+f.size+'">'+capacityGraphic(f.size)+'</div><div class="inline"><span class="pill '+cls+'"><i></i>'+s+'</span>'+soilPill(f)+workingPill(f)+'<span class="sub">'+types[f.type]+' · '+f.size+' polí</span></div><div data-farm-timer="'+E(f.id)+'">'+duePanel(f)+'</div>'+farmAccounts(f)+metric('Odhad rastu','sprout',g)+metric('Odhad vody','water',w,'water')+'<div class="details">'+prop('Umiestnenie',placeText(f))+prop('Výsadbu má na starosti',f.planted?withPhone(f.worker||'Ja'):'Podľa novej dohody')+prop('Dohodnutá doba prenájmu',dayLabel(leaseDays(f)))+prop('Pridaná do evidencie',(f.createdAt?date(f.createdAt):'Dátum neuvedený')+(CLOUD?byLine('farm',f.id,'pridal'):''))+(f.planted?prop('Odhad pre výsadbu',(f.crop===melon?melon:'Všeobecný')+' · '+fmt(growthHours(f))+' h'):'')+prop('Zasadené',f.planted?date(f.planted):'—')+prop('Predpokladaný zber',f.planted?date(f.planted+growthHours(f)*H):'—')+prop('Posledné polievanie',f.watered?date(f.watered):'—')+(f.archived?prop(f.term,f.due?date(f.due):'Bez termínu'):'')+(f.type==='player'?prop('Prenajímateľ',f.owner||'—')+prop('Telefón',f.phone||'—')+prop('Účet na nájomné',f.account||'—'):'')+'</div>'+ongoingBox(f)+reminderSummary(f)+rentSummary(f)+agreements(f)+wagesFor(f)+'<div class="actiongrid">'+(f.archived?'':btn('Zapísať prácu','work:'+f.id,'work','primary'))+btn('Pridať pohyb','tx:'+f.id,'wallet')+btn('Upraviť','edit:'+f.id,'settings')+btn(f.archived?'Obnoviť farmu':'Archivovať','archive:'+f.id,'log')+'</div>')}
 const jobs={dig:['Kopanie','work'],till:['Rýľovanie','work'],water:['Polievanie','water'],plant:['Sadenie','sprout'],harvest:['Zber','basket']};
 // Shown in work order; saved in game order (a harvest first, so a new crop can follow on the same visit).
 const jobShown=['dig','till','plant','water','harvest'],jobOrder=['harvest','dig','till','plant','water'];
@@ -836,9 +848,9 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
      if(!Number.isFinite(createdAt)||createdAt<=0){toast('Zadaj platný dátum a čas pridania.');return}
    }
    const door=d.door?+d.door:null;
-   if(door!==null&&!(Number.isInteger(door)&&door>=1&&door<=DOORS)){toast('Vyber číslo dverí od 1 do '+DOORS+'.');return}
+   if(door!==null&&!(Number.isInteger(door)&&door>=1&&door<=DOORS)){toast('Vyber dvere zo zoznamu.');return}
    const taken=door&&db.farms.find(x=>sameDoor(x,{id:old?.id||'new',loc:+d.loc,floor:+d.floor,door}));
-   if(taken){toast('Dvere '+door+' na '+d.floor+'. poschodí budovy '+d.loc+' už má farma '+taken.name+'.');return}
+   if(taken){toast(doorText(door).replace(/^./,c=>c.toLocaleUpperCase('sk'))+' na '+d.floor+'. poschodí budovy '+d.loc+' už má farma '+taken.name+'.');return}
    const days=Number(d.leaseDays??leaseDays(old));
    if(!validLeaseDays(days)){toast('Vyber dobu prenájmu od 1 do 30 dní.');return}
    const rentPrice=d.rentAmount?Number(ungroupAmount(d.rentAmount)):null;
