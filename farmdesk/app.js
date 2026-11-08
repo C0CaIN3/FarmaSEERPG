@@ -1277,6 +1277,7 @@ function authScreen(state,msg='',name=''){
     login:'<form id="loginform" class="auth-form"><h1>Prihlásenie</h1>'+err+field('Meno hráča','name','text',name,'required maxlength="60" autocomplete="username"')+field('Heslo','password','password','','required autocomplete="current-password"')+'<button class="btn primary" type="submit">Prihlásiť sa</button><p class="auth-switch">Ešte nemáš účet? <button type="button" class="btnlink" data-auth="signup">Zaregistruj sa</button></p></form>',
     signup:'<form id="signupform" class="auth-form"><h1>Nový hráč</h1>'+err+field('Meno hráča','name','text',name,'required minlength="2" maxlength="60" autocomplete="username"')+field('Heslo (aspoň 8 znakov)','password','password','','required minlength="8" maxlength="72" autocomplete="new-password"')+field('Heslo znova','password2','password','','required minlength="8" maxlength="72" autocomplete="new-password"')+'<p class="hint">Prvý registrovaný hráč je leader. Ďalších musí leader schváliť, až potom uvidia farmy.</p><button class="btn primary" type="submit">Vytvoriť účet</button><p class="auth-switch">Už máš účet? <button type="button" class="btnlink" data-auth="login">Prihlás sa</button></p></form>',
     pending:'<div class="auth-form"><h1>Čakáš na schválenie</h1>'+err+'<p>Účet <strong>'+E(me?.name||'')+'</strong> je vytvorený. Leader ťa musí schváliť v Nastaveniach, potom uvidíš spoločné farmy.</p><div class="actiongrid"><button class="btn primary" type="button" data-auth="recheck">Skontrolovať znova</button><button class="btn" type="button" data-auth="logout">Odhlásiť sa</button></div></div>',
+    offline:'<div class="auth-form"><h1>Bez pripojenia</h1><p>Si stále prihlásený, len sa teraz nedá spojiť so spoločnou databázou. Skontroluj internet, appka to skúsi znova sama, keď sa spojenie vráti.</p><div class="actiongrid"><button class="btn primary" type="button" data-auth="recheck">Skúsiť znova</button></div></div>',
     blocked:'<div class="auth-form"><h1>Prístup zablokovaný</h1><p>Leader ti zablokoval prístup k spoločnej evidencii.</p><div class="actiongrid"><button class="btn" type="button" data-auth="logout">Odhlásiť sa</button></div></div>'
   };
   el.innerHTML='<div class="auth-brand"><span class="rail-logo">'+ic('brand')+'</span><strong>FarmDesk</strong><span>SeeRPG · spoločná evidencia</span></div>'+forms[state];
@@ -1306,8 +1307,11 @@ async function cloudStart(){
     const session=await FarmCloud.session();
     if(!session)return authScreen('login');
     await enterWorkspace(session);
-  }catch(e){authScreen('login',cloudError(e))}
+  }catch(e){if(isOffline(e))authScreen('offline');else authScreen('login',cloudError(e))}
 }
+// A dropped connection must never look like being signed out: the saved session stays and is retried.
+const isOffline=e=>navigator.onLine===false||/Failed to fetch|NetworkError|Load failed|network|timed? ?out|fetch/i.test(String(e?.message||e||''));
+window.addEventListener('online',()=>{if(CLOUD&&$('#auth .auth-form h1')?.textContent==='Bez pripojenia')FarmCloud.session().then(s=>s?enterWorkspace(s):authScreen('login')).catch(()=>{});else if(CLOUD&&cloudReady)scheduleRefresh(0)});
 document.addEventListener('click',async e=>{
   if(!CLOUD)return;
   const b=e.target.closest('[data-auth],[data-a]');if(!b)return;
@@ -1318,7 +1322,7 @@ document.addEventListener('click',async e=>{
     else if(a==='recheck'){const s=await FarmCloud.session();if(s)await enterWorkspace(s);else authScreen('login')}
     else if(a==='member'&&isLeader()){await FarmCloud.setMember(id,extra);members=await FarmCloud.members();render();toast(extra==='active'?playerName(id)+' má prístup k spoločnej evidencii.':playerName(id)+' je zablokovaný.')}
     else if(a==='memberpw'&&isLeader())modal('Nové heslo pre hráča',form('pwform','<input type="hidden" name="user" value="'+E(id)+'"><p class="wide">'+E(playerName(id))+' sa po zmene odhlási na všetkých zariadeniach. Nové heslo mu povedz osobne.</p><div class="wide">'+field('Nové heslo (aspoň 8 znakov)','password','text','','required minlength="8" maxlength="72" autocomplete="new-password"')+'</div>','Nastaviť heslo'));
-  }catch(err){if(b.dataset.auth)authScreen('login',cloudError(err));else toast(cloudError(err))}
+  }catch(err){if(b.dataset.auth)authScreen(isOffline(err)&&a==='recheck'?'offline':'login',isOffline(err)&&a==='recheck'?'':cloudError(err));else toast(cloudError(err))}
 });
 document.addEventListener('submit',async e=>{
   if(!CLOUD)return;
