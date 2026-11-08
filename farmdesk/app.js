@@ -560,6 +560,7 @@ function edit(f){
     select('Budova (farma)','loc',seq(7),f?.loc||1)+select('Poschodie','floor',seq(15),f?.floor||1)+
     select('Dohodnutá doba prenájmu','leaseDays',seq(30).map(([n])=>[n,dayLabel(n)]),leaseDays(f))+
     forintField('Dohodnuté nájomné za celé obdobie','rentAmount',agreedRent(f)??'')+
+    (f?'':'<label class="checkline wide"><input type="checkbox" name="rentPaid" checked><span><strong>Nájom je už zaplatený</strong><small>Zapíše sa ako náklad farmy'+(CLOUD?', zaplatil '+E(myName()):'')+'. Ráta sa do vkladu vo vyúčtovaní.</small></span></label>')+
     playerFields+editingFields+(f?.planted?growthProfile(f.crop):''),f?'Uložiť':'Pridať farmu'));
 }
 
@@ -886,6 +887,7 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
    if(!validLeaseDays(days)){toast('Vyber dobu prenájmu od 1 do 30 dní.');return}
    const rentPrice=d.rentAmount?Number(ungroupAmount(d.rentAmount)):null;
    if(rentPrice!==null&&(!isAmount(rentPrice)||rentPrice<=0)){toast('Zadaj kladnú sumu nájmu alebo nechaj pole prázdne.');return}
+   if(!old&&d.rentPaid&&!rentPrice){toast('Zadaj sumu nájmu, alebo odškrtni „Nájom je už zaplatený“.');return}
    const unchangedDue=old&&d.due===local(old.due);
    const dueFromEntry=!old||Boolean(createdAt&&old.dueFromEntry&&unchangedDue);
    const due=dueFromEntry?shiftDays(createdAt,days):unchangedDue?old.due:d.due?new Date(d.due).getTime():null;
@@ -896,6 +898,11 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
      createdAt,name:d.name.trim(),loc:+d.loc,floor:+d.floor,door:d.door?+d.door:null,size:+d.size,leaseDays:days,due,dueFromEntry,sample:false};
    if(d.ownerFirst!==undefined)entry.owner=[d.ownerFirst.trim(),(d.ownerLast||'').trim()].filter(Boolean).join(' ');
    if(old)Object.assign(old,entry);else db.farms.push(entry);
+   // A new farm whose lease is already paid books the rent right away, for the lease it starts.
+   if(!old&&d.rentPaid&&rentPrice){
+     if(entry.type==='player')saveRent(entry,{rentStart:local(createdAt)},createdAt,rentPrice);
+     else{const end=leaseEnd(createdAt,entry);db.tx.push({id:uid(),farm:entry.id,category:'rent',amount:rentPrice,at:createdAt,desc:'Nájom na '+dayLabel(days)+' · '+date(createdAt)+' – '+date(end),rentStart:createdAt,rentEnd:end})}
+   }
    activeFarm=entry.id;
  }
  else if(id==='agreementform'){

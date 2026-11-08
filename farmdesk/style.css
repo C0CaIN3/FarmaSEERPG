@@ -81,3 +81,4 @@ svg.farmer{display:block;flex-shrink:0;border-radius:50%;overflow:hidden;box-sha
 .settle-box .auth-msg{font-size:11px;margin:8px 0}.settle-box .actiongrid{margin-top:10px}
 @media(max-width:640px){.transfer{grid-template-columns:auto minmax(0,1fr) auto}.transfer>svg:nth-of-type(2){display:none}}
 .settle-box .account-dates{font-size:11px;color:var(--soft);margin:0 0 10px}
+.checkline{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid #355b40;border-radius:8px;background:#1f2e25;cursor:pointer}.checkline input{width:18px;height:18px;min-height:0;margin:1px 0 0;accent-color:var(--growth);flex-shrink:0}.checkline strong,.checkline small{display:block}.checkline strong{font-size:12px}.checkline small{font-size:11px;color:var(--soft);margin-top:3px;font-weight:400}
