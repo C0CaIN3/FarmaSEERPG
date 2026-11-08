@@ -65,3 +65,11 @@ svg.farmer{display:block;flex-shrink:0;border-radius:50%;overflow:hidden;box-sha
 .contact svg.farmer{width:34px;height:34px}
 @media(max-width:640px){.rail-avatar{display:grid!important}.me-chip{padding:3px}}
 .name-door{display:grid;grid-template-columns:minmax(0,1fr) 140px;gap:13px}@media(max-width:640px){.name-door{grid-template-columns:minmax(0,1fr) 120px;gap:10px}}
+/* Farm as its own page */
+.farm-title{align-items:flex-end}.farm-title h1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.door-tag{font-size:13px;letter-spacing:0;font-weight:600;padding:4px 9px;border-radius:7px;background:#253c2e;color:#afe7ae;border:1px solid #355b40}
+.back-link{margin-bottom:6px;font-size:12px}.back-link svg{transform:rotate(180deg)}
+.farm-page{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:15px;align-items:start}.farm-col{display:grid;gap:13px;min-width:0;align-content:start}
+.farm-col .contract-box{margin:0;padding:16px 17px;background:var(--panel);border-radius:12px}.farm-hero{overflow:hidden}.farm-hero .detail-size-banner{margin:-18px -18px 14px}.farm-hero .inline{flex-wrap:wrap;margin-bottom:2px}
+.farm-journal .activity:first-of-type{border-top:0}.farm-journal h3{display:flex;align-items:center;gap:7px}
+@media(max-width:900px){.farm-page{grid-template-columns:1fr}}
+@media(max-width:640px){.farm-title .actiongrid{width:100%}.farm-hero .detail-size-banner{margin:-14px -14px 12px}}
