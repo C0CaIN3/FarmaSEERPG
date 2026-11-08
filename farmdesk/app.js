@@ -542,10 +542,10 @@ function edit(f){
     person+field('Herné telefónne číslo','phone','tel',f?.phone,'maxlength="50"')+
     field('Herné číslo účtu','account','text',f?.account,'maxlength="80"')+'</fieldset>';
   modal(f?'Upraviť farmu':'Pridať farmu',form('farmform',
-    '<div class="wide">'+field('Názov farmy','name','text',f?.name,'required maxlength="70"')+'</div>'+
+    '<div class="wide name-door">'+field('Názov farmy','name','text',f?.name,'required maxlength="70"')+select('Č. dverí','door',[['','–'],...seq(DOORS)],f?.door||'')+'</div>'+
     select('Typ prenájmu','type',Object.entries(types),f?.type||'own')+
     select('Počet polí','size',[[40,40],[80,80],[120,120]],f?.size||40)+
-    select('Budova (farma)','loc',seq(7),f?.loc||1)+select('Poschodie','floor',seq(15),f?.floor||1)+select('Číslo dverí','door',[['','Neuvedené'],...seq(DOORS)],f?.door||'')+
+    select('Budova (farma)','loc',seq(7),f?.loc||1)+select('Poschodie','floor',seq(15),f?.floor||1)+
     select('Dohodnutá doba prenájmu','leaseDays',seq(30).map(([n])=>[n,dayLabel(n)]),leaseDays(f))+
     forintField('Dohodnuté nájomné za celé obdobie','rentAmount',agreedRent(f)??'')+
     playerFields+editingFields+(f?.planted?growthProfile(f.crop):''),f?'Uložiť':'Pridať farmu'));
