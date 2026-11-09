@@ -27,9 +27,8 @@ const measuredMelonDryHours = Number(((18 + 24 / 60) / (1 - 119 / 246)).toFixed(
 type Farm = Record<string, any>;
 type Settings = { growth: number; dry: number; melonHours?: number; melonDryHours?: number };
 const PUMPKIN = 'Tekvica';
-const pumpkinMeasurementHours = 16 + 58 / 60;
-const measuredPumpkinHours = Math.round(pumpkinMeasurementHours / (94 / 246));
-const measuredPumpkinDryHours = Number((pumpkinMeasurementHours / (1 - 128 / 246)).toFixed(2));
+const measuredPumpkinHours = 44;     // fitted from three photos, see farmdesk/merania
+const measuredPumpkinDryHours = 35.2;
 const named = (f: Farm) => f.crop === MELON || f.crop === PUMPKIN;
 const growthHours = (f: Farm, s: Settings) => f.crop === MELON ? (s.melonHours ?? measuredMelonHours) : f.crop === PUMPKIN ? measuredPumpkinHours : s.growth;
 const dryingHours = (f: Farm, s: Settings) => f.crop === MELON ? (s.melonDryHours ?? measuredMelonDryHours) : f.crop === PUMPKIN ? measuredPumpkinDryHours : s.dry;

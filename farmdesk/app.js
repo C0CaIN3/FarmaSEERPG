@@ -101,11 +101,10 @@ const measuredMelonHours=Math.round(melonMeasurementHours/(103/246));
 // 119 of 246 moisture pixels remained after one uninterrupted drying interval.
 const measuredMelonDryHours=Number((melonMeasurementHours/(1-119/246)).toFixed(2));
 const pumpkin='Tekvica',namedCrops=[melon,pumpkin];
-// Pumpkin (Sütőtök), one watering at planting: after 16 h 58 min growth 94/246 px and moisture 128/246 px.
-// The earlier 44-minute photo (2 px growth, 242 px moisture) lies on the same lines.
-const pumpkinMeasurementHours=16+58/60;
-const measuredPumpkinHours=Math.round(pumpkinMeasurementHours/(94/246));
-const measuredPumpkinDryHours=Number((pumpkinMeasurementHours/(1-128/246)).toFixed(2));
+// Pumpkin (Sütőtök), one watering at planting. Three photos (0 h 44 min, 16 h 58 min, 19 h 40 min) lie on
+// straight lines from planting; a least-squares fit gives 5.54 px/h growth and 6.99 px/h drying of 246 px.
+const measuredPumpkinHours=44;
+const measuredPumpkinDryHours=35.2;
 function dryingHours(f){return f.crop===melon?(db.melonDryHours??measuredMelonDryHours):f.crop===pumpkin?measuredPumpkinDryHours:db.dry}
 function growthHours(f){return f.crop===melon?(db.melonHours??measuredMelonHours):f.crop===pumpkin?measuredPumpkinHours:db.growth}
 const cropOf=v=>namedCrops.includes(v)?v:'Úroda';
@@ -600,7 +599,7 @@ function settingsTabs(){
     :[['alerts','Upozornenia','bell'],['crops','Pestovanie','sprout'],['data','Údaje','log']];
 }
 function cropsPanel(){
-  return '<section class="panel">'+section('Časy pestovania')+'<p>Rast a úbytok vody sa počítajú rovnomerne od posledného sadenia a poliatia. Zadaj časy odmerané v hre. Zmena prepočíta aj rozbehnuté cykly.</p><form id="timing"><div class="formgrid">'+field('Všeobecný rast do zberu (hodiny)','growth','number',db.growth,'required min=".01" max="8760" step=".01"')+field('Vodný melón – rast (hodiny)','melonHours','number',growthHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Vodný melón – vyschnutie zo 100 % (hodiny)','melonDryHours','number',dryingHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Všeobecné vyschnutie zo 100 % (hodiny)','dry','number',db.dry,'required min=".01" max="8760" step=".01"')+'</div><button class="btn primary">Uložiť časy</button></form><p><strong>Tekvica (namerané po 16 h 58 min)</strong><br>Rast 38,2 %, voda 52 % → zber asi za '+fmt(measuredPumpkinHours)+' h, vyschnutie zo 100 % asi za '+fmt(measuredPumpkinDryHours)+' h.</p><p><strong>Meranie melóna po 18 h 24 min</strong><br>Rast ≈ 42 %, vlhkosť ≈ 48 %, stav ≈ 100 %. Z jedného merania vychádza pri rovnomernom raste odhad približne 44 hodín od zasadenia po zber. Vlhkosť začala na 100 % a bez ďalšieho poliatia klesla na približne 48 %. Pri rovnomernom úbytku vychádza vyschnutie asi po 35 h 40 min od plného poliatia.</p></section>';
+  return '<section class="panel">'+section('Časy pestovania')+'<p>Rast a úbytok vody sa počítajú rovnomerne od posledného sadenia a poliatia. Zadaj časy odmerané v hre. Zmena prepočíta aj rozbehnuté cykly.</p><form id="timing"><div class="formgrid">'+field('Všeobecný rast do zberu (hodiny)','growth','number',db.growth,'required min=".01" max="8760" step=".01"')+field('Vodný melón – rast (hodiny)','melonHours','number',growthHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Vodný melón – vyschnutie zo 100 % (hodiny)','melonDryHours','number',dryingHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Všeobecné vyschnutie zo 100 % (hodiny)','dry','number',db.dry,'required min=".01" max="8760" step=".01"')+'</div><button class="btn primary">Uložiť časy</button></form><p><strong>Tekvica (3 merania, posledné po 19 h 40 min)</strong><br>Rast 44,3 %, voda 43,9 % → zber asi za '+fmt(measuredPumpkinHours)+' h, vyschnutie zo 100 % asi za '+fmt(measuredPumpkinDryHours)+' h.</p><p><strong>Meranie melóna po 18 h 24 min</strong><br>Rast ≈ 42 %, vlhkosť ≈ 48 %, stav ≈ 100 %. Z jedného merania vychádza pri rovnomernom raste odhad približne 44 hodín od zasadenia po zber. Vlhkosť začala na 100 % a bez ďalšieho poliatia klesla na približne 48 %. Pri rovnomernom úbytku vychádza vyschnutie asi po 35 h 40 min od plného poliatia.</p></section>';
 }
 function inAppAlertsPanel(){
   return '<section class="panel">'+section(CLOUD?'Keď je appka otvorená':'Upozornenia na termíny')+'<p>Pri otvorenej appke dostaneš pripomienku dva dni pred termínom, deň pred ním a v deň termínu. Termíny si môžeš dať aj do kalendára v telefóne.</p><div class="actiongrid">'+btn(db.sound?'Vypnúť zvuk':'Zapnúť zvuk','sound','bell')+(CLOUD?'':btn(db.notices?'Vypnúť oznámenia':'Povoliť oznámenia','notify','bell'))+btn('Export termínov (.ics)','ics','calendar')+'</div></section>';
