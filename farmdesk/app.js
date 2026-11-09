@@ -498,7 +498,6 @@ function finance() {
     cropReport()+(CLOUD?playerResults():'')+'<section class="panel">'+section('Pohyby na účte')+(movements||empty('Pridaj prvý príjem alebo výdavok.'))+'</section>';
 }
 // ---- Harvests and prices: which crop and farm size earns the most per hour ----
-function lastHarvest(farm,before){return db.logs.filter(l=>l.farm===farm&&l.action==='Zber'&&l.at<=before).sort((a,b)=>b.at-a.at)[0]||null}
 function rentShare(f,start,end){
   // Rent counts for the part of each paid lease that the cycle used.
   let sum=0;
@@ -519,29 +518,28 @@ function cropCycles(){
       const rows=db.tx.filter(x=>x.farm===f.id);
       const sales=rows.filter(x=>x.category==='sale'&&x.at>=h.at&&x.at<next);
       const spent=rows.filter(x=>(x.category==='seed'||x.category==='wage')&&x.at>prev&&x.at<=h.at).reduce((n,x)=>n+x.amount,0);
-      const revenue=sales.reduce((n,x)=>n+x.amount,0),soldPieces=sales.reduce((n,x)=>n+(x.pieces||0),0),soldWithPieces=sales.filter(x=>x.pieces).reduce((n,x)=>n+x.amount,0);
+      const revenue=sales.reduce((n,x)=>n+x.amount,0);
       const hours=Math.max(0,(h.at-h.cycleAt)/H);
-      out.push({farm:f,crop:h.crop||'Úroda',size:h.size||f.size,hours,pieces:h.pieces??null,revenue,soldPieces,soldWithPieces,cost:spent+rentShare(f,h.cycleAt,h.at),at:h.at});
+      out.push({farm:f,crop:h.crop||'Úroda',size:h.size||f.size,hours,pieces:h.pieces??null,revenue,cost:spent+rentShare(f,h.cycleAt,h.at),at:h.at});
     });
   }
   return out;
 }
 function cropReport(){
   const cycles=cropCycles().filter(c=>c.hours>0);
-  const head=section('Úroda a ceny · čo sa najviac oplatí');
-  if(!cycles.length)return '<section class="panel crop-report">'+head+empty('Zatiaľ žiadny dokončený cyklus. Pri zápise Zberu zadaj, koľko kusov ste zobrali, a pri predaji počet predaných kusov.')+'</section>';
+  const head=section('Úroda · čo sa najviac oplatí');
+  if(!cycles.length)return '<section class="panel crop-report">'+head+empty('Zatiaľ žiadny dokončený cyklus. Pri zápise Zberu môžeš zadať, koľko kusov ste zobrali. Predaj zapíš na farmu, z ktorej úroda je.')+'</section>';
   const groups=new Map();
   for(const c of cycles){const k=c.crop+'|'+c.size;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(c)}
   const sum=(l,k)=>l.reduce((n,c)=>n+c[k],0);
   const rows=[...groups.values()].map(l=>{
     const withPieces=l.filter(c=>c.pieces!=null),hours=sum(l,'hours'),profit=sum(l,'revenue')-sum(l,'cost');
-    const sold=sum(l,'soldPieces'),price=sold?sum(l,'soldWithPieces')/sold:(withPieces.length&&sum(withPieces,'pieces')?sum(withPieces,'revenue')/sum(withPieces,'pieces'):null);
-    return {crop:l[0].crop,size:l[0].size,n:l.length,pieces:withPieces.length?sum(withPieces,'pieces')/withPieces.length:null,price,cost:sum(l,'cost')/l.length,hours:hours/l.length,revenue:sum(l,'revenue')/l.length,perHour:hours?profit/hours:0};
+    return {crop:l[0].crop,size:l[0].size,n:l.length,pieces:withPieces.length?sum(withPieces,'pieces')/withPieces.length:null,cost:sum(l,'cost')/l.length,hours:hours/l.length,revenue:sum(l,'revenue')/l.length,perHour:hours?profit/hours:0};
   }).sort((a,b)=>b.perHour-a.perHour);
   const best=rows[0];
-  const body=rows.map((r,i)=>`<tr class="${i===0&&r.perHour>0?'best-row':''}"><th scope="row">${E(cropName(r.crop))}${i===0&&r.perHour>0?' <span class="pill ready">najlepšie</span>':''}</th><td>${r.size} polí</td><td>${r.n}</td><td>${r.pieces==null?'—':fmt(Math.round(r.pieces))}</td><td>${r.price==null?'—':money(cents(r.price))}</td><td>${money(cents(r.cost))}</td><td>${money(cents(r.revenue))}</td><td>${fmt(Math.round(r.hours*10)/10)} h</td><td class="${r.perHour<0?'loss':r.perHour>0?'gain':''}">${money(cents(r.perHour))}</td></tr>`).join('');
+  const body=rows.map((r,i)=>`<tr class="${i===0&&r.perHour>0?'best-row':''}"><th scope="row">${E(cropName(r.crop))}${i===0&&r.perHour>0?' <span class="pill ready">najlepšie</span>':''}</th><td>${r.size} polí</td><td>${r.n}</td><td>${r.pieces==null?'—':fmt(Math.round(r.pieces))}</td><td>${money(cents(r.cost))}</td><td>${money(cents(r.revenue))}</td><td>${fmt(Math.round(r.hours*10)/10)} h</td><td class="${r.perHour<0?'loss':r.perHour>0?'gain':''}">${money(cents(r.perHour))}</td></tr>`).join('');
   return '<section class="panel crop-report">'+head+(best.perHour>0?'<p class="crop-best">'+ic('chart')+'Najviac zarába <strong>'+E(cropName(best.crop))+'</strong> na farme s <strong>'+best.size+' poliami</strong>: približne '+money(cents(best.perHour))+' za hodinu.</p>':'')+
-    `<div class="tablewrap"><table><thead><tr><th>Plodina</th><th>Veľkosť</th><th>Cyklov</th><th>Ø kusov</th><th>Ø cena/ks</th><th>Náklad na cyklus</th><th>Ø tržba</th><th>Ø dĺžka</th><th>Zisk / hod.</th></tr></thead><tbody>${body}</tbody></table></div>`+
+    `<div class="tablewrap"><table><thead><tr><th>Plodina</th><th>Veľkosť</th><th>Cyklov</th><th>Ø kusov</th><th>Náklad na cyklus</th><th>Ø tržba</th><th>Ø dĺžka</th><th>Zisk / hod.</th></tr></thead><tbody>${body}</tbody></table></div>`+
     '<p class="hint">Cyklus je od zasadenia po zber. Náklad na cyklus = semienka a mzdy od predošlého zberu + pomerná časť nájmu za čas rastu. Tržba = predaje na farme po zbere (do ďalšieho zberu). Vlastná práca hráčov sa sem neráta.</p></section>';
 }
 function farmResults() {
@@ -975,7 +973,7 @@ function work(id,assignment=null,ongoing=null,mode='done'){
     select('Farma','farm',(fixedFarm?[f]:activeFarms()).map(x=>[x.id,x.name]),f.id)+
     jobPicker(f,ongoing?ongoing.jobs:[job],assignment?.job)+
     '<div id="crop-profile" class="wide" '+((ongoing?ongoing.jobs.includes('plant'):job==='plant')?'':'hidden')+'>'+growthProfile(ongoing?.crop||'Úroda')+'</div>'+
-    (()=>{const on=ongoing?ongoing.jobs.includes('harvest'):job==='harvest';return '<div id="harvest-fields" class="wide" '+(on?'':'hidden')+'>'+field('Koľko kusov ste zobrali ('+cropName(f.crop)+')','pieces','number','','min="0" max="100000" step="1" inputmode="numeric" placeholder="nepovinné"'+(on?'':' disabled'))+'<p class="hint">Z kusov a ceny pri predaji appka spočíta, ktorá plodina a veľkosť farmy zarába najviac.</p></div>'})()+
+    (()=>{const on=ongoing?ongoing.jobs.includes('harvest'):job==='harvest';return '<div id="harvest-fields" class="wide" '+(on?'':'hidden')+'>'+field('Koľko kusov ste zobrali ('+cropName(f.crop)+')','pieces','number','','min="0" max="100000" step="1" inputmode="numeric" placeholder="nepovinné"'+(on?'':' disabled'))+'<p class="hint">Appka z toho ukáže, koľko kusov priemerne dáva ktorá plodina a veľkosť farmy.</p></div>'})()+
     (fixedFarm?'':'<div class="wide">'+select('Stav práce','status',[['done','Hotová – zapísať do denníka'],['ongoing','Prebieha – pracovník práve začal']],mode)+'</div>')+
     '<div class="wide">'+select('Kto vykonal prácu?','performer',[['self',CLOUD?'My, hráči sami':'Ja'],['hired','Najatý pracovník']],hire?'hired':'self')+'</div>'+
     (CLOUD?crewPicker(ongoing?.players||[me?.user_id],hire):'')+
@@ -997,7 +995,6 @@ function tx(id,category){
     (id?'<input type="hidden" name="fromFarm" value="1">':'')+
     select('Farma','farm',[['','Všeobecné'],...farmopts()],id||'')+select('Kategória','category',Object.entries(categories),category||'sale')+
     forintField('Suma','amount',rent?agreedRent(f)??'':'',{required:true})+
-    '<div id="sale-fields" class="wide formgrid" '+((category||'sale')==='sale'?'':'hidden')+'>'+field('Predaných kusov','pieces','number','','min="1" max="100000" step="1" inputmode="numeric" placeholder="nepovinné"')+'<div class="field"><span>Cena za kus</span><output id="piece-price">—</output></div></div>'+
     field('Dátum a čas platby','at','datetime-local',local(now()),'required')+
     '<div id="rent-fields" class="wide formgrid">'+(rent?rentFields(f):'')+'</div>'+
     '<div class="wide">'+field('Poznámka','desc','text','','maxlength="150"')+'</div>','Uložiť pohyb'));
@@ -1186,13 +1183,7 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
    if(d.category==='rent'&&f?.type==='player'&&!f.archived){
      if(at>now()){toast('Úhradu zapíš po zaplatení v hre.');return}
      if(!saveRent(f,d,at,amount))return;
-   }else{
-     const pieces=d.category==='sale'&&d.pieces?Number(d.pieces):null;
-     if(pieces!==null&&!(Number.isInteger(pieces)&&pieces>0&&pieces<=100000)){toast('Počet kusov zadaj ako celé číslo.');return}
-     const entry={id:uid(),category:d.category,farm:d.farm,desc:d.desc||'',amount,at};
-     if(pieces){entry.pieces=pieces;const c=lastHarvest(d.farm,at);if(c?.crop)entry.crop=c.crop}
-     db.tx.push(entry);
-   }
+   }else db.tx.push({id:uid(),category:d.category,farm:d.farm,desc:d.desc||'',amount,at});
  }
  else if(id==='workprices'){
    const prices={};
@@ -1201,9 +1192,7 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
  else if(id==='timing'){db.growth=+d.growth;db.dry=+d.dry;if(d.melonHours)db.melonHours=+d.melonHours;if(d.melonDryHours)db.melonDryHours=+d.melonDryHours;save();render();toast('Časy pestovania boli uložené.');return}else return;
  save();close();render();if(id==='workform'||id==='agreementform')detail(f);else if(id==='farmform'||id==='payform')detail(db.farms.find(x=>x.id===activeFarm));else if(id==='txform'&&(d.fromFarm||d.category==='rent')&&f)detail(f);toast('Záznam bol uložený.')});
 document.addEventListener('change',async e=>{const cat=e.target.dataset?.pushcat;if(!cat)return;try{await togglePushCategory(cat)}catch(err){e.target.checked=!e.target.checked;toast(cloudError(err))}});
-document.addEventListener('input',e=>{if(e.target.name==='who'&&e.target.form?.elements.workerPhone){const known=workerPhone(e.target.value);if(known)e.target.form.elements.workerPhone.value=known}if(e.target.hasAttribute('data-forint'))updateAmountInput(e.target,e.inputType==='insertFromPaste');if(e.target.id==='search'){query=e.target.value;$('#matches').innerHTML=farmsgrid();$('#matches').querySelectorAll('canvas').forEach(paint)}if(e.target.closest('#calcform'))calculate();if(e.target.closest('#txform'))salePiecePrice(e.target.form)});
-document.addEventListener('change',e=>{const fm=e.target.form;if(fm?.id==='txform'&&e.target.name==='category'){const box=$('#sale-fields');if(box){box.hidden=e.target.value!=='sale';box.querySelector('input').disabled=box.hidden}salePiecePrice(fm)}});
-function salePiecePrice(fm){const out=$('#piece-price');if(!out||!fm)return;const n=Number(fm.elements.pieces?.value),a=Number(ungroupAmount(fm.elements.amount?.value||''));out.textContent=n>0&&a>0?money(cents(a/n)):'—'}
+document.addEventListener('input',e=>{if(e.target.name==='who'&&e.target.form?.elements.workerPhone){const known=workerPhone(e.target.value);if(known)e.target.form.elements.workerPhone.value=known}if(e.target.hasAttribute('data-forint'))updateAmountInput(e.target,e.inputType==='insertFromPaste');if(e.target.id==='search'){query=e.target.value;$('#matches').innerHTML=farmsgrid();$('#matches').querySelectorAll('canvas').forEach(paint)}if(e.target.closest('#calcform'))calculate()});
 let pendingRestore=null;
 function isBackup(v){let finite=Number.isFinite,txt=x=>typeof x==='string',id=x=>txt(x)&&/^[a-z0-9-]{1,70}$/i.test(x),time=x=>x===null||(finite(x)&&x>0&&x<8640000000000000);if(!v||![v.growth,v.dry,v.melonHours??measuredMelonHours,v.melonDryHours??measuredMelonDryHours].every(x=>finite(x)&&x>=.01&&x<=8760)||![v.logs,v.tx,v.farms].every(Array.isArray))return false;
  const allowedTerms=['Zúčtovanie','Koniec nájmu',weeklyTerm];
