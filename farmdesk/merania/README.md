@@ -25,3 +25,8 @@ Všetky tri merania ležia na priamke od zasadenia (rast aj vysychanie sú rovno
 - vysychanie 6,99 px/h → zo 100 % na nulu asi za **35 h 12 min**. Pod 25 % klesne asi 26 h 24 min po poliatí.
 
 Používa sa v appke aj v notifikáciách od 9. 11. 2026.
+
+
+## Merania priamo v appke
+
+*Nastavenia → Pestovanie → Merania z hry*: nahraj fotku okienka rastliny a zadaj čas od sadenia a od poliatia. Appka nájde modrý, zelený a žltý pruh a odmeria ich po pixeloch. Potom preloží priamku všetkými meraniami danej plodiny (fotky z tejto zložky sú zarátané automaticky). Navrhne aj „skriptový odhad“, teda najhrubšie okrúhle číslo minút (120, 60, 30 … 1), ktoré ešte sedí do rozsahu ±1 px. Tlačidlom ho možno použiť pre celý tím aj pre notifikácie (`cropTimes` v spoločných nastaveniach).

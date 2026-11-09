@@ -25,13 +25,14 @@ const MELON = 'Vodný melón';
 const measuredMelonHours = Math.round((18 + 24 / 60) / (103 / 246));
 const measuredMelonDryHours = Number(((18 + 24 / 60) / (1 - 119 / 246)).toFixed(2));
 type Farm = Record<string, any>;
-type Settings = { growth: number; dry: number; melonHours?: number; melonDryHours?: number };
+type Settings = { growth: number; dry: number; melonHours?: number; melonDryHours?: number; cropTimes?: Record<string, { growth?: number; dry?: number }> };
 const PUMPKIN = 'Tekvica';
 const measuredPumpkinHours = 44;     // fitted from three photos, see farmdesk/merania
 const measuredPumpkinDryHours = 35.2;
 const named = (f: Farm) => f.crop === MELON || f.crop === PUMPKIN;
-const growthHours = (f: Farm, s: Settings) => f.crop === MELON ? (s.melonHours ?? measuredMelonHours) : f.crop === PUMPKIN ? measuredPumpkinHours : s.growth;
-const dryingHours = (f: Farm, s: Settings) => f.crop === MELON ? (s.melonDryHours ?? measuredMelonDryHours) : f.crop === PUMPKIN ? measuredPumpkinDryHours : s.dry;
+const confirmed = (f: Farm, s: Settings, k: 'growth' | 'dry') => { const v = +(s.cropTimes?.[f.crop]?.[k] ?? 0); return v > 0 ? v : null; };
+const growthHours = (f: Farm, s: Settings) => confirmed(f, s, 'growth') ?? (f.crop === MELON ? (s.melonHours ?? measuredMelonHours) : f.crop === PUMPKIN ? measuredPumpkinHours : s.growth);
+const dryingHours = (f: Farm, s: Settings) => confirmed(f, s, 'dry') ?? (f.crop === MELON ? (s.melonDryHours ?? measuredMelonDryHours) : f.crop === PUMPKIN ? measuredPumpkinDryHours : s.dry);
 function progress(f: Farm, s: Settings, t = Date.now()) {
   const percent = (stamp: number, hours: number) => Math.max(0, Math.min(100, (t - stamp) / (hours * H) * 100));
   const growth = f.planted ? percent(f.planted, growthHours(f, s)) : 0;
@@ -176,7 +177,7 @@ async function runCycle() {
   const farms = records.filter(r => r.kind === 'farm').map(r => r.data as Farm);
   const logs = records.filter(r => r.kind === 'log').map(r => r.data as Farm);
   const st = (records.find(r => r.kind === 'settings' && r.id === 'main')?.data || {}) as Record<string, any>;
-  const settings: Settings = { growth: +st.growth > 0 ? +st.growth : 48, dry: +st.dry > 0 ? +st.dry : 24, melonHours: +st.melonHours > 0 ? +st.melonHours : undefined, melonDryHours: +st.melonDryHours > 0 ? +st.melonDryHours : undefined };
+  const settings: Settings = { growth: +st.growth > 0 ? +st.growth : 48, dry: +st.dry > 0 ? +st.dry : 24, melonHours: +st.melonHours > 0 ? +st.melonHours : undefined, melonDryHours: +st.melonDryHours > 0 ? +st.melonDryHours : undefined, cropTimes: st.cropTimes && typeof st.cropTimes === 'object' ? st.cropTimes : undefined };
   const farmMap = new Map<string, Farm>(farms.map(f => [f.id, f]));
   const names = new Map<string, string>(members.map(m => [m.user_id, m.name]));
   const active = new Map<string, Record<string, any>>(members.filter(m => m.status === 'active').map(m => [m.user_id, m]));
