@@ -26,14 +26,19 @@ const measuredMelonHours = Math.round((18 + 24 / 60) / (103 / 246));
 const measuredMelonDryHours = Number(((18 + 24 / 60) / (1 - 119 / 246)).toFixed(2));
 type Farm = Record<string, any>;
 type Settings = { growth: number; dry: number; melonHours?: number; melonDryHours?: number };
-const growthHours = (f: Farm, s: Settings) => f.crop === MELON ? (s.melonHours ?? measuredMelonHours) : s.growth;
-const dryingHours = (f: Farm, s: Settings) => f.crop === MELON ? (s.melonDryHours ?? measuredMelonDryHours) : s.dry;
+const PUMPKIN = 'Tekvica';
+const pumpkinMeasurementHours = 16 + 58 / 60;
+const measuredPumpkinHours = Math.round(pumpkinMeasurementHours / (94 / 246));
+const measuredPumpkinDryHours = Number((pumpkinMeasurementHours / (1 - 128 / 246)).toFixed(2));
+const named = (f: Farm) => f.crop === MELON || f.crop === PUMPKIN;
+const growthHours = (f: Farm, s: Settings) => f.crop === MELON ? (s.melonHours ?? measuredMelonHours) : f.crop === PUMPKIN ? measuredPumpkinHours : s.growth;
+const dryingHours = (f: Farm, s: Settings) => f.crop === MELON ? (s.melonDryHours ?? measuredMelonDryHours) : f.crop === PUMPKIN ? measuredPumpkinDryHours : s.dry;
 function progress(f: Farm, s: Settings, t = Date.now()) {
   const percent = (stamp: number, hours: number) => Math.max(0, Math.min(100, (t - stamp) / (hours * H) * 100));
   const growth = f.planted ? percent(f.planted, growthHours(f, s)) : 0;
-  const g = f.crop === MELON && growth < 100 ? Math.min(99, Math.round(growth)) : Math.floor(growth);
+  const g = named(f) && growth < 100 ? Math.min(99, Math.round(growth)) : Math.floor(growth);
   const remaining = f.watered ? 100 - percent(f.watered, dryingHours(f, s)) : 0;
-  const w = f.crop === MELON && remaining > 0 ? Math.max(1, Math.round(remaining)) : Math.ceil(remaining);
+  const w = named(f) && remaining > 0 ? Math.max(1, Math.round(remaining)) : Math.ceil(remaining);
   return { g, w };
 }
 const doorSides: [string, number][] = [['ľavé', 4], ['stredné', 3], ['pravé', 4]];

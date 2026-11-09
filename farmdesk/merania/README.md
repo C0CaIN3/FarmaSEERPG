@@ -17,9 +17,10 @@ Používa sa v appke: rast lineárne ~44 h do zberu, vyschnutie z plného poliat
 | Čas | Vlhkosť (Nedvesség) | Rast (Növekedés) | Poznámka | Fotka |
 |---|---|---|---|---|
 | 0 h 44 min | 242 px = 98,4 % | 2 px = 0,8 % | prvé meranie, 9. 11. 2026 v noci | `sutotok-0h44m.png` |
+| 16 h 58 min | 128 px = 52,0 % | 94 px = 38,2 % | bez ďalšieho poliatia, 9. 11. 2026 | `sutotok-16h58m.png` |
 
-Predbežne z jedného bodu (veľmi nepresné, ±1 px = ±0,4 %):
-- vlhkosť klesla o 4 px (1,6 %) za 44 min, čo je asi 2,2 %/h a vyschnutie asi za 45 h (rozsah asi 36 až 60 h);
-- rast 2 px (0,8 %) za 44 min, čo je asi 1,1 %/h a zber asi za 90 h (rozsah asi 60 až 180 h).
+Z oboch meraní (body ležia na jednej priamke od zasadenia, takže rast aj vysychanie sú rovnomerné):
+- rast 94 px za 16 h 58 min → 100 % asi za **44 h** (rovnako ako melón);
+- vlhkosť klesla o 118 px (48 %) za 16 h 58 min → vyschnutie zo 100 % asi za **35 h 22 min** (melón 35 h 38 min).
 
-Čaká sa na ďalšiu fotku po niekoľkých hodinách **bez poliatia medzi tým**. Z dvoch bodov sa vypočíta rýchlosť rastu a vysychania. Appka zatiaľ tekvicu nepozná, nič sa nemenilo.
+Používa sa v appke aj v notifikáciách od 9. 11. 2026.
