@@ -1290,6 +1290,8 @@ window.addEventListener('storage',e=>{if(!CLOUD&&e.key===key&&e.newValue){try{db
 let cloudReady=false,me=null,members=[],syncChain=Promise.resolve(),syncState='ok',refreshTimer=null,stopLive=null,pendingPaint=false,cloudTimer=null;
 const lastSynced=new Map(),meta=new Map(),dropLocal=new Set();let conflictNote=[];
 const rkey=(kind,id)=>kind+'\u0001'+id;
+// JSON with sorted keys: the database stores objects with its own key order.
+const canon=v=>JSON.stringify(v,(k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(n=>[n,x[n]])):x);
 function recordList(state=db){
   const out=[];
   for(const f of state.farms)out.push({kind:'farm',id:f.id,data:f});
@@ -1369,7 +1371,7 @@ async function pushDiff(){
     for(const d of del){lastSynced.delete(d.k);meta.delete(d.k)}
     if(res.conflicts.length){
       // Someone else saved these first: their version wins, this browser's change is dropped and reloaded.
-      for(const c of res.conflicts){const k=rkey(c.kind,c.id);dropLocal.add(k);conflictNote.push({kind:c.kind,id:c.id,name:c.kind==='farm'?db.farms.find(f=>f.id===c.id)?.name:null})}
+      for(const c of res.conflicts){const k=rkey(c.kind,c.id);dropLocal.add(k);conflictNote.push({kind:c.kind,id:c.id,name:c.kind==='farm'?db.farms.find(f=>f.id===c.id)?.name:null,mine:JSON.stringify(cur.get(k)?.data)})}
       setSync('ok');scheduleRefresh(50);return;
     }
     setSync('ok');
@@ -1399,11 +1401,24 @@ async function refreshInner(){
   for(const r of rows){const k=rkey(r.kind,r.id);lastSynced.set(k,JSON.stringify(r.data));meta.set(k,{created_by:r.created_by,created_at:r.created_at,updated_by:r.updated_by,updated_at:r.updated_at});merged.set(k,r)}
   for(const r of dirty)merged.set(rkey(r.kind,r.id),r);
   for(const k of removed)merged.delete(k);
+  // Conflicts: when the server copy already equals this browser's change, the save went through and only
+  // the answer was lost (phone asleep, weak signal). When the newer copy is this player's own (another
+  // device or a lost answer), this device's change is kept and sent again. Only another player's edit wins.
+  let retry=false;
+  const real=conflictNote.filter(c=>{
+    const k=rkey(c.kind,c.id),m=meta.get(k);
+    if(!m||!c.mine)return true;
+    if(canon(merged.get(k)?.data)===canon(JSON.parse(c.mine)))return false;
+    if(m.updated_by===me?.user_id){merged.set(k,{kind:c.kind,id:c.id,data:JSON.parse(c.mine)});retry=true;return false}
+    return true;
+  });
+  conflictNote=[];
   applyRecords([...merged.values()]);
-  if(conflictNote.length){
-    const c=conflictNote[0],k=rkey(c.kind,c.id),by=meta.get(k)?.updated_by,what=c.kind==='farm'?'Farmu '+(db.farms.find(f=>f.id===c.id)?.name||c.name||''):'Tento záznam';
-    toast(meta.has(k)?what+' medzitým zmenil '+playerName(by)+'. Tvoja zmena sa neuložila, načítal som jeho verziu. Skontroluj a zopakuj ju.':what+' medzitým niekto odstránil. Tvoja zmena sa neuložila.');
-    conflictNote=[];
+  if(retry)queueSync();
+  if(real.length){
+    const c=real[0],k=rkey(c.kind,c.id),by=meta.get(k)?.updated_by,label={farm:'Farmu '+(db.farms.find(f=>f.id===c.id)?.name||c.name||''),tx:'Tento pohyb na účte',log:'Tento zápis práce',ongoing:'Túto prebiehajúcu prácu',worker:'Telefón pracovníka',settings:'Nastavenia pestovania'}[c.kind]||'Tento záznam';
+    toast(!meta.has(k)?label+' medzitým niekto odstránil. Tvoja zmena sa neuložila.'
+      :label+' medzitým zmenil '+playerName(by)+'. Tvoja zmena sa neuložila, načítal som jeho verziu. Skontroluj a zopakuj ju.');
   }
   if(dirty.length||removed.length)queueSync();
   if(syncState!=='saving')setSync('ok');
