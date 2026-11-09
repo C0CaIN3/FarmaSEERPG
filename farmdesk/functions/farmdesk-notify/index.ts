@@ -50,6 +50,13 @@ const farmUrl = (id?: string) => id ? `${APP_URL}#farma-${encodeURIComponent(id)
 
 type Alert = { key: string; category: string; title: string; body: string; url: string; leadersOnly?: boolean; exclude?: string | null; farm?: string };
 
+// A player who pressed "Beriem ja" holds the farm until it is watered, at most six hours.
+function claimNote(f: Farm, t: number): string {
+  const c = f.waterClaim;
+  if (!c || typeof c !== 'object' || !(+c.at > (+f.watered || 0)) || t - +c.at > 6 * H) return '';
+  return ` Berie ${c.name || 'hráč'}.`;
+}
+
 // ---- Alerts from the current state of the farms ---------------------------------------------------
 function stateAlerts(farms: Farm[], s: Settings, t = Date.now()): Alert[] {
   const out: Alert[] = [];
@@ -59,7 +66,7 @@ function stateAlerts(farms: Farm[], s: Settings, t = Date.now()): Alert[] {
     if (f.planted) {
       const { g, w } = progress(f, s, t);
       if (g >= 100) out.push({ key: `harvest:${f.id}:${f.planted}`, category: 'harvest', title: `${name}: úroda je zrelá`, body: 'Rast 100 %. Môžete zbierať.', url, farm: f.id });
-      else if (w <= 25) out.push({ key: `water:${f.id}:${f.watered ?? 0}:${w <= 0 ? 0 : 25}`, category: 'water', title: `${name}: treba poliať`, body: w <= 0 ? 'Voda je na nule, úroda nerastie.' : `Voda ${w} %. Polejte čoskoro.`, url, farm: f.id });
+      else if (w <= 25) out.push({ key: `water:${f.id}:${f.watered ?? 0}:${w <= 0 ? 0 : 25}`, category: 'water', title: `${name}: treba poliať`, body: (w <= 0 ? 'Voda je na nule, úroda nerastie.' : `Voda ${w} %. Polejte čoskoro.`) + claimNote(f, t), url, farm: f.id });
     }
     if (f.due) {
       const due = +f.due, term = f.term || 'Termín';
@@ -95,6 +102,11 @@ function eventAlert(e: Record<string, any>, farms: Map<string, Farm>, names: Map
   if (e.event === 'sale') {
     const x = p.tx || {};
     return { ...base, category: 'money', title: `${farmTitle(f)}: predaj úrody`, body: `${actor} predal za ${money(+x.amount || 0)}. Pozrite vyúčtovanie farmy.` };
+  }
+  if (e.event === 'water_claim') {
+    const c = p.claim || {};
+    const who = names.get(c.by) || c.name || actor;
+    return { ...base, category: 'water', title: `${farmTitle(f)}: polievanie berie ${who}`, body: `${who} ide poliať túto farmu. Ostatní ju nemusia riešiť.` };
   }
   if (e.event === 'player_pending') {
     return { key: `event:${e.id}`, exclude: e.actor, category: 'players', leadersOnly: true, title: 'Nový hráč čaká na schválenie', body: `${p.name || 'Hráč'} sa zaregistroval. Schváľ ho v Nastaveniach → Hráči.`, url: APP_URL };

@@ -59,6 +59,25 @@ if (config?.supabaseUrl && config?.publishableKey) {
         const { error } = await sb.from('records').upsert(chunk, { onConflict: 'kind,id' }); fail(error);
       }
     },
+    // Saves with a version check: rows changed by someone else since `expected` come back as conflicts.
+    async save(records) {
+      const out = { saved: [], conflicts: [] };
+      for (let i = 0; i < records.length; i += 400) {
+        const chunk = records.slice(i, i + 400).map(({ kind, id, data, expected }) => ({ kind, id, data, expected: expected ?? null }));
+        const { data, error } = await sb.rpc('farmdesk_upsert', { p_rows: chunk }); fail(error);
+        out.saved.push(...(data?.saved || [])); out.conflicts.push(...(data?.conflicts || []));
+      }
+      return out;
+    },
+    // Recent changes, newest first; with `farm`, only that farm and its payments and work.
+    async history({ limit = 150, farm = null } = {}) {
+      let q = sb.from('record_history').select('id,at,actor,op,kind,record_id,old_data,new_data').order('at', { ascending: false }).limit(limit);
+      if (farm) {
+        const id = String(farm).replace(/[^a-zA-Z0-9-]/g, '');
+        q = q.or(`and(kind.eq.farm,record_id.eq.${id}),new_data->>farm.eq.${id},old_data->>farm.eq.${id}`);
+      }
+      const { data, error } = await q; fail(error); return data;
+    },
     async remove(keys) {
       const byKind = new Map();
       for (const { kind, id } of keys) byKind.set(kind, [...(byKind.get(kind) || []), id]);
