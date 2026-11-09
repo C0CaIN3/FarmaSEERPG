@@ -29,7 +29,7 @@ function farmer(seed,size=32,label=''){
     ${hat}</svg>`;
 }
 const $=s=>document.querySelector(s), E=s=>String(s??'').replace(/[&<>"']/g,v=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[v]));
-const H=3600000,D=24*H, now=()=>Date.now(), uid=()=>crypto.randomUUID(), key='farmdesk-sk-v1', names={water:'Polievanie',overview:'Prehľad',farms:'Moje farmy',finance:'Ekonomika',alerts:'Upozornenia',history:'Denník prác',settings:'Nastavenia'};
+const H=3600000,D=24*H, now=()=>Date.now(), uid=()=>crypto.randomUUID(), key='farmdesk-sk-v1', names={water:'Polievanie',overview:'Prehľad',farms:'Farmy',finance:'Ekonomika',alerts:'Upozornenia',history:'Denník prác',settings:'Nastavenia'};
 const types={own:'Vlastná (od štátu)',player:'Prenajatá od hráča'}, categories={sale:'Tržba',rent:'Nájom',wage:'Mzda',seed:'Osivo',invest:'Investícia',other:'Iný výdavok'};
 const fmt=n=>new Intl.NumberFormat('sk-SK',{maximumFractionDigits:2}).format(n), date=t=>new Date(t).toLocaleString('sk-SK',{dateStyle:'short',timeStyle:'short'}), local=t=>t?new Date(t-new Date(t).getTimezoneOffset()*60000).toISOString().slice(0,16):'';
 const forintFormat=new Intl.NumberFormat('en-US',{useGrouping:true,maximumFractionDigits:2});
@@ -464,8 +464,15 @@ function home() {
   const farmTotals=totals(farmTx);
   const activeIds=new Set(fs.map(f=>f.id));
   const activeProfit=totals(farmTx.filter(x=>activeIds.has(x.farm))).profit;
-  const moneyCard=`<button class="summary-card ${activeProfit<0?'profit-card negative-result':'profit-card'}" data-a="go:finance"><span class="summary-label">${ic('wallet')}Hospodárenie fariem</span><span class="card-arrow">${ic('arrow')}</span>
-    <span class="profit-split"><span><small>Investované do fariem</small><b>${money(farmTotals.cost)}</b></span><span><small>Tržby z fariem celkovo</small><b>${money(farmTotals.rev)}</b></span><span class="net"><small>Zisk fariem</small><b>${money(activeProfit)}</b></span></span></button>`;
+  // Shared players can switch the card between the whole team and their own money.
+  const mine=CLOUD&&moneyView==='me'?myMoney():null;
+  const switcher=CLOUD?'<span class="money-switch" role="group" aria-label="Zobraziť">'+[['all','Všetci'],['me','Ja']].map(([k,l])=>'<button type="button" class="'+(moneyView===k?'on':'')+'" aria-pressed="'+(moneyView===k)+'" data-a="moneyview:'+k+'">'+l+'</button>').join('')+'</span>':'';
+  const lines=mine
+    ?`<span><small>Investoval som</small><b>${money(mine.cost)}</b></span><span><small>Moje tržby z predaja</small><b>${money(mine.rev)}</b></span>${mine.adj?`<span><small>Z vyúčtovaní</small><b>${(mine.adj>0?'+':'')+money(mine.adj)}</b></span>`:''}<span class="net"><small>Môj zisk</small><b>${money(mine.profit)}</b></span>`
+    :`<span><small>Investované do fariem</small><b>${money(farmTotals.cost)}</b></span><span><small>Tržby z fariem celkovo</small><b>${money(farmTotals.rev)}</b></span><span class="net"><small>Zisk fariem</small><b>${money(activeProfit)}</b></span>`;
+  const shownProfit=mine?mine.profit:activeProfit;
+  const moneyCard=`<div class="summary-card ${shownProfit<0?'profit-card negative-result':'profit-card'}" data-a="go:finance" role="link" tabindex="0"><span class="summary-label">${ic('wallet')}${mine?'Moje hospodárenie':'Hospodárenie fariem'}</span>${switcher}<span class="card-arrow">${ic('arrow')}</span>
+    <span class="profit-split">${lines}</span>${mine?'<small class="money-note">Platby, ktoré si zapísal ty, a prevody z uzavretých vyúčtovaní.</small>':''}</div>`;
   const kpis=moneyCard+
     farmStatusCard(fs)+
     waterCard(fs)+
@@ -475,7 +482,7 @@ function home() {
   const day=new Date().toLocaleDateString('sk-SK',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   return `<div class="console-title"><div><h1>Prehľad hospodárstva</h1><div class="console-date">${ic('calendar')}${day}</div></div><div class="actiongrid">${btn('Zapísať prácu','work','log')}${btn('Pridať farmu','new','plus','primary')}</div></div>
   <div class="summary-grid">${kpis}</div><div class="analysis-grid">${reportChart(chartDays)}${fieldSummary(fs)}</div>
-  <div class="work-grid"><section class="portfolio"><div class="work-head"><h2>Moje farmy <span class="total">${fs.length}</span></h2><button class="btnlink" data-a="map">${ic('pin')}Lokality</button></div>${tabs()}${propertyTable(fs)}</section>
+  <div class="work-grid"><section class="portfolio"><div class="work-head"><h2>Farmy <span class="total">${fs.length}</span></h2><button class="btnlink" data-a="map">${ic('pin')}Lokality</button></div>${tabs()}${propertyTable(fs)}</section>
   <div class="side-stack">${workingPane()}<section class="task-pane"><div class="work-head"><h2>Najbližšie úlohy <span class="total">${items.length}</span></h2><button class="minor-arrow" data-a="go:alerts" aria-label="Všetky upozornenia">${ic('arrow')}</button></div><div class="queue-body">${tasks||empty('Žiadna farma teraz nevyžaduje pozornosť.')}</div></section></div></div>`;
 }
 function priorityView(which) {
@@ -695,7 +702,7 @@ function render(){
  const nav=(p,i)=>`<button class="rail-link ${page===p||page==='farm'&&p==='farms'?'active':''}" title="${names[p]}" aria-label="${names[p]}" aria-current="${page===p?'page':'false'}" data-a="go:${p}">${ic(i)}<span>${names[p]}</span></button>`;
  $('#sidebar').innerHTML=`<button class="rail-logo" data-a="go:overview" aria-label="FarmDesk"><img src="assets/mark-96.png" alt=""></button><nav>${nav('overview','grid')}${nav('farms','barn')}${nav('water','water')}${nav('finance','chart')}${nav('history','log')}${nav('alerts','bell')}</nav><div class="rail-bottom">${nav('settings','settings')}<button class="rail-avatar" data-a="go:settings" title="${E(CLOUD?myName():'Farmár')}">${farmer(CLOUD?me?.user_id:'farmdesk',34,CLOUD?myName():'Farmár')}</button></div>`;
  $('#top').innerHTML=`<div class="top-id"><button class="iconbtn menu" data-a="menu" aria-label="Menu">${ic('menu')}</button><strong>FarmDesk</strong><span class="divider"></span><span class="server-name">SeeRPG</span></div><div class="top-actions"><button class="search-shortcut" data-a="searchfarm">${ic('search')}<span>Vyhľadať farmu</span></button>${db.demo?'<button class="demo" data-a="go:settings">Ukážkové údaje</button>':''}${CLOUD?cloudTopbar():''}<button class="iconbtn" aria-label="Upozornenia" data-a="go:alerts">${ic('bell')}${count?'<i class="dot"></i>':''}</button></div>`;
- $('#main').innerHTML=page==='overview'?home():page==='farms'?heading('Moje farmy','Evidencia prenájmov od štátu a od hráčov.',btn('Pridať farmu','new','plus','primary'))+'<div class="filters"><input id="search" aria-label="Vyhľadať farmu" placeholder="Vyhľadať farmu podľa mena alebo čísla (napr. D05)…" value="'+E(query)+'"></div>'+tabs()+'<div id="matches">'+farmsgrid()+'</div>':page==='finance'?finance():page==='settings'?settings():page==='history'?journal():page==='farm'?farmPage():page==='water'?waterPage():noticesPage();document.querySelectorAll('canvas').forEach(paint)}
+ $('#main').innerHTML=page==='overview'?home():page==='farms'?heading('Farmy','Evidencia prenájmov od štátu a od hráčov.',btn('Pridať farmu','new','plus','primary'))+'<div class="filters"><input id="search" aria-label="Vyhľadať farmu" placeholder="Vyhľadať farmu podľa mena alebo čísla (napr. D05)…" value="'+E(query)+'"></div>'+tabs()+'<div id="matches">'+farmsgrid()+'</div>':page==='finance'?finance():page==='settings'?settings():page==='history'?journal():page==='farm'?farmPage():page==='water'?waterPage():noticesPage();document.querySelectorAll('canvas').forEach(paint)}
 const field=(l,n,t,v='',attr='')=>'<label class="field">'+l+'<input name="'+n+'" type="'+t+'" value="'+E(v)+'" '+attr+'></label>';
 function select(l,n,opts,val,attr=''){return '<label class="field">'+l+'<select name="'+n+'" '+attr+'>'+opts.map(([v,s])=>'<option value="'+E(v)+'" '+(String(val)===String(v)?'selected':'')+'>'+E(s)+'</option>').join('')+'</select></label>'}
 const seq=(n)=>Array.from({length:n},(_,i)=>[i+1,String(i+1)]);
@@ -1054,7 +1061,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
  else if(a==='settle'&&f){const st=settlementFor(f);if(st)confirmBox('Uzavrieť vyúčtovanie?',(st.transfers.length?st.transfers.map(t=>playerName(t.from)+' pošle '+playerName(t.to)+' '+money(t.amount)).join(' · ')+'. ':'Nikto nikomu nič neposiela. ')+'Po uzavretí sa prevody započítajú hráčom v Ekonomike.','settleok:'+id)}
  else if(a==='settleok'&&f){closeSettlement(f);save();close();render();toast('Vyúčtovanie je uzavreté.')}
  else if(a==='settlereopen'&&f)confirmBox('Otvoriť vyúčtovanie znova?','Prevody z tohto vyúčtovania sa prestanú rátať v Ekonomike, kým ho znova neuzavrieš.','settlereopenok:'+id);
- else if(a==='settlereopenok'&&f){const st=settlementFor(f);if(st?.closed)f.settlements=(f.settlements||[]).filter(x=>x!==st.closed);save();close();render()}else if(a==='back'){if(/^#farma-/.test(location.hash)&&history.length>1)history.back();else go(prevPage||'overview')}else if(a==='waterview')go('water');else if(a==='waterspan'){waterHours=[12,24,48].includes(+id)?+id:24;render()}
+ else if(a==='settlereopenok'&&f){const st=settlementFor(f);if(st?.closed)f.settlements=(f.settlements||[]).filter(x=>x!==st.closed);save();close();render()}else if(a==='back'){if(/^#farma-/.test(location.hash)&&history.length>1)history.back();else go(prevPage||'overview')}else if(a==='waterview')go('water');else if(a==='moneyview'){moneyView=id==='me'?'me':'all';try{localStorage.setItem('farmdesk-money-view',moneyView)}catch{}render()}else if(a==='waterspan'){waterHours=[12,24,48].includes(+id)?+id:24;render()}
  else if(a==='claim'&&f){const c=activeClaim(f);if(c&&!claimMine(c)){toast('Túto farmu už berie '+claimName(c)+'.');return}f.waterClaim={by:CLOUD?me?.user_id:null,name:CLOUD?myName():'Ja',at:now()};save();render();toast('Farma '+f.name+' je tvoja na poliatie.')}
  else if(a==='unclaim'&&f){delete f.waterClaim;save();render()}
  else if(a==='workwater'&&f){work(id);const fm=$('#workform');if(fm){fm.querySelectorAll('input[name="job"]').forEach(b=>{if(b.type==='checkbox')b.checked=b.value==='water'});syncJobPicker(fm,f)}}else if(a==='harvestview')harvestView();else if(a==='go')go(id);else if(a==='menu')document.body.classList.toggle('navopen');else if(a==='close')close();else if(a==='filter'){filter=id;render()}else if(a==='farm')detail(f);else if(a==='archive'){confirmBox(f.archived?'Obnoviť farmu?':'Archivovať farmu?',f.archived?'Farma sa vráti medzi aktívne farmy.':'Farma sa presunie do archívu. História a financie ostanú v evidencii.','archiveok:'+id)}else if(a==='delfarm'&&f){if(CLOUD&&!isLeader()){toast('Farmu môže úplne odstrániť iba leader.');return}const n=db.tx.filter(x=>x.farm===id).length,l=db.logs.filter(x=>x.farm===id).length;confirmBox('Odstrániť farmu úplne?',f.name+': odstráni sa farma, '+n+' pohybov na účte a '+l+' zápisov prác. Tržby a náklady zmiznú aj z Ekonomiky. Toto sa nedá vrátiť'+(CLOUD?' (v Histórii zmien ostane záznam 120 dní).':'.')+' Ak ju chceš len odložiť, použi Archivovať.','delfarmok:'+id)}
@@ -1273,7 +1280,7 @@ document.addEventListener('change',async e=>{let el=e.target;if(el.name==='type'
    const start=new Date(el.value).getTime();$('#next-rent').textContent=Number.isFinite(start)?date(leaseEnd(start,farm)):'—';
  }
  if(el.id==='file'&&el.files.length){try{let v=readFarmData(await el.files[0].text());if(!isBackup(v))throw 0;pendingRestore={...v,sent:{},sound:false,notices:false};confirmBox('Obnoviť zálohu?',(CLOUD?'Spoločné údaje všetkých hráčov nahradí obsah súboru (':'Aktuálne údaje nahradí obsah súboru (')+v.farms.length+' fariem).','restoreok')}catch{toast('Súbor nie je platná záloha FarmDesk.')}el.value=''}});
-document.addEventListener('keydown',e=>{if(['Enter',' '].includes(e.key)&&e.target.matches('[role="button"]')){e.preventDefault();e.target.click()}});
+document.addEventListener('keydown',e=>{if(['Enter',' '].includes(e.key)&&e.target.matches('[role="button"],[role="link"]')){e.preventDefault();e.target.click()}});
 function pointReadout(e){
  const point=e.target.closest?.('[data-point]');
  if(!point)return;
@@ -1441,13 +1448,18 @@ function cloudTopbar(){
   return (waiting?'<button class="demo pending-chip" data-a="settab:team">'+waiting+' čaká na schválenie</button>':'')+
     '<span id="sync" class="sync-dot '+syncState+'" title="'+syncTitle()+'"></span><button class="me-chip" data-a="go:settings" title="Prihlásený hráč">'+farmer(me?.user_id,22,myName())+'<span>'+E(myName())+'</span></button>';
 }
-function playerResults(){
+let moneyView=(()=>{try{return localStorage.getItem('farmdesk-money-view')==='me'?'me':'all'}catch{return 'all'}})();
+function playerTotals(){
   const rows=new Map(),add=uid=>{if(!rows.has(uid))rows.set(uid,{rev:0,cost:0,adj:0});return rows.get(uid)};
   for(const m of members)if(m.status==='active')add(m.user_id);
   for(const x of db.tx){const r=add(recordMeta('tx',x.id)?.created_by??me?.user_id);if(x.category==='sale')r.rev+=x.amount;else r.cost+=x.amount}
   // Money passed between players in closed settlements moves profit from the seller to the investors.
   for(const f of db.farms)for(const st of f.settlements||[])for(const t of st.transfers||[]){add(t.from).adj-=t.amount;add(t.to).adj+=t.amount}
-  const list=[...rows].map(([uid,r])=>({uid,...r,profit:r.rev-r.cost+r.adj})).sort((a,b)=>b.profit-a.profit);
+  return [...rows].map(([uid,r])=>({uid,...r,profit:r.rev-r.cost+r.adj}));
+}
+function myMoney(){return playerTotals().find(r=>r.uid===me?.user_id)||{uid:me?.user_id,rev:0,cost:0,adj:0,profit:0}}
+function playerResults(){
+  const list=playerTotals().sort((a,b)=>b.profit-a.profit);
   const tot=list.reduce((t,r)=>({rev:t.rev+r.rev,cost:t.cost+r.cost}),{rev:0,cost:0}),tp=tot.rev-tot.cost;
   const signed=n=>n?(n>0?'+':'')+money(n):'—';
   const body=list.map(r=>`<tr><th scope="row"><span class="player-cell">${farmer(r.uid,24,playerName(r.uid))}${E(playerName(r.uid))}</span>${r.uid===me?.user_id?' <span class="sub">(ty)</span>':''}</th><td>${money(r.cost)}</td><td>${money(r.rev)}</td><td class="${r.adj<0?'loss':r.adj>0?'gain':''}">${signed(r.adj)}</td><td class="${r.profit<0?'loss':r.profit>0?'gain':''}">${money(r.profit)}</td></tr>`).join('');
