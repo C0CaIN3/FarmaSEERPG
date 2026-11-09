@@ -23,7 +23,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 const H = 3600000, D = 24 * H;
 const MELON = 'Vodný melón', PUMPKIN = 'Tekvica';
 // Times of the server script (see farmdesk/merania): 44 h to harvest, 35 h 12 min from full water to dry.
-const CROP_TIMES: Record<string, { growth: number; dry: number }> = { [MELON]: { growth: 44, dry: 35.2 }, [PUMPKIN]: { growth: 44, dry: 35.2 } };
+const CROP_TIMES: Record<string, { growth: number; dry: number }> = { [MELON]: { growth: 44, dry: 35.2 }, [PUMPKIN]: { growth: 44, dry: 35.2 }, Malina: { growth: 44, dry: 35.2 } };
 type Farm = Record<string, any>;
 type Settings = { growth: number; dry: number };
 const named = (f: Farm) => f.crop in CROP_TIMES;
@@ -173,7 +173,7 @@ async function runCycle() {
   const farms = records.filter(r => r.kind === 'farm').map(r => r.data as Farm);
   const logs = records.filter(r => r.kind === 'log').map(r => r.data as Farm);
   const st = (records.find(r => r.kind === 'settings' && r.id === 'main')?.data || {}) as Record<string, any>;
-  const settings: Settings = { growth: +st.growth > 0 ? +st.growth : 48, dry: +st.dry > 0 ? +st.dry : 24 };
+  const settings: Settings = { growth: +st.growth > 0 ? +st.growth : 44, dry: +st.dry > 0 ? +st.dry : 35.2 };
   const farmMap = new Map<string, Farm>(farms.map(f => [f.id, f]));
   const names = new Map<string, string>(members.map(m => [m.user_id, m.name]));
   const active = new Map<string, Record<string, any>>(members.filter(m => m.status === 'active').map(m => [m.user_id, m]));

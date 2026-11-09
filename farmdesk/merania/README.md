@@ -30,3 +30,5 @@ Používa sa v appke aj v notifikáciách od 9. 11. 2026.
 ## Nastavené v appke (9. 11. 2026)
 
 Vodný melón aj tekvica: **zber 44 h** po zasadení, **voda zo 100 % na nulu za 35 h 12 min** (pod 25 % po 26 h 24 min). Voda ubúda presne 1,25× rýchlejšie, než rastie úroda, čo vyzerá ako nastavenie skriptu. Melónová fotka sedí na tieto časy do 2 px. Časy sú pevne v `app.js` (`CROP_TIMES`) a v notifikačnej funkcii.
+
+Malina (Málna), 9. 11. 2026 21:20, 1 h 16 min po sadení a poliatí: voda 236 px, rast 8 px. S časmi 44 h a 35 h 12 min appka ukazuje 237 a 7 px. Všetky tri plodiny majú zrejme rovnaké časy, preto sú rovnaké aj všeobecné časy pre neurčenú plodinu.

@@ -67,7 +67,7 @@ function forintField(label,name,value='',{precise=false,required=false}={}){
   return field(label+' (Ft)',name,'text',groupAmountEntry(value),
     'data-forint inputmode="decimal" title="Tisíce oddeľuje čiarka, desatinné miesta bodka." maxlength="48" pattern="'+pattern+'" '+(required?'required':''));
 }
-function fresh(demo=true){let t=now();let base={demo,growth:48,dry:24,sound:false,notices:false,farms:[],tx:[],logs:[],sent:{}};if(!demo)return base;
+function fresh(demo=true){let t=now();let base={demo,growth:44,dry:35.2,sound:false,notices:false,farms:[],tx:[],logs:[],sent:{}};if(!demo)return base;
  base.farms=[['Smaragdová lúka','own',1,3,80,30.7,5.3,12],['Borovicový háj','player',3,7,40,17.7,19.5,1.6],['Zlatý klas','own',5,2,120,51,9,8]].map(([name,type,loc,floor,size,g,w,d],i)=>({id:'ex'+i,name,type,loc,floor,size,art:i,createdAt:t,planted:t-g*H,watered:t-w*H,due:t+d*D,owner:i===1?'Martin Green':'',phone:i===1?'555-0142':'',account:i===1?'RP-10428':'',worker:i===1?'Alex Farmer':'',crop:'Úroda',term:type==='player'?'Ďalšie nájomné':'Koniec nájmu'}));
  base.tx=[
  ['sale',1800,2,6],['sale',3100,2,5],['sale',1900,2,4],['sale',3400,2,3],['sale',2100,2,2],['sale',2500,2,1],['sale',3600,2,0],
@@ -84,7 +84,7 @@ function readFarmData(raw){
 // Shared mode: farms live in the FarmDesk database; only personal preferences stay in this browser.
 const CLOUD=!!(window.FARMDESK_CONFIG&&window.FarmCloud),prefKey='farmdesk-cloud-prefs';
 function readPrefs(){try{return JSON.parse(localStorage.getItem(prefKey))||{}}catch{return {}}}
-function sharedEmpty(){const p=readPrefs();return {demo:false,growth:48,dry:24,sound:!!p.sound,notices:!!p.notices,sent:p.sent||{},farms:[],tx:[],logs:[],ongoing:[],workers:{}}}
+function sharedEmpty(){const p=readPrefs();return {demo:false,growth:44,dry:35.2,sound:!!p.sound,notices:!!p.notices,sent:p.sent||{},farms:[],tx:[],logs:[],ongoing:[],workers:{}}}
 let db;if(CLOUD)db=sharedEmpty();else{try{let raw=localStorage.getItem(key);db=raw?readFarmData(raw):fresh()}catch{db=fresh(false)}}let page='overview',filter='all',query='',activeFarm=null,audioCtx,toastTimer;
 function save(){
   if(CLOUD){try{localStorage.setItem(prefKey,JSON.stringify({sound:db.sound,notices:db.notices,sent:db.sent}))}catch{}queueSync();return}
@@ -96,10 +96,10 @@ const go=p=>{if(p==='settings')settingsTab=null;if(/^#farma-/.test(location.hash
 const btn=(label,action,icon='',style='')=>'<button type="button" class="btn '+style+'" data-a="'+action+'">'+(icon?ic(icon):'')+label+'</button>';
 const link=(label,action)=>'<button class="btnlink" data-a="'+action+'">'+label+ic('arrow')+'</button>';
 const melon='Vodný melón';
-const pumpkin='Tekvica',namedCrops=[melon,pumpkin];
+const pumpkin='Tekvica',raspberry='Malina',namedCrops=[melon,pumpkin,raspberry];
 // Times of the server script, worked out from screenshots (farmdesk/merania): every crop grows in 44 h
 // and dries from a full watering in 35 h 12 min (water runs out 1.25 times faster than the crop grows).
-const CROP_TIMES={[melon]:{growth:44,dry:35.2},[pumpkin]:{growth:44,dry:35.2}};
+const CROP_TIMES={[melon]:{growth:44,dry:35.2},[pumpkin]:{growth:44,dry:35.2},[raspberry]:{growth:44,dry:35.2}};
 function dryingHours(f){return CROP_TIMES[f.crop]?.dry??db.dry}
 function growthHours(f){return CROP_TIMES[f.crop]?.growth??db.growth}
 // Growth in the game stops while the plant has no water, so the bar can be behind the planting time.
@@ -111,7 +111,8 @@ function growthProfile(crop){
   return select('Plodina','crop',[
     ['Úroda','Neurčená · všeobecný odhad '+fmt(db.growth)+' h'],
     [melon,melon+' · '+fmt(CROP_TIMES[melon].growth)+' h'],
-    [pumpkin,pumpkin+' · '+fmt(CROP_TIMES[pumpkin].growth)+' h']
+    [pumpkin,pumpkin+' · '+fmt(CROP_TIMES[pumpkin].growth)+' h'],
+    [raspberry,raspberry+' · '+fmt(CROP_TIMES[raspberry].growth)+' h']
   ],cropOf(crop));
 }
 function progress(f,t=now()){
@@ -159,7 +160,7 @@ function soil(f){
 const soilPill=f=>{const [label,kind]=soil(f);return '<span class="pill soil-'+kind+'" title="Stav pôdy"><i></i>'+label+'</span>'};
 // The plant window from the game: three 246 px bars (Nedvesség, Növekedés, Állapot) in the game's colours,
 // filled to the same pixel, only thicker.
-const GAME_BAR=246,huCrop={[melon]:'Görögdinnye',[pumpkin]:'Sütőtök'};
+const GAME_BAR=246,huCrop={[melon]:'Görögdinnye',[pumpkin]:'Sütőtök',[raspberry]:'Málna'};
 function gameBars(f,t=now()){
   const clamp=x=>Math.max(0,Math.min(1,x));
   const grow=f.planted?clamp((t-growthStart(f))/(growthHours(f)*H)):0,water=f.watered?clamp(1-(t-f.watered)/(dryingHours(f)*H)):0;
