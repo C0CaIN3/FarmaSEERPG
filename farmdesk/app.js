@@ -154,6 +154,17 @@ function soil(f){
   return ['Neopracovaná','raw'];
 }
 const soilPill=f=>{const [label,kind]=soil(f);return '<span class="pill soil-'+kind+'" title="Stav pôdy"><i></i>'+label+'</span>'};
+// The plant window from the game: three 246 px bars (Nedvesség, Növekedés, Állapot) in the game's colours,
+// filled to the same pixel, only thicker.
+const GAME_BAR=246,huCrop={[melon]:'Görögdinnye',[pumpkin]:'Sütőtök'};
+function gameBars(f,t=now()){
+  const clamp=x=>Math.max(0,Math.min(1,x));
+  const grow=f.planted?clamp((t-f.planted)/(growthHours(f)*H)):0,water=f.watered?clamp(1-(t-f.watered)/(dryingHours(f)*H)):0;
+  const px=x=>Math.round(x*GAME_BAR),bar=(cls,label,hu,v,shown)=>'<div class="gbar-label"><span>'+label+' <small>'+hu+'</small></span><b>'+shown+'</b></div><div class="gbar '+cls+'" role="img" aria-label="'+label+' '+shown+'"><i style="width:'+(px(v)/GAME_BAR*100)+'%"></i></div>';
+  const {g,w}=progress(f,t);
+  return '<div class="game-bars">'+(f.planted?'<strong>'+E(cropName(f.crop))+(huCrop[f.crop]?' <small>'+huCrop[f.crop]+'</small>':'')+'</strong>':'')+
+    bar('water','Voda','Nedvesség',water,w+' %')+bar('growth','Rast','Növekedés',grow,g+' %')+bar('state','Stav','Állapot',f.planted?1:0,f.planted?'—':'')+'</div>';
+}
 const metric=(label,key,n,w='')=>'<div class="metric '+w+'">'+ic(key)+label+'<b>'+n+' %</b></div><div class="bar '+w+'"><i style="width:'+n+'%"></i></div>';
 // Capacity is read directly from the farm, including older saved records.
 const capacityStyles = {
@@ -209,7 +220,7 @@ function card(f) {
     <div class="farm-size-banner size-${f.size}">${capacityGraphic(f.size)}</div>
     <div class="cardbody"><div class="cardheading"><h3>${E(f.name)}</h3>${ic('arrow')}</div>
     <div class="cardmeta">${ic('pin')}${position} · ${types[f.type]}</div>
-    <div class="cardmeters"><div>${metric('Rast','sprout',g)}</div><div>${metric('Voda','water',w,'water')}</div></div></div>
+    <div class="cardmeters">${gameBars(f)}</div></div>
     <div class="cardfoot"><span class="inline"><span class="pill ${tone}"><i></i>${state}</span>${soilPill(f)}${workingPill(f)}</span><span class="deadline ${soon?(f.due<=now()?'overdue':'urgent'):''}" title="${E(f.term)}">${ic('calendar')}${f.due?countdown(f.due):'Bez termínu'}</span></div></article>`;
 }
 function stat(label,n,detail,icon,color=''){return '<div class="stat"><div class="statlabel"><span class="ico '+color+'">'+ic(icon)+'</span>'+label+'</div><strong>'+n+'</strong><small>'+detail+'</small></div>'}
@@ -929,7 +940,7 @@ function farmPage(){
   const history=[...db.logs].filter(l=>l.farm===f.id).sort((a,b)=>b.at-a.at);
   const journal='<section class="contract-box farm-journal"><h3>Práce na farme <span class="total">'+history.length+'</span></h3>'+(history.slice(0,12).map(l=>row(l.icon,l.action,withPhone(l.who)+(l.fee>0?' · '+money(l.fee):'')+byLine('log',l.id,'zapísal'),date(l.at),l.icon==='water'?'blue':'')).join('')||empty('Na tejto farme zatiaľ nie je zapísaná práca.'))+(history.length>12?'<p class="hint">Staršie práce nájdeš v Denníku prác.</p>':'')+'</section>';
   return `<div class="pagetitle farm-title"><div><button class="btnlink back-link" data-a="back">${ic('arrow')}Späť</button><h1>${E(f.name)}${f.door?' <span class="door-tag">'+E(doorLabel(f.door))+'</span>':''}</h1><p>${E(placeText(f))} · ${types[f.type]} · ${f.size} polí</p></div>${actions}</div>
-  <div class="farm-page"><div class="farm-col"><section class="panel farm-hero"><div class="detail-size-banner size-${f.size}">${capacityGraphic(f.size)}</div><div class="inline"><span class="pill ${cls}"><i></i>${s}</span>${soilPill(f)}${workingPill(f)}</div><div data-farm-timer="${E(f.id)}">${duePanel(f)}</div>${metric('Odhad rastu','sprout',g)}${metric('Odhad vody','water',w,'water')}<div class="details">${props}</div></section>${ongoingBox(f)}${agreements(f)}</div>
+  <div class="farm-page"><div class="farm-col"><section class="panel farm-hero"><div class="detail-size-banner size-${f.size}">${capacityGraphic(f.size)}</div><div class="inline"><span class="pill ${cls}"><i></i>${s}</span>${soilPill(f)}${workingPill(f)}</div><div data-farm-timer="${E(f.id)}">${duePanel(f)}</div>${gameBars(f)}<div class="details">${props}</div></section>${ongoingBox(f)}${agreements(f)}</div>
   <div class="farm-col">${farmAccounts(f)}${CLOUD?settlementBox(f)+settlementHistory(f):''}${rentSummary(f)}${wagesFor(f)}${journal}</div></div>`;
 }
 const jobs={dig:['Kopanie','work'],till:['Rýľovanie','work'],water:['Polievanie','water'],plant:['Sadenie','sprout'],harvest:['Zber','basket']};
