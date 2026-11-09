@@ -760,21 +760,31 @@ function rentSummary(f){
 }
 function agreements(f){
   const entries=f.assignments||[];
-  if(f.archived&&!entries.length)return '';
+  if(!entries.length)return '';
   const body=entries.map(a=>`<div class="agreement-row"><div><strong>${E(jobs[a.job][0])} · ${E(withPhone(a.who))}</strong><small>${money(a.fee)} · ${a.plannedAt?date(a.plannedAt):'Termín podľa dohody'}</small></div>
     ${f.archived?'':'<div class="actiongrid">'+btn('Dokončiť','finishjob:'+a.id,'check')+btn('Upraviť','editjob:'+a.id,'settings')+'</div>'}</div>`).join('');
-  return `<section class="contract-box"><h3>Dohodnuté práce</h3>${body}
-    ${f.archived?'':btn('Dohodnúť prácu','agree:'+f.id,'plus')}</section>`;
+  return `<section class="contract-box"><h3>Dohodnuté práce <span class="total">${entries.length}</span></h3>${body}</section>`;
+}
+// One dialog for work: done now, running right now, or agreed for later.
+function workModeSwitch(f,mode){
+  const opt=(k,label,icon)=>'<button type="button" class="seg '+(mode===k?'on':'')+'" aria-pressed="'+(mode===k)+'" data-a="workmode:'+k+'" data-farm="'+E(f.id)+'">'+ic(icon)+label+'</button>';
+  return '<div class="wide segmented" role="group" aria-label="Čo chceš zapísať">'+opt('done','Hotová','check')+opt('ongoing','Práve prebieha','clock')+opt('agree','Dohodnúť na neskôr','calendar')+'</div>';
+}
+function openAgreementsList(f){
+  const list=f.assignments||[];
+  if(!list.length)return '';
+  return '<div class="wide agree-open"><small>Už dohodnuté na tejto farme</small>'+list.map(a=>'<div class="agreement-row"><div><strong>'+E(jobs[a.job][0])+' · '+E(withPhone(a.who))+'</strong><small>'+money(a.fee)+' · '+(a.plannedAt?date(a.plannedAt):'Termín podľa dohody')+'</small></div><div class="actiongrid">'+btn('Dokončiť','finishjob:'+a.id,'check')+btn('Upraviť','editjob:'+a.id,'settings')+'</div></div>').join('')+'</div>';
 }
 function agreementForm(f,a=null){
   if(!f||f.archived)return;
-  const fields='<input type="hidden" name="farm" value="'+E(f.id)+'"><input type="hidden" name="assignment" value="'+E(a?.id||'')+'">'+
+  const fields=(a?'':workModeSwitch(f,'agree')+'<p class="wide hint">Dohodnutá práca sa uloží na farmu. Keď ju pracovník spraví, klikni Dokončiť a zapíše sa do denníka.</p>')+
+    (a?'<input type="hidden" name="farm" value="'+E(f.id)+'">':select('Farma','farm',activeFarms().map(x=>[x.id,x.name]),f.id))+'<input type="hidden" name="assignment" value="'+E(a?.id||'')+'">'+
     select('Dohodnutá práca','job',Object.entries(jobs).map(([key,v])=>[key,v[0]]),a?.job||'plant')+
     field('Meno pracovníka','who','text',a?.who||'','required maxlength="80" list="workers"')+
     phoneField(a?.who||'')+'<datalist id="workers">'+Object.keys(db.workers||{}).map(n=>'<option value="'+E(n)+'"></option>').join('')+'</datalist>'+
     forintField('Odmena za túto prácu','fee',a?.fee??'',{required:true})+
     field('Plánovaný čas (voliteľné)','plannedAt','datetime-local',local(a?.plannedAt));
-  modal(a?'Upraviť dohodu':'Dohodnúť prácu',form('agreementform',fields,'Uložiť dohodu')+(a?btn('Zrušiť dohodu','canceljob:'+a.id,'x','danger'):''));
+  modal(a?'Upraviť dohodu':'Zapísať prácu',form('agreementform',fields,'Uložiť dohodu')+(a?btn('Zrušiť dohodu','canceljob:'+a.id,'x','danger'):''));
 }
 function findAgreement(id){
   const f=activeFarms().find(f=>f.assignments?.some(a=>a.id===id));
@@ -966,15 +976,15 @@ function work(id,assignment=null,ongoing=null,mode='done'){
   const people=[...new Set([...db.logs.map(l=>l.who),...db.farms.map(f=>f.worker),...Object.keys(db.workers||{})].filter(n=>n&&n!=='Ja'))];
   const hire=ongoing?ongoing.performer==='hired':!!assignment||!!plantedByHire;
   const fixedFarm=assignment||ongoing;
-  const title=ongoing?'Dokončiť prácu':assignment?'Dokončiť dohodnutú prácu':mode==='ongoing'?'Poslať na prácu':'Zapísať prácu';
+  const title=ongoing?'Dokončiť prácu':assignment?'Dokončiť dohodnutú prácu':'Zapísať prácu';
   modal(title,form('workform',
     (assignment?'<input type="hidden" name="assignment" value="'+E(assignment.id)+'">':'')+
     (ongoing?'<input type="hidden" name="ongoing" value="'+E(ongoing.id)+'"><input type="hidden" name="status" value="done"><p class="wide hint worktime">'+ic('clock')+'Práca začala '+date(ongoing.startedAt)+' ('+ago(ongoing.startedAt)+'). Uprav, čo sa naozaj spravilo, a potvrď.</p>':'')+
+    (fixedFarm?'':workModeSwitch(f,mode)+'<input type="hidden" name="status" value="'+(mode==='ongoing'?'ongoing':'done')+'">')+
     select('Farma','farm',(fixedFarm?[f]:activeFarms()).map(x=>[x.id,x.name]),f.id)+
-    jobPicker(f,ongoing?ongoing.jobs:[job],assignment?.job)+
+    jobPicker(f,ongoing?ongoing.jobs:[job],assignment?.job)+(fixedFarm?'':openAgreementsList(f))+
     '<div id="crop-profile" class="wide" '+((ongoing?ongoing.jobs.includes('plant'):job==='plant')?'':'hidden')+'>'+growthProfile(ongoing?.crop||'Úroda')+'</div>'+
     (()=>{const on=ongoing?ongoing.jobs.includes('harvest'):job==='harvest';return '<div id="harvest-fields" class="wide" '+(on?'':'hidden')+'>'+field('Koľko kusov ste zobrali ('+cropName(f.crop)+')','pieces','number','','min="0" max="100000" step="1" inputmode="numeric" placeholder="nepovinné"'+(on?'':' disabled'))+'<p class="hint">Appka z toho ukáže, koľko kusov priemerne dáva ktorá plodina a veľkosť farmy.</p></div>'})()+
-    (fixedFarm?'':'<div class="wide">'+select('Stav práce','status',[['done','Hotová – zapísať do denníka'],['ongoing','Prebieha – pracovník práve začal']],mode)+'</div>')+
     '<div class="wide">'+select('Kto vykonal prácu?','performer',[['self',CLOUD?'My, hráči sami':'Ja'],['hired','Najatý pracovník']],hire?'hired':'self')+'</div>'+
     (CLOUD?crewPicker(ongoing?.players||[me?.user_id],hire):'')+
     (ongoing?'':'<p class="wide hint worktime">'+ic('clock')+'Dátum a čas sa zapíšu automaticky pri stlačení Zapísať. Pri prebiehajúcej práci ako čas začiatku.</p>'+
@@ -1056,6 +1066,12 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
  else if(a==='finishwork'){const o=(db.ongoing||[]).find(x=>x.id===id);if(o)work(o.farm,null,o);else toast('Táto práca už bola uzavretá.')}
  else if(a==='cancelwork'){const o=(db.ongoing||[]).find(x=>x.id===id);if(o)confirmBox('Zrušiť prebiehajúcu prácu?',fname(o.farm)+' · '+o.who+' · '+jobNames(o.jobs)+'. Do denníka sa nič nezapíše.','cancelworkok:'+id)}
  else if(a==='cancelworkok'){const o=(db.ongoing||[]).find(x=>x.id===id);db.ongoing=(db.ongoing||[]).filter(x=>x.id!==id);save();if(o&&db.farms.find(f=>f.id===o.farm))detail(db.farms.find(f=>f.id===o.farm));else{close();render()}}else if(a==='agree')agreementForm(f);
+ else if(a==='workmode'){
+   const fm=$('#workform'),farmId=fm?.elements.farm?.value||b.dataset.farm,farm=db.farms.find(x=>x.id===farmId);
+   if(id==='agree'){agreementForm(farm);return}
+   if(fm){fm.elements.status.value=id;fm.querySelectorAll('.segmented .seg').forEach(x=>{const on=x.dataset.a==='workmode:'+id;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on)});return}
+   work(farmId,null,null,id);
+ }
  else if(['finishjob','editjob','canceljob','canceljobok'].includes(a)){
    const {f:target,a:agreement}=findAgreement(id);
    if(!target){toast('Táto dohoda už nie je otvorená.');return}
@@ -1222,6 +1238,8 @@ document.addEventListener('change',async e=>{let el=e.target;if(el.name==='type'
      fields.who.value=fields.performer.value==='hired'?farm.worker:'';
      fields.workerPhone.value=workerPhone(fields.who.value);
      fields.fee.value='';fields.settlement.value='pending';
+     const open=el.form.querySelector('.agree-open'),fresh=openAgreementsList(farm);
+     if(open)open.outerHTML=fresh;else if(fresh)el.form.querySelector('.jobpick')?.insertAdjacentHTML('afterend',fresh);
    }
    if(el.name==='alljobs'){const cycle=fullCycle(db.farms.find(x=>x.id===fields.farm.value));el.form.querySelectorAll('input[type="checkbox"][name="job"]').forEach(b=>b.checked=el.checked&&cycle.includes(b.value))}
    if(['farm','job','alljobs'].includes(el.name))syncJobPicker(el.form,db.farms.find(x=>x.id===fields.farm.value));
