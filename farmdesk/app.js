@@ -758,12 +758,13 @@ function edit(f){
 }
 
 function rentSummary(f){
-  if(f.type!=='player'&&agreedRent(f)==null)return '';
   const last=db.tx.filter(x=>x.farm===f.id&&x.rentStart!=null).sort((a,b)=>b.rentEnd-a.rentEnd)[0];
+  const covered=rentCovered(f);
   return `<section class="contract-box"><h3>Nájom na ${dayLabel(leaseDays(f))}</h3><div class="contract-lines">
     <span>Dohodnutá suma</span><strong>${agreedRent(f)!=null?money(agreedRent(f))+' za celé obdobie':'Nezadaná'}</strong>
-    ${last?'<span>Posledné uhradené obdobie</span><strong>'+date(last.rentStart)+' – '+date(last.rentEnd)+'</strong>':''}</div>
-    ${f.archived?'':'<div class="actiongrid">'+btn('Zapísať úhradu nájmu','rent:'+f.id,'wallet','primary')+'</div>'}</section>`;
+    ${last?'<span>Posledné uhradené obdobie</span><strong>'+date(last.rentStart)+' – '+date(last.rentEnd)+'</strong>':''}
+    <span>Aktuálne obdobie</span><strong class="${covered?'gain':'loss'}">${covered?'Zaplatené':'Úhrada nie je zapísaná'}</strong></div>
+    ${f.archived?'':'<div class="actiongrid">'+(covered?'':btn('Nájom už zaplatený','rentpaid:'+f.id,'check','primary'))+btn('Zapísať úhradu nájmu','rent:'+f.id,'wallet',covered?'primary':'')+'</div>'+(covered?'':'<p class="hint">Ak si nájom zaplatil ešte pred appkou, klikni „Nájom už zaplatený“. Zapíše sa ako náklad farmy za obdobie, ktoré beží teraz.</p>')}</section>`;
 }
 function agreements(f){
   const entries=f.assignments||[];
@@ -815,12 +816,16 @@ function addWage(l,at){
   return true;
 }
 
-function rentFields(f){
-  if(!f||f.type!=='player'||f.archived)return '';
+// Start of the lease that runs now: the period that ends at the current deadline.
+const currentLeaseStart=f=>f.due&&f.due>now()?shiftDays(f.due,-leaseDays(f)):(f.createdAt||now());
+const rentCovered=(f,t=now())=>db.tx.some(x=>x.farm===f.id&&x.category==='rent'&&x.rentStart!=null&&x.rentStart<=t&&t<x.rentEnd);
+function rentFields(f,prepaid=false){
+  if(!f||f.archived)return '';
   // An existing next-payment date is the start of a renewal, including early payments.
-  const first=f.dueFromEntry&&f.createdAt;
-  const start=first||f.due||now();
-  return '<div class="wide rent-period"><p>'+E(f.owner||'Prenajímateľ')+' · Účet '+E(f.account||'neuvedený')+'</p></div>'+
+  const first=!prepaid&&f.dueFromEntry&&f.createdAt;
+  const start=prepaid?currentLeaseStart(f):first||f.due||now();
+  return (f.type==='player'?'<div class="wide rent-period"><p>'+E(f.owner||'Prenajímateľ')+' · Účet '+E(f.account||'neuvedený')+'</p></div>':'')+
+    (prepaid?'<p class="wide hint">Zapíše sa úhrada za obdobie, ktoré beží teraz. Ak sa začiatok nájmu líši, oprav ho.</p>':'')+
     (first?select('Platené obdobie','rentPeriod',[['first','Prvé obdobie od pridania'],['renew','Predĺženie od splatnosti']],'first'):'')+
     field('Začiatok plateného obdobia','rentStart','datetime-local',local(start),'required')+
     '<div class="field"><span>Nasledujúca splatnosť</span><output id="next-rent">'+date(leaseEnd(start,f))+'</output></div>'+
@@ -837,7 +842,7 @@ function saveRent(f,d,at,amount){
   const desc=[f.owner,'Nájom na '+dayLabel(leaseDays(f))+' · '+date(start)+' – '+date(end),d.desc].filter(Boolean).join(' · ');
   db.tx.push({id:uid(),farm:f.id,category:'rent',amount,at,desc,rentStart:start,rentEnd:end});
   if(agreedRent(f)==null)f.rentAmount=amount;
-  f.term=weeklyTerm;
+  f.term=f.type==='player'?weeklyTerm:'Koniec nájmu';
   f.dueFromEntry=false;
   f.due=Math.max(end,...existing.map(x=>x.rentEnd));
   return true;
@@ -1004,16 +1009,16 @@ function work(id,assignment=null,ongoing=null,mode='done'){
     select('Vyplatenie','settlement',[['pending','Vyplatím neskôr'],['paid','Už vyplatené pri práci']],ongoing?.settlement||'pending')+
     '</fieldset>',ongoing?'Potvrdiť dokončenie':'Zapísať'));
 }
-function tx(id,category){
+function tx(id,category,prepaid=false){
   const f=db.farms.find(x=>x.id===id);
   const rent=category==='rent'&&f&&!f.archived;
-  const title=rent?'Úhrada nájmu':category==='seed'?'Nákup semienok':id&&category==='sale'?'Predaj úrody':'Pridať finančný pohyb';
+  const title=rent?(prepaid?'Nájom už zaplatený':'Úhrada nájmu'):category==='seed'?'Nákup semienok':id&&category==='sale'?'Predaj úrody':'Pridať finančný pohyb';
   modal(title,form('txform',
     (id?'<input type="hidden" name="fromFarm" value="1">':'')+
     select('Farma','farm',[['','Všeobecné'],...farmopts()],id||'')+select('Kategória','category',Object.entries(categories),category||'sale')+
     forintField('Suma','amount',rent?agreedRent(f)??'':'',{required:true})+
-    field('Dátum a čas platby','at','datetime-local',local(now()),'required')+
-    '<div id="rent-fields" class="wide formgrid">'+(rent?rentFields(f):'')+'</div>'+
+    field(prepaid?'Kedy si nájom zaplatil (približne)':'Dátum a čas platby','at','datetime-local',local(prepaid?Math.min(now(),currentLeaseStart(f)):now()),'required max="'+local(now())+'"')+
+    '<div id="rent-fields" class="wide formgrid">'+(rent?rentFields(f,prepaid):'')+'</div>'+
     '<div class="wide">'+field('Poznámka','desc','text','','maxlength="150"')+'</div>','Uložiť pohyb'));
 }
 
@@ -1088,7 +1093,7 @@ else if(a==='moneyview'){moneyView=id==='me'?'me':'all';try{localStorage.setItem
    if(a==='canceljob')confirmBox('Zrušiť dohodu?',agreement.who+' · '+jobs[agreement.job][0]+' · '+money(agreement.fee),'canceljobok:'+id);
    if(a==='canceljobok'){target.assignments=target.assignments.filter(x=>x.id!==id);save();detail(target)}
  }
- else if(a==='seed'||a==='sale')tx(id,a);else if(a==='rent')tx(id,'rent');else if(a==='paywork')payout(db.logs.find(l=>l.id===id));else if(a==='tx')tx(id);else if(a==='calc')calc();else if(a==='ics')calendar();else if(a==='backup')download('farmdesk-zaloha.json',JSON.stringify(db,null,2),'application/json');else if(a==='restore'){if(CLOUD&&!isLeader())toast('Spoločnú zálohu môže obnoviť iba leader.');else $('#file').click()}else if(a==='clear')confirmBox('Odstrániť ukážkové údaje?','Odstránia sa tri vzorové farmy a ich vzorové pohyby a práce. Vlastné záznamy sa zachovajú.','clearok');else if(a==='clearok'){let used=new Set([...db.logs,...db.tx].filter(x=>!x.sample).map(x=>x.farm));db.farms=db.farms.filter(x=>!x.sample||used.has(x.id));db.logs=db.logs.filter(x=>!x.sample);db.tx=db.tx.filter(x=>!x.sample);db.demo=false;save();close();render();toast('Ukážkové údaje boli odstránené.')}
+ else if(a==='seed'||a==='sale')tx(id,a);else if(a==='rent')tx(id,'rent');else if(a==='rentpaid')tx(id,'rent',true);else if(a==='paywork')payout(db.logs.find(l=>l.id===id));else if(a==='tx')tx(id);else if(a==='calc')calc();else if(a==='ics')calendar();else if(a==='backup')download('farmdesk-zaloha.json',JSON.stringify(db,null,2),'application/json');else if(a==='restore'){if(CLOUD&&!isLeader())toast('Spoločnú zálohu môže obnoviť iba leader.');else $('#file').click()}else if(a==='clear')confirmBox('Odstrániť ukážkové údaje?','Odstránia sa tri vzorové farmy a ich vzorové pohyby a práce. Vlastné záznamy sa zachovajú.','clearok');else if(a==='clearok'){let used=new Set([...db.logs,...db.tx].filter(x=>!x.sample).map(x=>x.farm));db.farms=db.farms.filter(x=>!x.sample||used.has(x.id));db.logs=db.logs.filter(x=>!x.sample);db.tx=db.tx.filter(x=>!x.sample);db.demo=false;save();close();render();toast('Ukážkové údaje boli odstránené.')}
  else if(a==='sound'){db.sound=!db.sound;if(db.sound){try{audioCtx??=new AudioContext();await audioCtx.resume();beep()}catch{db.sound=false;toast('Zvuk sa nepodarilo zapnúť.')}}save();render()}
  else if(a==='notify'){if(db.notices)db.notices=false;else{try{db.notices=(await Notification.requestPermission())==='granted';if(!db.notices)toast('Povoľ oznámenia v nastaveniach prehliadača.')}catch{toast('Prehliadač nepodporuje systémové oznámenia.')}}save();render()}
  else if(a==='txview'){let x=db.tx.find(x=>x.id===id);modal(categories[x.category]+' · '+money(x.amount),'<p>'+E(fname(x.farm))+' · '+date(x.at)+'</p><p>'+E(x.desc)+'</p>'+btn('Odstrániť pohyb','deltx:'+id,'x','danger'))}else if(a==='deltx')confirmBox('Odstrániť pohyb?','Pohyb sa odstráni z nákladov alebo tržieb. Pri prepojenej platbe sa upraví aj splatnosť nájmu alebo stav odmeny.','deltxok:'+id);else if(a==='deltxok'){removeMovement(id);save();close();render()}
@@ -1204,7 +1209,7 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
  else if(id==='txform'){
    const at=new Date(d.at).getTime(),amount=Number(ungroupAmount(d.amount));
    if(!Number.isFinite(at)||!isAmount(amount)||amount<=0){toast('Skontroluj dátum a sumu platby.');return}
-   if(d.category==='rent'&&f?.type==='player'&&!f.archived){
+   if(d.category==='rent'&&f&&!f.archived&&d.rentStart){
      if(at>now()){toast('Úhradu zapíš po zaplatení v hre.');return}
      if(!saveRent(f,d,at,amount))return;
    }else db.tx.push({id:uid(),category:d.category,farm:d.farm,desc:d.desc||'',amount,at});
