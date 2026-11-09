@@ -31,7 +31,7 @@ const growthHours = (f: Farm, s: Settings) => CROP_TIMES[f.crop]?.growth ?? s.gr
 const dryingHours = (f: Farm, s: Settings) => CROP_TIMES[f.crop]?.dry ?? s.dry;
 function progress(f: Farm, s: Settings, t = Date.now()) {
   const percent = (stamp: number, hours: number) => Math.max(0, Math.min(100, (t - stamp) / (hours * H) * 100));
-  const growth = f.planted ? percent(f.planted, growthHours(f, s)) : 0;
+  const growth = f.planted ? percent(+(f.growthFrom ?? f.planted), growthHours(f, s)) : 0;
   const g = named(f) && growth < 100 ? Math.min(99, Math.round(growth)) : Math.floor(growth);
   const remaining = f.watered ? 100 - percent(f.watered, dryingHours(f, s)) : 0;
   const w = named(f) && remaining > 0 ? Math.max(1, Math.round(remaining)) : Math.ceil(remaining);

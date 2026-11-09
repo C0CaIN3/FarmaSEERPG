@@ -102,6 +102,9 @@ const pumpkin='Tekvica',namedCrops=[melon,pumpkin];
 const CROP_TIMES={[melon]:{growth:44,dry:35.2},[pumpkin]:{growth:44,dry:35.2}};
 function dryingHours(f){return CROP_TIMES[f.crop]?.dry??db.dry}
 function growthHours(f){return CROP_TIMES[f.crop]?.growth??db.growth}
+// Growth in the game stops while the plant has no water, so the bar can be behind the planting time.
+// growthFrom is where the bar would start if it had grown without a break; planted stays the real time.
+const growthStart=f=>f.planted?(f.growthFrom??f.planted):null;
 const cropOf=v=>namedCrops.includes(v)?v:'Úroda';
 const cropName=c=>c&&c!=='Úroda'?c:'Neurčená plodina';
 function growthProfile(crop){
@@ -113,7 +116,7 @@ function growthProfile(crop){
 }
 function progress(f,t=now()){
   const percent=(stamp,hours)=>Math.max(0,Math.min(100,(t-stamp)/(hours*H)*100));
-  const growth=f.planted?percent(f.planted,growthHours(f)):0;
+  const growth=f.planted?percent(growthStart(f),growthHours(f)):0;
   const g=namedCrops.includes(f.crop)&&growth<100?Math.min(99,Math.round(growth)):Math.floor(growth);
   const remaining=f.watered?100-percent(f.watered,dryingHours(f)):0;
   const w=namedCrops.includes(f.crop)&&remaining>0?Math.max(1,Math.round(remaining)):Math.ceil(remaining);
@@ -159,7 +162,7 @@ const soilPill=f=>{const [label,kind]=soil(f);return '<span class="pill soil-'+k
 const GAME_BAR=246,huCrop={[melon]:'Görögdinnye',[pumpkin]:'Sütőtök'};
 function gameBars(f,t=now()){
   const clamp=x=>Math.max(0,Math.min(1,x));
-  const grow=f.planted?clamp((t-f.planted)/(growthHours(f)*H)):0,water=f.watered?clamp(1-(t-f.watered)/(dryingHours(f)*H)):0;
+  const grow=f.planted?clamp((t-growthStart(f))/(growthHours(f)*H)):0,water=f.watered?clamp(1-(t-f.watered)/(dryingHours(f)*H)):0;
   const px=x=>Math.round(x*GAME_BAR),bar=(cls,label,hu,v,shown)=>'<div class="gbar-label"><span>'+label+' <small>'+hu+'</small></span><b>'+shown+'</b></div><div class="gbar '+cls+'" role="img" aria-label="'+label+' '+shown+'"><i style="width:'+(px(v)/GAME_BAR*100)+'%"></i></div>';
   const {g,w}=progress(f,t);
   return '<div class="game-bars">'+(f.planted?'<strong>'+E(cropName(f.crop))+(huCrop[f.crop]?' <small>'+huCrop[f.crop]+'</small>':'')+'</strong>':'')+
@@ -408,7 +411,7 @@ function waterCard(fs){
     <span class="water-list">${rows}</span><small class="${dry?'water-alert':''}">${note}${list.length>3?' · +'+(list.length-3)+' ďalšie':''}</small></button>`;
 }
 // Harvest overview: planted farms ordered from the ripest.
-function harvestList(fs){return fs.filter(f=>f.planted).map(f=>({f,g:progress(f).g,at:f.planted+growthHours(f)*H})).sort((a,b)=>b.g-a.g||a.at-b.at)}
+function harvestList(fs){return fs.filter(f=>f.planted).map(f=>({f,g:progress(f).g,at:growthStart(f)+growthHours(f)*H})).sort((a,b)=>b.g-a.g||a.at-b.at)}
 const harvestTone=g=>g>=100?'ripe':g>=75?'near':'';
 const harvestLeft=({g,at})=>g>=100?'Zrelé':'o '+timeLeft(at);
 function harvestCard(fs){
@@ -1030,7 +1033,7 @@ function harvestFromSale(f,at){
   const log={id:uid(),farm:f.id,action:jobs.harvest[0],icon:jobs.harvest[1],who:CLOUD?myName():'Ja',at:stamp,fee:0,cycleAt:f.planted,performer:'self',crop:f.crop||'Úroda',size:f.size,fromSale:true};
   if(CLOUD&&me?.user_id)log.players=[me.user_id];
   db.logs.push(log);
-  f.crop='Úroda';f.planted=null;f.watered=null;delete f.waterClaim;
+  f.crop='Úroda';f.planted=null;f.watered=null;delete f.waterClaim;delete f.growthFrom;
 }
 function tx(id,category,prepaid=false){
   const f=db.farms.find(x=>x.id===id);
@@ -1209,8 +1212,8 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
    const created=[];
    selected.forEach((j,i)=>{
      const stamp=at+i,cycleAt=j==='plant'?stamp:f.planted,cropBefore=f.crop||'Úroda';
-     if(j==='harvest'){f.crop='Úroda';f.planted=null;f.watered=null;delete f.waterClaim}
-     if(j==='plant'){f.crop=cropOf(d.crop);f.planted=stamp;f.worker=who;f.workerHired=hired;if(crew.length)f.crew=crew;else delete f.crew;if(!f.watered)f.watered=stamp}
+     if(j==='harvest'){f.crop='Úroda';f.planted=null;f.watered=null;delete f.waterClaim;delete f.growthFrom}
+     if(j==='plant'){f.crop=cropOf(d.crop);f.planted=stamp;delete f.growthFrom;f.worker=who;f.workerHired=hired;if(crew.length)f.crew=crew;else delete f.crew;if(!f.watered)f.watered=stamp}
      if(j==='water'){f.watered=stamp;delete f.waterClaim}
      const [action,icon]=jobs[j];
      // The agreed fee covers the whole visit, so it is booked once, on the first entry.
