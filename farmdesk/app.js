@@ -504,7 +504,35 @@ function noticesPage() {
   }).join('');
   return heading('Upozornenia','Zber, polievanie a blížiace sa termíny.',btn('Nastavenia','go:settings','settings'))+'<div class="noticesgrid">'+panels+'</div>';
 }
-function settings(){return heading('Nastavenia','Kalibrácia odhadov a správa pracovného priestoru.')+'<div class="settings">'+(CLOUD?installPanel()+workPricePanel():'')+'<section class="panel">'+section('Časy pestovania')+'<p>Rast a úbytok vody sa počítajú rovnomerne od posledného sadenia a poliatia. Zadaj časy odmerané v hre. Zmena prepočíta aj rozbehnuté cykly.</p><form id="timing"><div class="formgrid">'+field('Všeobecný rast do zberu (hodiny)','growth','number',db.growth,'required min=".01" max="8760" step=".01"')+field('Vodný melón – rast (hodiny)','melonHours','number',growthHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Vodný melón – vyschnutie zo 100 % (hodiny)','melonDryHours','number',dryingHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Všeobecné vyschnutie zo 100 % (hodiny)','dry','number',db.dry,'required min=".01" max="8760" step=".01"')+'</div><button class="btn primary">Uložiť časy</button></form><p><strong>Meranie melóna po 18 h 24 min</strong><br>Rast ≈ 42 %, vlhkosť ≈ 48 %, stav ≈ 100 %. Z jedného merania vychádza pri rovnomernom raste odhad približne 44 hodín od zasadenia po zber. Vlhkosť začala na 100 % a bez ďalšieho poliatia klesla na približne 48 %. Pri rovnomernom úbytku vychádza vyschnutie asi po 35 h 40 min od plného poliatia.</p></section><section class="panel">'+section('Upozornenia na termíny')+'<p>Pri otvorenej aplikácii dostaneš pripomienku dva dni pred termínom, deň pred ním a v deň termínu, vždy v jeho miestnom čase. Pre pripomienky pri zatvorenej aplikácii importuj termíny do kalendára s povolenými upozorneniami. Po zmene termínu aktualizuj jeho záznam aj v kalendári.</p><div class="actiongrid">'+btn(db.sound?'Vypnúť zvuk':'Zapnúť zvuk','sound','bell')+btn(db.notices?'Vypnúť oznámenia':'Povoliť oznámenia','notify','bell')+btn('Export termínov (.ics)','ics','calendar')+'</div></section>'+(CLOUD?cloudPanels():'<section class="panel">'+section('Údaje v tomto prehliadači')+'<p>'+ (db.demo?'Pracuješ s ukážkovými údajmi. Pred prvým vlastným zápisom môžeš začať s prázdnou evidenciou. ':'')+'Záloha obsahuje farmy, kontakty, denník, financie a nastavenia.</p><div class="actiongrid">'+btn('Export zálohy','backup','log')+btn('Obnoviť zálohu','restore','history')+(db.demo?btn('Odstrániť ukážkové údaje','clear','','danger'):'')+'</div></section>')+'<input type="file" hidden id="file" accept=".json,application/json"></div>'}
+// Settings are split into categories; the chosen one is remembered for this visit.
+let settingsTab='alerts';
+function settingsTabs(){
+  return CLOUD?[['alerts','Upozornenia','bell'],['crops','Pestovanie','sprout'],['team','Hráči','user'],['app','Appka','home'],['data','Údaje','log']]
+    :[['alerts','Upozornenia','bell'],['crops','Pestovanie','sprout'],['data','Údaje','log']];
+}
+function cropsPanel(){
+  return '<section class="panel">'+section('Časy pestovania')+'<p>Rast a úbytok vody sa počítajú rovnomerne od posledného sadenia a poliatia. Zadaj časy odmerané v hre. Zmena prepočíta aj rozbehnuté cykly.</p><form id="timing"><div class="formgrid">'+field('Všeobecný rast do zberu (hodiny)','growth','number',db.growth,'required min=".01" max="8760" step=".01"')+field('Vodný melón – rast (hodiny)','melonHours','number',growthHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Vodný melón – vyschnutie zo 100 % (hodiny)','melonDryHours','number',dryingHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Všeobecné vyschnutie zo 100 % (hodiny)','dry','number',db.dry,'required min=".01" max="8760" step=".01"')+'</div><button class="btn primary">Uložiť časy</button></form><p><strong>Meranie melóna po 18 h 24 min</strong><br>Rast ≈ 42 %, vlhkosť ≈ 48 %, stav ≈ 100 %. Z jedného merania vychádza pri rovnomernom raste odhad približne 44 hodín od zasadenia po zber. Vlhkosť začala na 100 % a bez ďalšieho poliatia klesla na približne 48 %. Pri rovnomernom úbytku vychádza vyschnutie asi po 35 h 40 min od plného poliatia.</p></section>';
+}
+function inAppAlertsPanel(){
+  return '<section class="panel">'+section(CLOUD?'Keď je appka otvorená':'Upozornenia na termíny')+'<p>Pri otvorenej appke dostaneš pripomienku dva dni pred termínom, deň pred ním a v deň termínu. Termíny si môžeš dať aj do kalendára v telefóne.</p><div class="actiongrid">'+btn(db.sound?'Vypnúť zvuk':'Zapnúť zvuk','sound','bell')+(CLOUD?'':btn(db.notices?'Vypnúť oznámenia':'Povoliť oznámenia','notify','bell'))+btn('Export termínov (.ics)','ics','calendar')+'</div></section>';
+}
+function localDataPanel(){
+  return '<section class="panel">'+section('Údaje v tomto prehliadači')+'<p>'+(db.demo?'Pracuješ s ukážkovými údajmi. Pred prvým vlastným zápisom môžeš začať s prázdnou evidenciou. ':'')+'Záloha obsahuje farmy, kontakty, denník, financie a nastavenia.</p><div class="actiongrid">'+btn('Export zálohy','backup','log')+btn('Obnoviť zálohu','restore','history')+(db.demo?btn('Odstrániť ukážkové údaje','clear','','danger'):'')+'</div></section>';
+}
+function settings(){
+  const tabsList=settingsTabs();
+  if(!tabsList.some(([k])=>k===settingsTab))settingsTab='alerts';
+  const waiting=CLOUD&&isLeader()?members.filter(m=>m.status==='pending').length:0;
+  const bar='<div class="tabs settings-tabs" role="tablist">'+tabsList.map(([k,label,icon])=>'<button role="tab" aria-selected="'+(settingsTab===k)+'" class="'+(settingsTab===k?'sel':'')+'" data-a="settab:'+k+'">'+ic(icon)+label+(k==='team'&&waiting?' <b class="tab-badge">'+waiting+'</b>':'')+'</button>').join('')+'</div>';
+  const body={
+    alerts:()=>(CLOUD?pushPanel():'')+inAppAlertsPanel(),
+    crops:()=>cropsPanel()+(CLOUD?workPricePanel():''),
+    team:()=>cloudPanels(),
+    app:()=>installPanel(),
+    data:()=>CLOUD?sharedDataPanel():localDataPanel()
+  }[settingsTab]();
+  return heading('Nastavenia','Upozornenia, pestovanie, hráči a údaje.')+bar+'<div class="settings">'+body+'<input type="file" hidden id="file" accept=".json,application/json"></div>';
+}
 function render(){
  const count=alerts().length;
  const nav=(p,i)=>`<button class="rail-link ${page===p||page==='farm'&&p==='farms'?'active':''}" title="${names[p]}" aria-label="${names[p]}" aria-current="${page===p?'page':'false'}" data-a="go:${p}">${ic(i)}<span>${names[p]}</span></button>`;
@@ -852,6 +880,7 @@ function check(){
 function confirmBox(title,msg,action){modal(title,'<p>'+E(msg)+'</p><div class="actions">'+btn('Zrušiť','close')+btn('Potvrdiť',action,'check','primary')+'</div>')}
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]');if(!b)return;let [a,id]=b.dataset.a.split(':');let f=db.farms.find(x=>x.id===id);
  if(a==='range'){const days=Number(id);if([7,14,30].includes(days)){chartDays=days;render();document.querySelector('[data-a="range:'+days+'"]')?.focus()}}else if(a==='map')modal('Lokality fariem',locationMap(activeFarms()));else if(a==='searchfarm'){go('farms');$('#search').focus()}else if(a==='location')locationDetail(Number(id));else if(a==='newloc'){edit(null);document.querySelector('[name="loc"]').value=id}else if(a==='priority')priorityView(id);
+ else if(a==='pushon'||a==='pushoff'||a==='pushtest'){if(pushState.busy)return;pushState.busy=true;try{if(a==='pushon')await enablePush();else if(a==='pushoff')await disablePush();else{const r=await FarmCloud.testPush();toast(r?.sent?'Skúšobná notifikácia odoslaná ('+r.sent+'×). Mala by prísť do pár sekúnd.':'Na tvoje zariadenia sa nepodarilo nič poslať. Vypni a znova zapni notifikácie.')}}catch(err){toast(cloudError(err,'Notifikácie sa nepodarilo nastaviť.'))}finally{pushState.busy=false;render()}}else if(a==='settab'){settingsTab=id;if(page!=='settings')go('settings');else{render();window.scrollTo(0,0)}}
  else if(a==='install'&&installPrompt){installPrompt.prompt();installPrompt.userChoice.finally(()=>{installPrompt=null;render()})}
  else if(a==='settle'&&f){const st=settlementFor(f);if(st)confirmBox('Uzavrieť vyúčtovanie?',(st.transfers.length?st.transfers.map(t=>playerName(t.from)+' pošle '+playerName(t.to)+' '+money(t.amount)).join(' · ')+'. ':'Nikto nikomu nič neposiela. ')+'Po uzavretí sa prevody započítajú hráčom v Ekonomike.','settleok:'+id)}
  else if(a==='settleok'&&f){closeSettlement(f);save();close();render();toast('Vyúčtovanie je uzavreté.')}
@@ -992,6 +1021,7 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
    db.workPrices=prices;save();render();toast('Ceny vlastnej práce sú uložené.');return}
  else if(id==='timing'){db.growth=+d.growth;db.dry=+d.dry;if(d.melonHours)db.melonHours=+d.melonHours;if(d.melonDryHours)db.melonDryHours=+d.melonDryHours;save();render();toast('Časy pestovania boli uložené.');return}else return;
  save();close();render();if(id==='workform'||id==='agreementform')detail(f);else if(id==='farmform'||id==='payform')detail(db.farms.find(x=>x.id===activeFarm));else if(id==='txform'&&(d.fromFarm||d.category==='rent')&&f)detail(f);toast('Záznam bol uložený.')});
+document.addEventListener('change',async e=>{const cat=e.target.dataset?.pushcat;if(!cat)return;try{await togglePushCategory(cat)}catch(err){e.target.checked=!e.target.checked;toast(cloudError(err))}});
 document.addEventListener('input',e=>{if(e.target.name==='who'&&e.target.form?.elements.workerPhone){const known=workerPhone(e.target.value);if(known)e.target.form.elements.workerPhone.value=known}if(e.target.hasAttribute('data-forint'))updateAmountInput(e.target,e.inputType==='insertFromPaste');if(e.target.id==='search'){query=e.target.value;$('#matches').innerHTML=farmsgrid();$('#matches').querySelectorAll('canvas').forEach(paint)}if(e.target.closest('#calcform'))calculate()});
 let pendingRestore=null;
 function isBackup(v){let finite=Number.isFinite,txt=x=>typeof x==='string',id=x=>txt(x)&&/^[a-z0-9-]{1,70}$/i.test(x),time=x=>x===null||(finite(x)&&x>0&&x<8640000000000000);if(!v||![v.growth,v.dry,v.melonHours??measuredMelonHours,v.melonDryHours??measuredMelonDryHours].every(x=>finite(x)&&x>=.01&&x<=8760)||![v.logs,v.tx,v.farms].every(Array.isArray))return false;
@@ -1187,7 +1217,7 @@ function paintAfterRefresh(){
 document.addEventListener('focusout',()=>{if(pendingPaint)setTimeout(()=>{if(pendingPaint&&!typingInMain()){pendingPaint=false;render()}},60)});
 function cloudTopbar(){
   const waiting=isLeader()?members.filter(m=>m.status==='pending').length:0;
-  return (waiting?'<button class="demo pending-chip" data-a="go:settings">'+waiting+' čaká na schválenie</button>':'')+
+  return (waiting?'<button class="demo pending-chip" data-a="settab:team">'+waiting+' čaká na schválenie</button>':'')+
     '<span id="sync" class="sync-dot '+syncState+'" title="'+syncTitle()+'"></span><button class="me-chip" data-a="go:settings" title="Prihlásený hráč">'+farmer(me?.user_id,22,myName())+'<span>'+E(myName())+'</span></button>';
 }
 function playerResults(){
@@ -1283,6 +1313,77 @@ function closeSettlement(f){
   f.settlements=[...(f.settlements||[]),{start:st.period.start,end:st.period.end,closedAt:now(),closedBy:me?.user_id||null,invested:cents(st.invested),labor:cents(st.labor),revenue:cents(st.revenue),
     shares:st.people.map(p=>({uid:p.uid,invested:cents(p.invested),labor:cents(p.labor),received:cents(p.received),due:p.due})),transfers:st.transfers}];
 }
+// ---- Push notifications to this device (sent by the farmdesk-notify Edge Function) ----
+const pushCategories=[
+  ['water','Polievanie','Farma má pod 25 % vody alebo vyschla.'],
+  ['harvest','Zber','Úroda je zrelá.'],
+  ['rent','Nájmy','2 dni a deň pred termínom a keď termín uplynie.'],
+  ['work','Práce','Niekto poslal ľudí na farmu alebo prácu dokončil.'],
+  ['money','Predaje','Niekto predal úrodu.'],
+  ['players','Noví hráči','Hráč čaká na schválenie (len leader).']
+];
+const defaultPushPrefs=()=>Object.fromEntries(pushCategories.map(([k])=>[k,true]));
+let pushState={loaded:false,endpoint:null,prefs:defaultPushPrefs(),devices:0,busy:false};
+const pushSupported=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+const b64url=s=>{const b=atob((s+'='.repeat((4-s.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(b,c=>c.charCodeAt(0))};
+async function pushRegistration(){return (await navigator.serviceWorker.getRegistration())||navigator.serviceWorker.register('sw.js')}
+async function loadPushState(){
+  if(!CLOUD||!pushSupported())return;
+  try{
+    const reg=await navigator.serviceWorker.getRegistration(),sub=reg&&await reg.pushManager.getSubscription();
+    const devices=await FarmCloud.pushDevices(),mine=sub&&devices.find(d=>d.endpoint===sub.endpoint);
+    pushState={...pushState,loaded:true,endpoint:mine?sub.endpoint:null,prefs:{...defaultPushPrefs(),...(mine?.prefs||{})},devices:devices.length};
+  }catch{pushState.loaded=true}
+  if(page==='settings'&&settingsTab==='alerts'&&!$('#modal').open)render();
+}
+async function savePushPrefs(sub){
+  const j=sub.toJSON();
+  await FarmCloud.savePush(j.endpoint,j.keys.p256dh,j.keys.auth,pushState.prefs,navigator.userAgent);
+  pushState.endpoint=j.endpoint;
+}
+async function enablePush(){
+  if(!pushSupported())return toast('Tento prehliadač notifikácie nepodporuje.');
+  if(isIOS()&&!isStandalone())return toast('Na iPhone najprv pridaj FarmDesk na plochu (Nastavenia → Appka) a notifikácie zapni v nej.');
+  const permission=await Notification.requestPermission();
+  if(permission!=='granted')return toast('Notifikácie sú zakázané. Povoľ ich pre túto stránku v nastaveniach prehliadača alebo telefónu.');
+  const key=await FarmCloud.pushKey();
+  if(!key)return toast('Server notifikácií sa ešte pripravuje. Skús to o minútu.');
+  const reg=await pushRegistration();await navigator.serviceWorker.ready;
+  let sub;
+  // A device that cannot reach its push service would otherwise wait forever.
+  const timeout=new Promise((_,no)=>setTimeout(()=>no(new Error('push timeout')),20000));
+  try{sub=(await reg.pushManager.getSubscription())||await Promise.race([reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64url(key)}),timeout])}
+  catch(err){console.warn('push subscribe',err);return toast('Prehliadač nedovolil zapnúť notifikácie na tomto zariadení. V anonymnom okne nefungujú; skús bežné okno alebo nainštalovanú appku.')}
+  await savePushPrefs(sub);
+  pushState.devices=(await FarmCloud.pushDevices()).length;
+  toast('Notifikácie sú zapnuté na tomto zariadení.');
+}
+async function disablePush(){
+  const reg=await navigator.serviceWorker.getRegistration(),sub=reg&&await reg.pushManager.getSubscription();
+  if(sub){await FarmCloud.deletePush(sub.endpoint).catch(()=>{});await sub.unsubscribe().catch(()=>{})}
+  pushState.endpoint=null;pushState.devices=Math.max(0,pushState.devices-1);
+  toast('Notifikácie sú na tomto zariadení vypnuté.');
+}
+async function togglePushCategory(cat){
+  const reg=await navigator.serviceWorker.getRegistration(),sub=reg&&await reg.pushManager.getSubscription();
+  if(!sub)return;
+  pushState.prefs={...pushState.prefs,[cat]:!pushState.prefs[cat]};
+  await savePushPrefs(sub);
+}
+function pushPanel(){
+  if(!pushState.loaded){loadPushState();return '<section class="panel">'+section('Notifikácie do telefónu')+'<p class="hint">Načítavam…</p></section>'}
+  const on=!!pushState.endpoint;
+  let intro;
+  if(!pushSupported())intro='<p>Tento prehliadač notifikácie nepodporuje. Na Androide použi Chrome, na iPhone appku pridanú na plochu (iOS 16.4 a novší).</p>';
+  else if(isIOS()&&!isStandalone())intro='<p>Na iPhone chodia notifikácie len do appky pridanej na plochu. Najprv ju nainštaluj v záložke <button class="btnlink" data-a="settab:app">Appka</button> a notifikácie zapni v nej.</p>';
+  else if(Notification.permission==='denied')intro='<p class="auth-msg">Notifikácie sú pre FarmDesk zakázané. Povoľ ich v nastaveniach prehliadača alebo telefónu (Upozornenia → FarmDesk) a vráť sa sem.</p>';
+  else intro='<p>Upozornenia ti prídu ako bežná notifikácia aj pri zavretej appke a zamknutom telefóne. Server kontroluje farmy každú minútu a o každej veci napíše len raz. Keď niečo spravíš ty sám, upozornenie o tom nedostaneš.</p>';
+  const canAct=pushSupported()&&!(isIOS()&&!isStandalone())&&Notification.permission!=='denied';
+  const actions=canAct?'<div class="actiongrid">'+(on?btn('Poslať skúšobnú notifikáciu','pushtest','bell','primary')+btn('Vypnúť na tomto zariadení','pushoff','x'):btn('Zapnúť notifikácie na tomto zariadení','pushon','bell','primary'))+'</div>':'';
+  const cats=on?'<div class="push-cats">'+pushCategories.filter(([k])=>k!=='players'||isLeader()).map(([k,label,hint])=>'<label class="checkline"><input type="checkbox" data-pushcat="'+k+'" '+(pushState.prefs[k]!==false?'checked':'')+'><span><strong>'+label+'</strong><small>'+hint+'</small></span></label>').join('')+'</div>':'';
+  const status=on?'<p class="settle-done">'+ic('check')+'Zapnuté na tomto zariadení'+(pushState.devices>1?' · spolu '+pushState.devices+' tvoje zariadenia':'')+'</p>':'';
+  return '<section class="panel">'+section('Notifikácie do telefónu')+intro+status+cats+actions+'</section>';
+}
 // ---- Install as a phone/desktop app (PWA) ----
 let installPrompt=null;
 const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
@@ -1305,8 +1406,11 @@ function cloudPanels(){
       :m.status==='active'?btn('Nastaviť heslo','memberpw:'+m.user_id,'key')+btn('Zablokovať','member:'+m.user_id+':blocked','x','danger'):btn('Odblokovať','member:'+m.user_id+':active','check');
     return `<div class="agreement-row player-row">${farmer(m.user_id,38,m.name)}<div><strong>${E(m.name)}${self?' (ty)':''}</strong><small>${m.role==='leader'?'Leader · ':''}${status[m.status]}</small></div><div class="actiongrid">${actions}</div></div>`;
   }).join('');
-  return '<section class="panel">'+section('Hráči',btn('Odhlásiť sa','logout','x'))+'<p>'+(lead?'Nových hráčov schvaľuješ ty. Kým ich neschváliš, nevidia žiadne údaje. ':'Nových hráčov schvaľuje leader. ')+'Každý sa prihlasuje vlastným menom a heslom.</p>'+list+'</section>'+
-    '<section class="panel">'+section('Spoločné údaje')+'<p>Farmy, financie, denník a pracovníci sú v spoločnej databáze a vidia ich všetci schválení hráči. Zvuk a oznámenia sa nastavujú pre každý prehliadač zvlášť.</p><div class="actiongrid">'+btn('Export zálohy','backup','log')+(lead?btn('Obnoviť zálohu','restore','history'):'')+'</div></section>';
+  return '<section class="panel">'+section('Hráči',btn('Odhlásiť sa','logout','x'))+'<p>'+(lead?'Nových hráčov schvaľuješ ty. Kým ich neschváliš, nevidia žiadne údaje. ':'Nových hráčov schvaľuje leader. ')+'Každý sa prihlasuje vlastným menom a heslom.</p>'+list+'</section>';
+}
+function sharedDataPanel(){
+  const lead=isLeader();
+  return '<section class="panel">'+section('Spoločné údaje')+'<p>Farmy, financie, denník a pracovníci sú v spoločnej databáze a vidia ich všetci schválení hráči. Zvuk a oznámenia sa nastavujú pre každý prehliadač zvlášť.</p><div class="actiongrid">'+btn('Export zálohy','backup','log')+(lead?btn('Obnoviť zálohu','restore','history'):'')+'</div></section>';
 }
 function authScreen(state,msg='',name=''){
   let el=$('#auth');
@@ -1332,6 +1436,7 @@ async function enterWorkspace(session,name){
   await refreshInner();
   if(!me||me.status!=='active')return;
   cloudReady=true;hideAuth();render();check();openFromHash();
+  pushState.loaded=false;
   stopLive??=FarmCloud.subscribe(()=>scheduleRefresh(400));
   cloudTimer??=setInterval(()=>scheduleRefresh(0),30000);
 }

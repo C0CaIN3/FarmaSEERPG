@@ -68,6 +68,14 @@ if (config?.supabaseUrl && config?.publishableKey) {
         }
       }
     },
+    // Push notifications: the public key, this player's devices, saving and removing a device, a test.
+    async pushKey() { const { data, error } = await sb.rpc('farmdesk_push_key'); fail(error); return data; },
+    async pushDevices() { const { data, error } = await sb.from('push_subscriptions').select('endpoint,prefs,user_agent,updated_at'); fail(error); return data; },
+    async savePush(endpoint, p256dh, auth, prefs, userAgent) {
+      const { data, error } = await sb.rpc('farmdesk_save_push', { p_endpoint: endpoint, p_p256dh: p256dh, p_auth: auth, p_prefs: prefs, p_user_agent: userAgent || null }); fail(error); return data;
+    },
+    async deletePush(endpoint) { const { error } = await sb.from('push_subscriptions').delete().eq('endpoint', endpoint); fail(error); },
+    async testPush() { const { data, error } = await sb.functions.invoke('farmdesk-notify', { body: { action: 'test' } }); fail(error); return data; },
     // Calls onChange after any change by any player; returns a function that stops listening.
     subscribe(onChange) {
       const channel = sb.channel('farmdesk-live')
