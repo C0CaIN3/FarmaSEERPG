@@ -92,7 +92,7 @@ function save(){
 }
 if(!CLOUD)save();
 function toast(msg){let t=$('#toast');t.textContent=msg;t.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.display='none',4500)}
-const go=p=>{if(/^#farma-/.test(location.hash)){try{history.replaceState(null,'',location.pathname+location.search)}catch{}}page=p;query='';filter='all';document.body.classList.remove('navopen');render();window.scrollTo(0,0)};
+const go=p=>{if(p==='settings')settingsTab=null;if(/^#farma-/.test(location.hash)){try{history.replaceState(null,'',location.pathname+location.search)}catch{}}page=p;query='';filter='all';document.body.classList.remove('navopen');render();window.scrollTo(0,0)};
 const btn=(label,action,icon='',style='')=>'<button type="button" class="btn '+style+'" data-a="'+action+'">'+(icon?ic(icon):'')+label+'</button>';
 const link=(label,action)=>'<button class="btnlink" data-a="'+action+'">'+label+ic('arrow')+'</button>';
 const melon='Vodný melón';
@@ -505,7 +505,7 @@ function noticesPage() {
   return heading('Upozornenia','Zber, polievanie a blížiace sa termíny.',btn('Nastavenia','go:settings','settings'))+'<div class="noticesgrid">'+panels+'</div>';
 }
 // Settings are split into categories; the chosen one is remembered for this visit.
-let settingsTab='alerts';
+let settingsTab=null; // null = list of categories (phone); the computer shows the first one
 function settingsTabs(){
   return CLOUD?[['alerts','Upozornenia','bell'],['crops','Pestovanie','sprout'],['team','Hráči','user'],['app','Appka','home'],['data','Údaje','log']]
     :[['alerts','Upozornenia','bell'],['crops','Pestovanie','sprout'],['data','Údaje','log']];
@@ -519,19 +519,39 @@ function inAppAlertsPanel(){
 function localDataPanel(){
   return '<section class="panel">'+section('Údaje v tomto prehliadači')+'<p>'+(db.demo?'Pracuješ s ukážkovými údajmi. Pred prvým vlastným zápisom môžeš začať s prázdnou evidenciou. ':'')+'Záloha obsahuje farmy, kontakty, denník, financie a nastavenia.</p><div class="actiongrid">'+btn('Export zálohy','backup','log')+btn('Obnoviť zálohu','restore','history')+(db.demo?btn('Odstrániť ukážkové údaje','clear','','danger'):'')+'</div></section>';
 }
+function settingsHints(){
+  const active=CLOUD?members.filter(m=>m.status==='active').length:0,waiting=CLOUD&&isLeader()?members.filter(m=>m.status==='pending').length:0;
+  return {
+    alerts:CLOUD?(pushState.endpoint?'Notifikácie zapnuté na tomto zariadení':'Notifikácie do telefónu a pripomienky'):'Pripomienky termínov a kalendár',
+    crops:'Časy rastu a vody'+(CLOUD?', cena vlastnej práce':''),
+    team:active+' '+(active===1?'hráč':active<5?'hráči':'hráčov')+(waiting?' · '+waiting+' čaká na schválenie':'')+' · odhlásenie',
+    app:isStandalone()?'Beží ako nainštalovaná appka':'Pridať FarmDesk na plochu telefónu',
+    data:CLOUD?'Záloha spoločných údajov':'Záloha a obnovenie'
+  };
+}
+// Settings as a list of categories: on a phone the list opens each category on its own screen,
+// on a computer the list stays on the left and the chosen category is shown on the right.
 function settings(){
   const tabsList=settingsTabs();
-  if(!tabsList.some(([k])=>k===settingsTab))settingsTab='alerts';
-  const waiting=CLOUD&&isLeader()?members.filter(m=>m.status==='pending').length:0;
-  const bar='<div class="tabs settings-tabs" role="tablist">'+tabsList.map(([k,label,icon])=>'<button role="tab" aria-selected="'+(settingsTab===k)+'" class="'+(settingsTab===k?'sel':'')+'" data-a="settab:'+k+'">'+ic(icon)+label+(k==='team'&&waiting?' <b class="tab-badge">'+waiting+'</b>':'')+'</button>').join('')+'</div>';
+  if(settingsTab&&!tabsList.some(([k])=>k===settingsTab))settingsTab=null;
+  const current=settingsTab||tabsList[0][0];
+  const hints=settingsHints(),waiting=CLOUD&&isLeader()?members.filter(m=>m.status==='pending').length:0;
+  const profile=CLOUD
+    ?'<div class="settings-profile">'+farmer(me?.user_id,76,myName())+'<strong>'+E(myName())+'</strong><small>'+(isLeader()?'Leader':'Hráč')+' · FarmDesk SeeRPG</small></div>'
+    :'<div class="settings-profile">'+farmer('farmdesk',76,'Farmár')+'<strong>FarmDesk</strong><small>Údaje v tomto prehliadači</small></div>';
+  const rows=tabsList.map(([k,label,icon])=>'<button class="settings-row '+(current===k?'on':'')+'" data-a="settab:'+k+'"><span class="settings-ico">'+ic(icon)+'</span><span class="settings-text"><strong>'+label+(k==='team'&&waiting?' <b class="tab-badge">'+waiting+'</b>':'')+'</strong><small>'+E(hints[k])+'</small></span>'+ic('right')+'</button>').join('');
+  const [,title,icon]=tabsList.find(([k])=>k===current);
   const body={
     alerts:()=>(CLOUD?pushPanel():'')+inAppAlertsPanel(),
     crops:()=>cropsPanel()+(CLOUD?workPricePanel():''),
     team:()=>cloudPanels(),
     app:()=>installPanel(),
     data:()=>CLOUD?sharedDataPanel():localDataPanel()
-  }[settingsTab]();
-  return heading('Nastavenia','Upozornenia, pestovanie, hráči a údaje.')+bar+'<div class="settings">'+body+'<input type="file" hidden id="file" accept=".json,application/json"></div>';
+  }[current]();
+  return '<div class="settings-shell '+(settingsTab?'has-detail':'')+'">'+
+    '<aside class="settings-nav"><h1 class="settings-title">Nastavenia</h1>'+profile+'<nav class="settings-list" aria-label="Kategórie nastavení">'+rows+'</nav></aside>'+
+    '<section class="settings-detail"><button class="settings-back" data-a="settab:">'+ic('right')+'Nastavenia</button><div class="settings-head"><span class="settings-ico">'+ic(icon)+'</span><div><h2>'+title+'</h2><p>'+E(hints[current])+'</p></div></div>'+
+    '<div class="settings">'+body+'</div></section></div><input type="file" hidden id="file" accept=".json,application/json">';
 }
 function render(){
  const count=alerts().length;
@@ -880,7 +900,7 @@ function check(){
 function confirmBox(title,msg,action){modal(title,'<p>'+E(msg)+'</p><div class="actions">'+btn('Zrušiť','close')+btn('Potvrdiť',action,'check','primary')+'</div>')}
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]');if(!b)return;let [a,id]=b.dataset.a.split(':');let f=db.farms.find(x=>x.id===id);
  if(a==='range'){const days=Number(id);if([7,14,30].includes(days)){chartDays=days;render();document.querySelector('[data-a="range:'+days+'"]')?.focus()}}else if(a==='map')modal('Lokality fariem',locationMap(activeFarms()));else if(a==='searchfarm'){go('farms');$('#search').focus()}else if(a==='location')locationDetail(Number(id));else if(a==='newloc'){edit(null);document.querySelector('[name="loc"]').value=id}else if(a==='priority')priorityView(id);
- else if(a==='pushon'||a==='pushoff'||a==='pushtest'){if(pushState.busy)return;pushState.busy=true;try{if(a==='pushon')await enablePush();else if(a==='pushoff')await disablePush();else{if(!pushState.endpoint){await enablePush();if(!pushState.endpoint)return}const r=await FarmCloud.testPush();toast(r?.sent?'Skúšobná notifikácia odoslaná ('+r.sent+'×). Mala by prísť do pár sekúnd.':'Na tvoje zariadenia sa nepodarilo nič poslať. Vypni a znova zapni notifikácie.')}}catch(err){toast(cloudError(err,'Notifikácie sa nepodarilo nastaviť.'))}finally{pushState.busy=false;render()}}else if(a==='settab'){settingsTab=id;if(page!=='settings')go('settings');else{render();window.scrollTo(0,0)}}
+ else if(a==='pushon'||a==='pushoff'||a==='pushtest'){if(pushState.busy)return;pushState.busy=true;try{if(a==='pushon')await enablePush();else if(a==='pushoff')await disablePush();else{if(!pushState.endpoint){await enablePush();if(!pushState.endpoint)return}const r=await FarmCloud.testPush();toast(r?.sent?'Skúšobná notifikácia odoslaná ('+r.sent+'×). Mala by prísť do pár sekúnd.':'Na tvoje zariadenia sa nepodarilo nič poslať. Vypni a znova zapni notifikácie.')}}catch(err){toast(cloudError(err,'Notifikácie sa nepodarilo nastaviť.'))}finally{pushState.busy=false;render()}}else if(a==='settab'){if(page!=='settings')go('settings');settingsTab=id||null;render();window.scrollTo(0,0)}
  else if(a==='install'&&installPrompt){installPrompt.prompt();installPrompt.userChoice.finally(()=>{installPrompt=null;render()})}
  else if(a==='settle'&&f){const st=settlementFor(f);if(st)confirmBox('Uzavrieť vyúčtovanie?',(st.transfers.length?st.transfers.map(t=>playerName(t.from)+' pošle '+playerName(t.to)+' '+money(t.amount)).join(' · ')+'. ':'Nikto nikomu nič neposiela. ')+'Po uzavretí sa prevody započítajú hráčom v Ekonomike.','settleok:'+id)}
  else if(a==='settleok'&&f){closeSettlement(f);save();close();render();toast('Vyúčtovanie je uzavreté.')}
@@ -1381,7 +1401,7 @@ function pushPanel(){
   const canAct=pushSupported()&&!(isIOS()&&!isStandalone())&&Notification.permission!=='denied';
   // One button: it turns notifications on for this device when needed and sends a test.
   const actions=canAct?'<div class="actiongrid">'+btn('Poslať skúšobnú notifikáciu','pushtest','bell','primary')+'</div>':'';
-  const cats=on?'<div class="push-cats">'+pushCategories.filter(([k])=>k!=='players'||isLeader()).map(([k,label,hint])=>'<label class="checkline"><input type="checkbox" data-pushcat="'+k+'" '+(pushState.prefs[k]!==false?'checked':'')+'><span><strong>'+label+'</strong><small>'+hint+'</small></span></label>').join('')+'</div>':'';
+  const cats=on?'<div class="push-cats">'+pushCategories.filter(([k])=>k!=='players'||isLeader()).map(([k,label,hint])=>'<label class="switch-row"><span><strong>'+label+'</strong><small>'+hint+'</small></span><input type="checkbox" class="switch" role="switch" data-pushcat="'+k+'" '+(pushState.prefs[k]!==false?'checked':'')+'></label>').join('')+'</div>':'';
   const status=on?'<p class="settle-done">'+ic('check')+'Zapnuté na tomto zariadení'+(pushState.devices>1?' · spolu '+pushState.devices+' tvoje zariadenia':'')+'</p>':'';
   return '<section class="panel">'+section('Notifikácie do telefónu')+intro+status+cats+actions+'</section>';
 }

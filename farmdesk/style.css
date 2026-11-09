@@ -89,4 +89,36 @@ svg.farmer{display:block;flex-shrink:0;border-radius:50%;overflow:hidden;box-sha
 /* Settings categories + push panel */
 .settings-tabs{margin-bottom:14px}.settings-tabs button{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;font-size:12px}.settings-tabs svg{width:14px;height:14px}.tab-badge{display:inline-grid;place-items:center;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--harvest);color:#2b2208!important;font-size:10px!important;margin-left:2px}
 .push-cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:8px;margin:12px 0}
-@media(max-width:640px){.settings-tabs{width:100%;flex-wrap:wrap;overflow:visible}.settings-tabs button{padding:7px 9px;flex:1 1 auto;justify-content:center}}
+
+
+/* Settings: category list + detail (phone: two screens, computer: side by side) */
+.settings-shell{display:grid;grid-template-columns:minmax(260px,320px) minmax(0,1fr);gap:18px;align-items:start;max-width:1180px}
+.settings-nav{position:sticky;top:16px;display:grid;gap:12px}
+.settings-title{font-size:clamp(26px,2.65vw,40px);line-height:1.14;font-weight:600;letter-spacing:-.055em;margin-bottom:2px}
+.settings-profile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:20px 14px 18px;border:1px solid var(--line);border-radius:14px;background:radial-gradient(ellipse at 50% 0,#2f4b3a80,transparent 70%),var(--panel);text-align:center}
+.settings-profile svg.farmer{margin-bottom:6px;box-shadow:0 0 0 3px #72cc7255}.settings-profile strong{font-size:16px}.settings-profile small{font-size:11px;color:var(--soft)}
+.settings-list{display:grid;border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden}
+.settings-row{display:flex;align-items:center;gap:12px;width:100%;padding:13px 14px;border:0;border-top:1px solid var(--line);background:transparent;text-align:left;color:inherit}
+.settings-row:first-child{border-top:0}.settings-row:hover{background:var(--lift)}.settings-row.on{background:#253c2e}.settings-row.on .settings-text strong{color:#afe7ae}
+.settings-row>svg:last-child{width:14px;height:14px;color:var(--muted);margin-left:auto;flex-shrink:0}
+.settings-ico{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#2b3a31;color:var(--growth);flex-shrink:0}.settings-ico svg{width:17px;height:17px}
+.settings-text{min-width:0;flex:1}.settings-text strong,.settings-text small{display:block}.settings-text strong{font-size:13px;font-weight:600}.settings-text small{font-size:11px;color:var(--soft);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.settings-detail{min-width:0}.settings-detail .settings{max-width:none}
+.settings-head{display:flex;align-items:center;gap:12px;margin:4px 0 14px}.settings-head .settings-ico{width:42px;height:42px;border-radius:12px}.settings-head h2{font-size:22px;letter-spacing:-.6px}.settings-head p{font-size:12px;color:var(--soft);margin-top:3px}
+.settings-back{display:none;align-items:center;gap:4px;border:0;background:transparent;color:#b2e3fa;font-size:13px;font-weight:600;padding:4px 0;margin-bottom:6px}.settings-back svg{width:15px;height:15px;transform:rotate(180deg)}
+.switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 2px;border-top:1px solid var(--line);cursor:pointer}.switch-row:first-child{border-top:0}
+.switch-row strong,.switch-row small{display:block}.switch-row strong{font-size:13px}.switch-row small{font-size:11px;color:var(--soft);margin-top:3px;font-weight:400}
+.push-cats{display:block;margin:6px 0 14px}
+input.switch{appearance:none;-webkit-appearance:none;width:46px;height:28px;min-height:0;padding:0;border:0;border-radius:14px;background:#3a4248;position:relative;cursor:pointer;flex-shrink:0;transition:background .18s}
+input.switch::before{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#f1f5f5;box-shadow:0 1px 3px #0006;transition:transform .18s}
+input.switch:checked{background:var(--growth)}input.switch:checked::before{transform:translateX(18px)}
+@media(max-width:760px){
+  .settings-shell{grid-template-columns:1fr;gap:0}
+  .settings-nav{position:static}
+  .settings-shell.has-detail .settings-nav{display:none}
+  .settings-shell:not(.has-detail) .settings-detail{display:none}
+  .settings-back{display:inline-flex}
+  .settings-row.on{background:transparent}.settings-row.on .settings-text strong{color:inherit}
+  .settings-profile{padding:22px 14px}
+  .settings-row{padding:15px 14px}
+}
