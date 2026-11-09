@@ -96,26 +96,19 @@ const go=p=>{if(p==='settings')settingsTab=null;if(/^#farma-/.test(location.hash
 const btn=(label,action,icon='',style='')=>'<button type="button" class="btn '+style+'" data-a="'+action+'">'+(icon?ic(icon):'')+label+'</button>';
 const link=(label,action)=>'<button class="btnlink" data-a="'+action+'">'+label+ic('arrow')+'</button>';
 const melon='Vodný melón';
-const melonMeasurementHours=18+24/60;
-const measuredMelonHours=Math.round(melonMeasurementHours/(103/246));
-// 119 of 246 moisture pixels remained after one uninterrupted drying interval.
-const measuredMelonDryHours=Number((melonMeasurementHours/(1-119/246)).toFixed(2));
 const pumpkin='Tekvica',namedCrops=[melon,pumpkin];
-// Pumpkin (Sütőtök), one watering at planting. Three photos (0 h 44 min, 16 h 58 min, 19 h 40 min) lie on
-// straight lines from planting; a least-squares fit gives 5.54 px/h growth and 6.99 px/h drying of 246 px.
-const measuredPumpkinHours=44;
-const measuredPumpkinDryHours=35.2;
-// Times confirmed from in-game measurements (Nastavenia → Pestovanie → Merania z hry) win over the defaults.
-const cropTime=(crop,k)=>{const v=db.cropTimes?.[crop]?.[k];return +v>0?+v:null};
-function dryingHours(f){return cropTime(f.crop,'dry')??(f.crop===melon?(db.melonDryHours??measuredMelonDryHours):f.crop===pumpkin?measuredPumpkinDryHours:db.dry)}
-function growthHours(f){return cropTime(f.crop,'growth')??(f.crop===melon?(db.melonHours??measuredMelonHours):f.crop===pumpkin?measuredPumpkinHours:db.growth)}
+// Times of the server script, worked out from screenshots (farmdesk/merania): every crop grows in 44 h
+// and dries from a full watering in 35 h 12 min (water runs out 1.25 times faster than the crop grows).
+const CROP_TIMES={[melon]:{growth:44,dry:35.2},[pumpkin]:{growth:44,dry:35.2}};
+function dryingHours(f){return CROP_TIMES[f.crop]?.dry??db.dry}
+function growthHours(f){return CROP_TIMES[f.crop]?.growth??db.growth}
 const cropOf=v=>namedCrops.includes(v)?v:'Úroda';
 const cropName=c=>c&&c!=='Úroda'?c:'Neurčená plodina';
 function growthProfile(crop){
   return select('Plodina','crop',[
     ['Úroda','Neurčená · všeobecný odhad '+fmt(db.growth)+' h'],
-    [melon,melon+' · približne '+fmt(growthHours({crop:melon}))+' h'],
-    [pumpkin,pumpkin+' · približne '+fmt(measuredPumpkinHours)+' h']
+    [melon,melon+' · '+fmt(CROP_TIMES[melon].growth)+' h'],
+    [pumpkin,pumpkin+' · '+fmt(CROP_TIMES[pumpkin].growth)+' h']
   ],cropOf(crop));
 }
 function progress(f,t=now()){
@@ -601,90 +594,9 @@ function settingsTabs(){
     :[['alerts','Upozornenia','bell'],['crops','Pestovanie','sprout'],['data','Údaje','log']];
 }
 function cropsPanel(){
-  return '<section class="panel">'+section('Časy pestovania')+'<p>Rast a úbytok vody sa počítajú rovnomerne od posledného sadenia a poliatia. Zadaj časy odmerané v hre. Zmena prepočíta aj rozbehnuté cykly.</p><form id="timing"><div class="formgrid">'+field('Všeobecný rast do zberu (hodiny)','growth','number',db.growth,'required min=".01" max="8760" step=".01"')+field('Vodný melón – rast (hodiny)','melonHours','number',growthHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Vodný melón – vyschnutie zo 100 % (hodiny)','melonDryHours','number',dryingHours({crop:melon}),'required min=".01" max="8760" step=".01"')+field('Všeobecné vyschnutie zo 100 % (hodiny)','dry','number',db.dry,'required min=".01" max="8760" step=".01"')+'</div><button class="btn primary">Uložiť časy</button></form><p class="hint">Vodný melón a tekvica majú časy z meraní v hre, pozri Merania z hry nižšie.</p></section>';
+  return '<section class="panel">'+section('Časy pestovania')+'<p>Rast a úbytok vody sa počítajú rovnomerne od posledného sadenia a poliatia.</p><div class="crop-times">'+namedCrops.map(c=>'<div><strong>'+E(c)+'</strong><span>Zber '+hmText(CROP_TIMES[c].growth)+' po zasadení</span><span>Voda vydrží '+hmText(CROP_TIMES[c].dry)+' (pod 25 % po '+hmText(CROP_TIMES[c].dry*.75)+')</span></div>').join('')+'</div><p class="hint">Časy plodín sú nastavené podľa servera. Pre neurčenú plodinu platia všeobecné časy nižšie.</p><form id="timing"><div class="formgrid">'+field('Všeobecný rast do zberu (hodiny)','growth','number',db.growth,'required min=".01" max="8760" step=".01"')+field('Všeobecné vyschnutie zo 100 % (hodiny)','dry','number',db.dry,'required min=".01" max="8760" step=".01"')+'</div><button class="btn primary">Uložiť časy</button></form></section>';
 }
-// ---- Measurements from in-game screenshots ----
-// Photos already analysed when the app was built (farmdesk/merania). Values are pixels of a 246 px bar.
-const BASE_MEASUREMENTS=[
-  {id:'m-melon-1',crop:melon,planted:18.4,watered:18.4,growthPx:103,waterPx:119,track:246,base:true,note:'gorogdinnye-18h24m'},
-  {id:'m-pump-1',crop:pumpkin,planted:44/60,watered:44/60,growthPx:2,waterPx:242,track:246,base:true,note:'sutotok-0h44m'},
-  {id:'m-pump-2',crop:pumpkin,planted:16+58/60,watered:16+58/60,growthPx:94,waterPx:128,track:246,base:true,note:'sutotok-16h58m'},
-  {id:'m-pump-3',crop:pumpkin,planted:19+40/60,watered:19+40/60,growthPx:109,waterPx:108,track:246,base:true,note:'sutotok-19h40m'}
-];
-const allMeasurements=()=>[...BASE_MEASUREMENTS,...(db.measurements||[])];
-// Straight line from planting / watering through the measured points (least squares through zero).
-// The range comes from moving every point by one pixel, the precision of a screenshot.
-function fitLine(points){
-  const ok=points.filter(p=>p.t>0&&p.f>0&&p.f<1);
-  if(!ok.length)return null;
-  const tt=ok.reduce((n,p)=>n+p.t*p.t,0),hours=e=>tt/ok.reduce((n,p)=>n+p.t*Math.max(1e-6,p.f+e*p.px),0);
-  return {hours:hours(0),lo:hours(1),hi:hours(-1),n:ok.length};
-}
-// The script most likely uses a round number of minutes: the coarsest round value inside the measured range.
-function scriptGuess(fit){
-  if(!fit)return null;
-  const m=fit.hours*60,lo=fit.lo*60,hi=fit.hi*60;
-  for(const step of [120,60,30,20,15,10,5,1]){const v=Math.round(m/step)*step;if(v>=lo-.01&&v<=hi+.01&&v>0)return {hours:v/60,step}}
-  return {hours:Math.round(m)/60,step:1};
-}
-function cropFit(crop){
-  const list=allMeasurements().filter(x=>x.crop===crop&&x.track>0);
-  const growth=fitLine(list.filter(x=>x.waterPx>0).map(x=>({t:x.planted,f:x.growthPx/x.track,px:1/x.track})));
-  const dry=fitLine(list.map(x=>({t:x.watered,f:1-x.waterPx/x.track,px:1/x.track})));
-  return {list,growth,dry,gScript:scriptGuess(growth),dScript:scriptGuess(dry)};
-}
-const hm=h=>{const m=Math.round(h*60);return Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')+' min'};
-function measurePanel(){
-  const crops=namedCrops.map(crop=>{
-    const r=cropFit(crop),cur={g:growthHours({crop}),d:dryingHours({crop})};
-    if(!r.list.length)return '<div class="measure-crop"><h3>'+E(crop)+'</h3>'+empty('Zatiaľ žiadne meranie.')+'</div>';
-    const line=(label,fit,guess,now)=>fit?'<div class="measure-fit"><span>'+label+'</span><strong>'+hm(fit.hours)+'</strong><small>rozsah '+hm(fit.lo)+' – '+hm(fit.hi)+' · '+fit.n+(fit.n===1?' bod':fit.n<5?' body':' bodov')+'</small><em>skript asi <b>'+hm(guess.hours)+'</b>'+(guess.step>=5?' (násobok '+guess.step+' min)':'')+'</em><small>v appke teraz '+hm(now)+'</small></div>':'';
-    const rows=r.list.map(x=>{
-      const pg=Math.round(x.planted*60),gp=x.growthPx/x.track*100,wp=x.waterPx/x.track*100;
-      const predG=Math.min(100,x.planted/cur.g*100),predW=Math.max(0,100-x.watered/cur.d*100),off=Math.round((gp-predG)/100*x.track),offW=Math.round((wp-predW)/100*x.track);
-      return '<tr><td>'+hm(x.planted)+(Math.abs(x.watered-x.planted)>.01?'<br><small>poliate pred '+hm(x.watered)+'</small>':'')+'</td><td>'+fmt(Math.round(gp*10)/10)+' %<small>'+x.growthPx+' px</small></td><td>'+fmt(Math.round(wp*10)/10)+' %<small>'+x.waterPx+' px</small></td><td class="'+(Math.abs(off)>2||Math.abs(offW)>2?'loss':'')+'">'+(off>0?'+':'')+off+' / '+(offW>0?'+':'')+offW+' px</td><td>'+(x.base?'<small>fotka v appke</small>':E(x.by||'')+' '+btn('Zmazať','delmeasure:'+x.id,'x','danger small'))+'</td></tr>';
-    }).join('');
-    return '<div class="measure-crop"><h3>'+E(crop)+'</h3><div class="measure-fits">'+line('Rast do zberu',r.growth,r.gScript,cur.g)+line('Vyschnutie zo 100 %',r.dry,r.dScript,cur.d)+'</div>'+
-      (r.growth&&r.dry?'<div class="actiongrid">'+btn('Použiť skriptový odhad','applytimes:'+crop+'|script','check','primary')+btn('Použiť presný výpočet','applytimes:'+crop+'|fit','chart')+(db.cropTimes?.[crop]?btn('Vrátiť pôvodné','applytimes:'+crop+'|reset','x'):'')+'</div>':'')+
-      '<div class="tablewrap"><table class="measure-table"><thead><tr><th>Od sadenia</th><th>Rast</th><th>Voda</th><th>Odchýlka (rast / voda)</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
-  }).join('');
-  return '<section class="panel">'+section('Merania z hry',btn('Pridať meranie','measure','plus','primary'))+
-    '<p>Odfoť okienko rastliny v hre (Nedvesség, Növekedés) a zapíš, koľko času prešlo od sadenia a od posledného poliatia. Appka odmeria pruhy po pixeloch, preloží všetkými meraniami priamku a navrhne okrúhly čas, aký má asi nastavený skript na serveri.</p>'+crops+
-    '<p class="hint">Najpresnejšie sú fotky po mnohých hodinách bez poliatia medzi tým. 1 pixel je asi 10 minút. Odchýlka od appky do ±2 px je v poriadku.</p></section>';
-}
-// Finds the blue (water), green (growth) and yellow (condition) bars in a screenshot of the plant window.
-function readBars(img){
-  const c=document.createElement('canvas'),w=c.width=img.naturalWidth,h=c.height=img.naturalHeight,x2=c.getContext('2d',{willReadFrequently:true});
-  x2.drawImage(img,0,0);const d=x2.getImageData(0,0,w,h).data;
-  const kinds={water:(r,g,b)=>b>170&&b>r+70&&b>g+10,growth:(r,g,b)=>g>130&&g>r+35&&g>b+25,state:(r,g,b)=>r>190&&g>140&&b<130&&r>b+90};
-  const best={};
-  for(let y=0;y<h;y++)for(const [k,test] of Object.entries(kinds)){
-    let n=0,left=-1,right=-1;
-    for(let x=0;x<w;x++){const i=(y*w+x)*4;if(test(d[i],d[i+1],d[i+2])){n++;if(left<0)left=x;right=x}}
-    if(n>(best[k]?.n||0)&&n>w*.04)best[k]={n,left,right,y};
-  }
-  const left=Math.min(...Object.values(best).map(b=>b.left)),track=best.state?best.state.right-left+1:null;
-  return {water:best.water?.n||0,growth:best.growth?.n||0,track,found:best};
-}
-function measureForm(){
-  const f=db.farms.find(x=>x.planted&&namedCrops.includes(x.crop)&&!x.archived);
-  modal('Pridať meranie z hry',form('measureform',
-    select('Plodina','crop',namedCrops.map(c=>[c,c]),f?.crop||pumpkin)+
-    '<label class="field wide"><span>Fotka okienka rastliny</span><input type="file" name="shot" accept="image/*"></label><p class="wide hint" id="measure-read">Po výbere fotky appka odmeria pruhy. Čísla môžeš opraviť ručne.</p>'+
-    field('Dĺžka celého pruhu (px)','track','number','','required min="20" max="4000" step="1" inputmode="numeric"')+field('Rast – zelený pruh (px)','growthPx','number','','required min="0" max="4000" step="1" inputmode="numeric"')+field('Voda – modrý pruh (px)','waterPx','number','','required min="0" max="4000" step="1" inputmode="numeric"')+
-    '<div class="field"><span>Od sadenia</span><div class="hm-pair"><input name="ph" type="number" min="0" max="500" step="1" required placeholder="h" inputmode="numeric"><input name="pm" type="number" min="0" max="59" step="1" required placeholder="min" inputmode="numeric"></div></div>'+
-    '<div class="field"><span>Od posledného poliatia</span><div class="hm-pair"><input name="wh" type="number" min="0" max="500" step="1" placeholder="h" inputmode="numeric"><input name="wm" type="number" min="0" max="59" step="1" placeholder="min" inputmode="numeric"></div><small class="hint">Prázdne = poliate len pri sadení.</small></div>','Uložiť meranie'));
-}
-async function readShot(input){
-  const file=input.files?.[0],out=$('#measure-read'),fm=input.form;if(!file)return;
-  out.textContent='Meriam…';
-  try{
-    const url=URL.createObjectURL(file),img=new Image();img.src=url;await img.decode();const r=readBars(img);URL.revokeObjectURL(url);
-    if(!r.track){out.textContent='Pruhy som nenašiel. Zadaj pixely ručne.';return}
-    fm.elements.track.value=r.track;fm.elements.growthPx.value=r.growth;fm.elements.waterPx.value=r.water;
-    out.innerHTML='Namerané: pruh <b>'+r.track+' px</b>, rast <b>'+r.growth+' px</b> ('+fmt(Math.round(r.growth/r.track*1000)/10)+' %), voda <b>'+r.water+' px</b> ('+fmt(Math.round(r.water/r.track*1000)/10)+' %).'+(r.found.state&&r.found.state.n<r.track-3?' Žltý pruh (Állapot) nie je plný, skontroluj dĺžku pruhu.':'');
-  }catch{out.textContent='Fotku sa nepodarilo prečítať. Zadaj pixely ručne.'}
-}
+const hmText=h=>{const m=Math.round(h*60);return Math.floor(m/60)+' h'+(m%60?' '+(m%60)+' min':'')};
 function inAppAlertsPanel(){
   return '<section class="panel">'+section(CLOUD?'Keď je appka otvorená':'Upozornenia na termíny')+'<p>Pri otvorenej appke dostaneš pripomienku dva dni pred termínom, deň pred ním a v deň termínu. Termíny si môžeš dať aj do kalendára v telefóne.</p><div class="actiongrid">'+btn(db.sound?'Vypnúť zvuk':'Zapnúť zvuk','sound','bell')+(CLOUD?'':btn(db.notices?'Vypnúť oznámenia':'Povoliť oznámenia','notify','bell'))+btn('Export termínov (.ics)','ics','calendar')+'</div></section>';
 }
@@ -774,7 +686,7 @@ function settings(){
   const [,title,icon]=tabsList.find(([k])=>k===current);
   const body={
     alerts:()=>(CLOUD?pushPanel():'')+inAppAlertsPanel(),
-    crops:()=>cropsPanel()+measurePanel()+(CLOUD?workPricePanel():''),
+    crops:()=>cropsPanel()+(CLOUD?workPricePanel():''),
     team:()=>cloudPanels(),
     history:()=>historyPanel(),
     app:()=>installPanel(),
@@ -1150,15 +1062,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
  else if(a==='settleok'&&f){closeSettlement(f);save();close();render();toast('Vyúčtovanie je uzavreté.')}
  else if(a==='settlereopen'&&f)confirmBox('Otvoriť vyúčtovanie znova?','Prevody z tohto vyúčtovania sa prestanú rátať v Ekonomike, kým ho znova neuzavrieš.','settlereopenok:'+id);
  else if(a==='settlereopenok'&&f){const st=settlementFor(f);if(st?.closed)f.settlements=(f.settlements||[]).filter(x=>x!==st.closed);save();close();render()}else if(a==='back'){if(/^#farma-/.test(location.hash)&&history.length>1)history.back();else go(prevPage||'overview')}else if(a==='waterview')go('water');
- else if(a==='measure')measureForm();
- else if(a==='delmeasure'){db.measurements=(db.measurements||[]).filter(x=>x.id!==id);save();render()}
- else if(a==='applytimes'){
-   const [crop,how]=id.split('|');if(!namedCrops.includes(crop))return;
-   db.cropTimes={...(db.cropTimes||{})};
-   if(how==='reset')delete db.cropTimes[crop];
-   else{const r=cropFit(crop);if(!r.growth||!r.dry)return;const g=how==='script'?r.gScript.hours:r.growth.hours,dd=how==='script'?r.dScript.hours:r.dry.hours;db.cropTimes[crop]={growth:Math.round(g*1000)/1000,dry:Math.round(dd*1000)/1000}}
-   save();render();toast(how==='reset'?crop+': pôvodné časy.':crop+': rast '+hm(growthHours({crop}))+', vyschnutie '+hm(dryingHours({crop}))+'.');
- }else if(a==='moneyview'){moneyView=id==='me'?'me':'all';try{localStorage.setItem('farmdesk-money-view',moneyView)}catch{}render()}else if(a==='waterspan'){waterHours=[12,24,48].includes(+id)?+id:24;render()}
+else if(a==='moneyview'){moneyView=id==='me'?'me':'all';try{localStorage.setItem('farmdesk-money-view',moneyView)}catch{}render()}else if(a==='waterspan'){waterHours=[12,24,48].includes(+id)?+id:24;render()}
  else if(a==='claim'&&f){const c=activeClaim(f);if(c&&!claimMine(c)){toast('Túto farmu už berie '+claimName(c)+'.');return}f.waterClaim={by:CLOUD?me?.user_id:null,name:CLOUD?myName():'Ja',at:now()};save();render();toast('Farma '+f.name+' je tvoja na poliatie.')}
  else if(a==='unclaim'&&f){delete f.waterClaim;save();render()}
  else if(a==='workwater'&&f){work(id);const fm=$('#workform');if(fm){fm.querySelectorAll('input[name="job"]').forEach(b=>{if(b.type==='checkbox')b.checked=b.value==='water'});syncJobPicker(fm,f)}}else if(a==='harvestview')harvestView();else if(a==='go')go(id);else if(a==='menu')document.body.classList.toggle('navopen');else if(a==='close')close();else if(a==='filter'){filter=id;render()}else if(a==='farm')detail(f);else if(a==='archive'){confirmBox(f.archived?'Obnoviť farmu?':'Archivovať farmu?',f.archived?'Farma sa vráti medzi aktívne farmy.':'Farma sa presunie do archívu. História a financie ostanú v evidencii.','archiveok:'+id)}else if(a==='delfarm'&&f){if(CLOUD&&!isLeader()){toast('Farmu môže úplne odstrániť iba leader.');return}const n=db.tx.filter(x=>x.farm===id).length,l=db.logs.filter(x=>x.farm===id).length;confirmBox('Odstrániť farmu úplne?',f.name+': odstráni sa farma, '+n+' pohybov na účte a '+l+' zápisov prác. Tržby a náklady zmiznú aj z Ekonomiky. Toto sa nedá vrátiť'+(CLOUD?' (v Histórii zmien ostane záznam 120 dní).':'.')+' Ak ju chceš len odložiť, použi Archivovať.','delfarmok:'+id)}
@@ -1309,20 +1213,12 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
    const prices={};
    for(const k of jobShown){const n=Number(ungroupAmount(d['price_'+k]||'0'));if(!isAmount(n)){toast('Skontroluj cenu práce '+jobs[k][0]+'.');return}prices[k]=n}
    db.workPrices=prices;save();render();toast('Ceny vlastnej práce sú uložené.');return}
- else if(id==='measureform'){
-   const n=k=>d[k]===''||d[k]==null?null:Number(d[k]);
-   const track=n('track'),g=n('growthPx'),w=n('waterPx'),planted=(n('ph')||0)+(n('pm')||0)/60,watered=n('wh')==null&&n('wm')==null?planted:(n('wh')||0)+(n('wm')||0)/60;
-   if(!(track>0)||g==null||w==null||g>track||w>track){toast('Pixely pruhov nesedia s dĺžkou pruhu.');return}
-   if(!(planted>0)||!(watered>0)||watered>planted+.01){toast('Zadaj čas od sadenia (a od poliatia nemôže byť dlhší).');return}
-   (db.measurements=db.measurements||[]).push({id:uid(),crop:namedCrops.includes(d.crop)?d.crop:pumpkin,planted:Math.round(planted*1000)/1000,watered:Math.round(watered*1000)/1000,growthPx:Math.round(g),waterPx:Math.round(w),track:Math.round(track),at:now(),by:CLOUD?myName():''});
-   save();close();render();toast('Meranie bolo uložené.');return}
- else if(id==='timing'){db.growth=+d.growth;db.dry=+d.dry;if(db.cropTimes?.[melon]){db.cropTimes={...db.cropTimes};delete db.cropTimes[melon]}if(d.melonHours)db.melonHours=+d.melonHours;if(d.melonDryHours)db.melonDryHours=+d.melonDryHours;save();render();toast('Časy pestovania boli uložené.');return}else return;
+ else if(id==='timing'){db.growth=+d.growth;db.dry=+d.dry;save();render();toast('Časy pestovania boli uložené.');return}else return;
  save();close();render();if(id==='workform'||id==='agreementform')detail(f);else if(id==='farmform'||id==='payform')detail(db.farms.find(x=>x.id===activeFarm));else if(id==='txform'&&(d.fromFarm||d.category==='rent')&&f)detail(f);toast('Záznam bol uložený.')});
-document.addEventListener('change',e=>{if(e.target.name==='shot'&&e.target.form?.id==='measureform')readShot(e.target)});
 document.addEventListener('change',async e=>{const cat=e.target.dataset?.pushcat;if(!cat)return;try{await togglePushCategory(cat)}catch(err){e.target.checked=!e.target.checked;toast(cloudError(err))}});
 document.addEventListener('input',e=>{if(e.target.name==='who'&&e.target.form?.elements.workerPhone){const known=workerPhone(e.target.value);if(known)e.target.form.elements.workerPhone.value=known}if(e.target.hasAttribute('data-forint'))updateAmountInput(e.target,e.inputType==='insertFromPaste');if(e.target.id==='search'){query=e.target.value;$('#matches').innerHTML=farmsgrid();$('#matches').querySelectorAll('canvas').forEach(paint)}if(e.target.closest('#calcform'))calculate()});
 let pendingRestore=null;
-function isBackup(v){let finite=Number.isFinite,txt=x=>typeof x==='string',id=x=>txt(x)&&/^[a-z0-9-]{1,70}$/i.test(x),time=x=>x===null||(finite(x)&&x>0&&x<8640000000000000);if(!v||![v.growth,v.dry,v.melonHours??measuredMelonHours,v.melonDryHours??measuredMelonDryHours].every(x=>finite(x)&&x>=.01&&x<=8760)||![v.logs,v.tx,v.farms].every(Array.isArray))return false;
+function isBackup(v){let finite=Number.isFinite,txt=x=>typeof x==='string',id=x=>txt(x)&&/^[a-z0-9-]{1,70}$/i.test(x),time=x=>x===null||(finite(x)&&x>0&&x<8640000000000000);if(!v||![v.growth,v.dry,v.melonHours??44,v.melonDryHours??35.2].every(x=>finite(x)&&x>=.01&&x<=8760)||![v.logs,v.tx,v.farms].every(Array.isArray))return false;
  const allowedTerms=['Zúčtovanie','Koniec nájmu',weeklyTerm];
  const linkedIds=new Set();
  function validPayment(x){
@@ -1415,8 +1311,6 @@ function recordList(state=db){
   if(state.workPrices)st.workPrices=state.workPrices;
   if(state.melonHours!=null)st.melonHours=state.melonHours;
   if(state.melonDryHours!=null)st.melonDryHours=state.melonDryHours;
-  if(state.cropTimes)st.cropTimes=state.cropTimes;
-  if(state.measurements?.length)st.measurements=state.measurements;
   out.push({kind:'settings',id:'main',data:st});
   return out;
 }
@@ -1434,8 +1328,6 @@ function applyRecords(list){
       if(+d.growth>0)next.growth=+d.growth;if(+d.dry>0)next.dry=+d.dry;
       if(+d.melonHours>0)next.melonHours=+d.melonHours;if(+d.melonDryHours>0)next.melonDryHours=+d.melonDryHours;
       if(d.workPrices&&typeof d.workPrices==='object')next.workPrices=d.workPrices;
-      if(d.cropTimes&&typeof d.cropTimes==='object')next.cropTimes=d.cropTimes;
-      if(Array.isArray(d.measurements))next.measurements=d.measurements;
     }
   }
   db=next;

@@ -27,6 +27,6 @@ Všetky tri merania ležia na priamke od zasadenia (rast aj vysychanie sú rovno
 Používa sa v appke aj v notifikáciách od 9. 11. 2026.
 
 
-## Merania priamo v appke
+## Nastavené v appke (9. 11. 2026)
 
-*Nastavenia → Pestovanie → Merania z hry*: nahraj fotku okienka rastliny a zadaj čas od sadenia a od poliatia. Appka nájde modrý, zelený a žltý pruh a odmeria ich po pixeloch. Potom preloží priamku všetkými meraniami danej plodiny (fotky z tejto zložky sú zarátané automaticky). Navrhne aj „skriptový odhad“, teda najhrubšie okrúhle číslo minút (120, 60, 30 … 1), ktoré ešte sedí do rozsahu ±1 px. Tlačidlom ho možno použiť pre celý tím aj pre notifikácie (`cropTimes` v spoločných nastaveniach).
+Vodný melón aj tekvica: **zber 44 h** po zasadení, **voda zo 100 % na nulu za 35 h 12 min** (pod 25 % po 26 h 24 min). Voda ubúda presne 1,25× rýchlejšie, než rastie úroda, čo vyzerá ako nastavenie skriptu. Melónová fotka sedí na tieto časy do 2 px. Časy sú pevne v `app.js` (`CROP_TIMES`) a v notifikačnej funkcii.
