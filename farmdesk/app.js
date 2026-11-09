@@ -1009,6 +1009,18 @@ function work(id,assignment=null,ongoing=null,mode='done'){
     select('Vyplatenie','settlement',[['pending','Vyplatím neskôr'],['paid','Už vyplatené pri práci']],ongoing?.settlement||'pending')+
     '</fieldset>',ongoing?'Potvrdiť dokončenie':'Zapísať'));
 }
+// Selling the crop means it was harvested: the farm starts over (dig, till, plant).
+function saleHarvestBox(f,category){
+  if(category!=='sale'||!f?.planted||f.archived)return '';
+  return '<label class="checkline"><input type="checkbox" name="harvested" checked><span><strong>Úroda je zozbieraná, farma sa vynuluje</strong><small>Zapíše sa Zber ('+E(cropName(f.crop))+') a farma bude znova neopracovaná: treba kopať, rýľovať a sadiť.</small></span></label>';
+}
+function harvestFromSale(f,at){
+  const t=Math.max(at,f.planted+60000),stamp=Math.min(t,now());
+  const log={id:uid(),farm:f.id,action:jobs.harvest[0],icon:jobs.harvest[1],who:CLOUD?myName():'Ja',at:stamp,fee:0,cycleAt:f.planted,performer:'self',crop:f.crop||'Úroda',size:f.size,fromSale:true};
+  if(CLOUD&&me?.user_id)log.players=[me.user_id];
+  db.logs.push(log);
+  f.crop='Úroda';f.planted=null;f.watered=null;delete f.waterClaim;
+}
 function tx(id,category,prepaid=false){
   const f=db.farms.find(x=>x.id===id);
   const rent=category==='rent'&&f&&!f.archived;
@@ -1019,6 +1031,7 @@ function tx(id,category,prepaid=false){
     forintField('Suma','amount',rent?agreedRent(f)??'':'',{required:true})+
     field(prepaid?'Kedy si nájom zaplatil (približne)':'Dátum a čas platby','at','datetime-local',local(prepaid?Math.min(now(),currentLeaseStart(f)):now()),'required max="'+local(now())+'"')+
     '<div id="rent-fields" class="wide formgrid">'+(rent?rentFields(f,prepaid):'')+'</div>'+
+    '<div id="sale-harvest" class="wide">'+saleHarvestBox(f,category||'sale')+'</div>'+
     '<div class="wide">'+field('Poznámka','desc','text','','maxlength="150"')+'</div>','Uložiť pohyb'));
 }
 
@@ -1212,7 +1225,11 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
    if(d.category==='rent'&&f&&!f.archived&&d.rentStart){
      if(at>now()){toast('Úhradu zapíš po zaplatení v hre.');return}
      if(!saveRent(f,d,at,amount))return;
-   }else db.tx.push({id:uid(),category:d.category,farm:d.farm,desc:d.desc||'',amount,at});
+   }else{
+     db.tx.push({id:uid(),category:d.category,farm:d.farm,desc:d.desc||'',amount,at});
+     const sold=db.farms.find(x=>x.id===d.farm);
+     if(d.category==='sale'&&d.harvested&&sold?.planted&&!sold.archived)harvestFromSale(sold,at);
+   }
  }
  else if(id==='workprices'){
    const prices={};
@@ -1265,6 +1282,7 @@ document.addEventListener('change',async e=>{let el=e.target;if(el.name==='type'
    const fields=el.form.elements, farm=db.farms.find(x=>x.id===fields.farm.value);
    const rent=fields.category.value==='rent'?rentFields(farm):'';
    $('#rent-fields').innerHTML=rent;
+   const sh=$('#sale-harvest');if(sh)sh.innerHTML=saleHarvestBox(farm,fields.category.value);
    if(fields.category.value==='rent')fields.amount.value=groupAmountEntry(agreedRent(farm));
  }
  if(el.name==='rentPeriod'){
