@@ -153,3 +153,12 @@ input.switch:checked{background:var(--growth)}input.switch:checked::before{trans
 /* Share agreement and transfers between players */
 .settle-tools{margin:8px 0 10px}.buyin-list{display:grid;gap:4px;margin-bottom:10px}.buyin-list .transfer small{display:block;font-size:10px;color:var(--soft)}
 .deal-rows{display:grid;gap:6px}.deal-row{display:grid;grid-template-columns:auto 1fr 90px auto;gap:8px;align-items:center;font-size:13px}.deal-row input{text-align:right}.deal-sum{font-size:12px;font-weight:600;color:#afe7ae;margin:0}.deal-sum.loss{color:#ff9292}
+/* Before/after preview in the share dialogs */
+.pv-explain{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:9px;background:#1f2e25;border:1px solid #355b40}.pv-explain svg{width:18px;height:18px;color:#afe7ae;flex-shrink:0;margin-top:2px}.pv-explain p{margin:0;font-size:12px;line-height:1.5;color:#d8efd9}.pv-explain strong{display:block;margin-bottom:2px}
+.pv-box{display:grid;gap:8px}.pv-head{font-size:11px;color:var(--soft)}
+.pv-grid{display:grid;gap:8px}
+.pv-person{padding:12px;border-radius:10px;background:#1d2528;border:1px solid var(--line)}
+.pv-name{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}.pv-name strong{font-size:14px}.pv-now{margin-left:auto;font-size:12px;font-weight:650;padding:3px 8px;border-radius:12px;background:#ffffff0d}
+.pv-lines{display:grid;gap:4px}.pv-line{display:grid;grid-template-columns:minmax(90px,1fr) minmax(0,auto) 14px minmax(0,auto);gap:6px;align-items:baseline;font-size:12px;font-variant-numeric:tabular-nums}
+.pv-line span{color:var(--soft)}.pv-line s{color:#7d898f;text-align:right}.pv-line em{font-style:normal;color:#7d898f;text-align:center}.pv-line b{text-align:right;font-weight:650;min-width:92px}
+.pv-cols s,.pv-cols b{text-decoration:none;font-size:10px;font-weight:500;color:var(--soft)}

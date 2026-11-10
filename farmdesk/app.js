@@ -1096,6 +1096,13 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
  else if(a==='deal'&&f)dealForm(f);
  else if(a==='dealoff'&&f){delete f.shareDeal;save();close();render();toast('Dohoda bola zrušená. Delí sa podľa vkladu.')}
  else if(a==='buyin'&&f)buyInForm(f);
+ else if(a==='buyinhalf'){
+   const fm=$('#buyinform');if(!fm)return;const farm=db.farms.find(x=>x.id===fm.elements.farm.value),st=farm&&settlementFor(farm);if(!st)return;
+   const inv=u=>st.people.find(p=>p.uid===u)?.invested||0,from=fm.elements.from.value,to=fm.elements.to.value;
+   const amount=cents((inv(to)-inv(from))/2);
+   if(from===to||amount<=0){toast('Hráč „Komu“ musí mať zaplatené viac nákladov.');return}
+   fm.elements.amount.value=groupAmountEntry(amount);fm.elements.amount.dispatchEvent(new Event('input',{bubbles:true}));toast('Polovica rozdielu v nákladoch: '+money(amount)+'.');
+ }
  else if(a==='buyindel'){const [fid,bid]=id.split('|'),farm=db.farms.find(x=>x.id===fid);if(farm){farm.buyIns=(farm.buyIns||[]).filter(b=>b.id!==bid);save();render()}}
  else if(a==='settlereopen'&&f)confirmBox('Otvoriť vyúčtovanie znova?','Prevody z tohto vyúčtovania sa prestanú rátať v Ekonomike, kým ho znova neuzavrieš.','settlereopenok:'+id);
  else if(a==='settlereopenok'&&f){const st=settlementFor(f);if(st?.closed)f.settlements=(f.settlements||[]).filter(x=>x!==st.closed);save();close();render()}else if(a==='back'){if(/^#farma-/.test(location.hash)&&history.length>1)history.back();else go(prevPage||'overview')}else if(a==='waterview')go('water');
@@ -1564,14 +1571,8 @@ function settlementFor(f){
   if(deal)for(const uid of Object.keys(deal.shares))add(uid);
   const people=[...per.values()].filter(p=>p.invested||p.received||p.labor||deal?.shares[p.uid]);
   const invested=people.reduce((n,p)=>n+p.invested,0),labor=people.reduce((n,p)=>n+p.labor,0),revenue=people.reduce((n,p)=>n+p.received,0);
-  const stakes=deal?100:invested+labor;
-  if(deal){
-    // Agreed shares: costs (and own work, if it counts) go back to whoever paid them, the rest is split by the shares.
-    const back=p=>p.invested+(deal.labor?p.labor:0),pool=revenue-people.reduce((n,p)=>n+back(p),0);
-    for(const p of people){p.stake=back(p);p.share=(deal.shares[p.uid]||0)/100;p.due=Math.round(back(p)+pool*p.share)}
-  }else for(const p of people){p.stake=p.invested+p.labor;p.share=stakes?p.stake/stakes:0;p.due=Math.round(revenue*p.share)}
-  if(people.length&&stakes){const top=people.reduce((a,b)=>b.share>a.share?b:a);top.due+=Math.round(revenue)-people.reduce((n,p)=>n+p.due,0)}
-  for(const p of people){p.profit=cents(p.due-p.invested);p.balance=cents(p.due-p.received)}
+  const stakes=splitDues(people,revenue,deal);
+  for(const p of people)p.balance=cents(p.due-p.received);
   // Who sends money to whom: largest debts paid to largest claims first.
   const transfers=[];
   if(stakes>0){
@@ -1586,6 +1587,51 @@ function settlementFor(f){
   const closed=(f.settlements||[]).find(st=>st.start===period.start&&st.end===period.end)||null;
   return {period,people,invested,labor,stakes,revenue,transfers,closed,deal,buyIns};
 }
+// Splits the revenue among the players (sets stake, share, due and profit on each) and returns the total stake.
+function splitDues(people,revenue,deal){
+  const stakes=deal?100:people.reduce((n,p)=>n+p.invested+p.labor,0);
+  if(deal){
+    // Agreed shares: costs (and own work, if it counts) go back to whoever paid them, the rest is split by the shares.
+    const back=p=>p.invested+(deal.labor?p.labor:0),pool=revenue-people.reduce((n,p)=>n+back(p),0);
+    for(const p of people){p.stake=back(p);p.share=(deal.shares[p.uid]||0)/100;p.due=Math.round(back(p)+pool*p.share)}
+  }else for(const p of people){p.stake=p.invested+p.labor;p.share=stakes?p.stake/stakes:0;p.due=Math.round(revenue*p.share)}
+  if(people.length&&stakes){const top=people.reduce((a,b)=>b.share>a.share?b:a);top.due+=Math.round(revenue)-people.reduce((n,p)=>n+p.due,0)}
+  for(const p of people)p.profit=cents(p.due-p.invested);
+  return stakes;
+}
+// Before/after preview for the share agreement and transfer dialogs.
+function previewSplit(f,{buyIn=null,deal,revenue}={}){
+  const st=settlementFor(f);if(!st)return null;
+  const base=uids=>{const list=st.people.map(p=>({uid:p.uid,invested:p.invested,labor:p.labor}));for(const u of uids)if(u&&!list.some(p=>p.uid===u))list.push({uid:u,invested:0,labor:0});return list};
+  const uids=[buyIn?.from,buyIn?.to,...Object.keys(deal?.shares||{})];
+  const before=base(uids),after=base(uids);
+  if(buyIn&&buyIn.amount>0){after.find(p=>p.uid===buyIn.from).invested+=buyIn.amount;after.find(p=>p.uid===buyIn.to).invested-=buyIn.amount}
+  const rev=revenue??st.revenue;
+  splitDues(before,rev,st.deal);splitDues(after,rev,deal===undefined?st.deal:deal);
+  return {before,after,revenue:rev,real:revenue==null||revenue===st.revenue&&st.revenue>0,costs:st.invested,buyIn:buyIn&&buyIn.amount>0?buyIn:null};
+}
+function previewTable(pv){
+  if(!pv)return '<p class="hint">Farma nemá aktuálne obdobie nájmu, ukážka nie je k dispozícii.</p>';
+  const line=(label,a,b,good=true)=>'<div class="pv-line"><span>'+label+'</span><s>'+(a===b?'':money(a))+'</s><em>'+(a===b?'':'→')+'</em><b class="'+(a===b||!good?'':b>a?'gain':'loss')+'">'+money(b)+'</b></div>';
+  const rows=pv.after.map(p=>{const b=pv.before.find(x=>x.uid===p.uid)||{invested:0,due:0,profit:0};
+    const now=pv.buyIn?(pv.buyIn.to===p.uid?pv.buyIn.amount:pv.buyIn.from===p.uid?-pv.buyIn.amount:0):0;
+    return '<div class="pv-person"><div class="pv-name">'+farmer(p.uid,30,playerName(p.uid))+'<strong>'+E(playerName(p.uid))+'</strong>'+(now?'<span class="pv-now '+(now>0?'gain':'loss')+'">'+(now>0?'dostane teraz +':'pošle teraz −')+money(Math.abs(now))+'</span>':'')+'</div>'+
+      '<div class="pv-lines"><div class="pv-line pv-cols"><span></span><s>predtým</s><em></em><b>potom</b></div>'+line('Vložil do farmy',b.invested,p.invested,false)+line('Dostane z tržby',b.due,p.due)+line('Zisk',b.profit,p.profit)+'</div></div>'}).join('');
+  return '<div class="pv-head">'+(pv.real?'Pri tržbe '+money(pv.revenue)+' na tejto farme':'Príklad: ak predáte za '+money(pv.revenue))+' · náklady farmy '+money(pv.costs)+'</div><div class="pv-grid">'+rows+'</div>';
+}
+function updatePreview(fm){
+  const f=db.farms.find(x=>x.id===fm.elements.farm.value),box=fm.querySelector('.pv-box');if(!f||!box)return;
+  const ex=fm.elements.example?Number(ungroupAmount(fm.elements.example.value||''))||0:null;
+  if(fm.id==='buyinform'){
+    const amount=Number(ungroupAmount(fm.elements.amount.value||''))||0;
+    box.innerHTML=previewTable(previewSplit(f,{buyIn:{from:fm.elements.from.value,to:fm.elements.to.value,amount:fm.elements.from.value===fm.elements.to.value?0:amount},revenue:ex||undefined}));
+  }else{
+    const shares={};let total=0;for(const i of fm.querySelectorAll('input[name^="share_"]')){const v=+i.value||0;if(v>0){shares[i.name.slice(6)]=v;total+=v}}
+    const deal=Math.abs(total-100)<0.01?{shares,labor:fm.elements.labor.checked}:null;
+    box.innerHTML=deal?previewTable(previewSplit(f,{deal,revenue:ex||undefined})):'<p class="hint">Ukážka sa zobrazí, keď budú podiely spolu 100 %.</p>';
+  }
+}
+function exampleRevenue(f){const st=settlementFor(f);return st?.revenue>0?'':String(Math.round((st?.invested||0)*1.5/1000)*1000||'')}
 function dealFor(f){
   const d=f.shareDeal;
   if(!d||typeof d!=='object'||!d.shares)return null;
@@ -1600,8 +1646,10 @@ function dealForm(f){
     '<p class="wide hint">Pri vyúčtovaní sa z tržby najprv vrátia náklady tomu, kto ich zaplatil. Zvyšok (zisk alebo strata) sa rozdelí podľa podielov. Spolu musí byť 100 %.</p>'+
     '<div class="wide deal-rows">'+rows+'</div><p class="wide deal-sum" id="deal-sum"></p>'+
     '<label class="checkline wide"><input type="checkbox" name="labor" '+(d?.labor?'checked':'')+'><span><strong>Rátať aj vlastnú prácu</strong><small>Zapnuté: hodnota vlastnej práce sa vráti ako náklad, ešte pred delením. Vypnuté: práca je zahrnutá v podiele.</small></span></label>'+
+    (exampleRevenue(f)?forintField('Príklad tržby na ukážku','example',exampleRevenue(f)):'')+
+    '<div class="wide pv-box"></div>'+
     (d?'<div class="wide actiongrid">'+btn('Zrušiť dohodu','dealoff:'+f.id,'x','danger')+'</div>':''),'Uložiť dohodu'));
-  dealSum();
+  dealSum();updatePreview($('#dealform'));
 }
 function dealSum(){
   const fm=$('#dealform'),out=$('#deal-sum');if(!fm||!out)return;
@@ -1612,10 +1660,14 @@ function buyInForm(f){
   const active=members.filter(m=>m.status==='active'),opts=active.map(m=>[m.user_id,m.name]);
   const other=active.find(m=>m.user_id!==me?.user_id)?.user_id;
   modal('Prevod medzi hráčmi · '+f.name,form('buyinform','<input type="hidden" name="farm" value="'+E(f.id)+'">'+
-    '<p class="wide hint">Keď jeden hráč pošle druhému peniaze za časť farmy (napríklad polovicu jeho investície). Náklady farmy sa nemenia, len sa presunie, kto koľko vložil.</p>'+
-    select('Kto poslal','from',opts,other||me?.user_id)+select('Komu','to',opts,me?.user_id)+
-    forintField('Suma','amount','',{required:true})+field('Kedy','at','datetime-local',local(now()),'required max="'+local(now())+'"')+
-    field('Poznámka','note','text','','maxlength="120" placeholder="napr. polovica semienok a nájmu"'),'Zapísať prevod'));
+    '<div class="wide pv-explain">'+ic('wallet')+'<p><strong>Hráč, ktorý prišiel neskôr, vráti časť nákladov tomu, kto ich zaplatil.</strong> Potom je to, ako keby od začiatku platili spolu. Náklady farmy sa nemenia, len sa presunie, kto koľko vložil.</p></div>'+
+    select('Kto posiela peniaze','from',opts,other||me?.user_id)+select('Komu (kto platil náklady)','to',opts,me?.user_id)+
+    forintField('Suma','amount','',{required:true})+'<div class="field"><span>&nbsp;</span>'+btn('Vyrovnať náklady napoly','buyinhalf','check')+'</div>'+
+    field('Kedy','at','datetime-local',local(now()),'required max="'+local(now())+'"')+
+    field('Poznámka','note','text','','maxlength="120" placeholder="napr. polovica nákladov"')+
+    (exampleRevenue(f)?forintField('Príklad tržby na ukážku','example',exampleRevenue(f)):'')+
+    '<div class="wide pv-box"></div>','Zapísať prevod'));
+  updatePreview($('#buyinform'));
 }
 function settlementBox(f){
   const st=settlementFor(f);
@@ -1846,4 +1898,5 @@ document.addEventListener('submit',async e=>{
 });
 document.body.insertAdjacentHTML('beforeend','<div class="mobileShade" data-a="menu"></div>');if(CLOUD)cloudStart();else{render();check();openFromHash()}
 window.addEventListener('hashchange',()=>{if(!CLOUD||cloudReady)openFromHash()});document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!CLOUD||cloudReady)){check();refreshDuePanel();if(CLOUD)scheduleRefresh(100)}});setInterval(()=>{if(CLOUD&&!cloudReady)return;check();refreshDuePanel();if(!$('#modal').open&&!document.activeElement.matches('input,select,button')&&page!=='settings')render()},30000);
-document.addEventListener('input',e=>{if(e.target.form?.id==='dealform')dealSum()});
+document.addEventListener('input',e=>{const fm=e.target.form;if(fm?.id==='dealform')dealSum();if(fm?.id==='dealform'||fm?.id==='buyinform')updatePreview(fm)});
+document.addEventListener('change',e=>{const fm=e.target.form;if(fm?.id==='dealform'||fm?.id==='buyinform')updatePreview(fm)});
