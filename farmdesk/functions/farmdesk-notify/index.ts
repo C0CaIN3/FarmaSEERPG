@@ -21,14 +21,14 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 
 // ---- Same estimates as farmdesk/app.js (keep in sync) ------------------------------------------
 const H = 3600000, D = 24 * H;
-const MELON = 'Vodný melón', PUMPKIN = 'Tekvica';
 // Times of the server script (see farmdesk/merania): 44 h to harvest, 35 h 12 min from full water to dry.
-const CROP_TIMES: Record<string, { growth: number; dry: number }> = { [MELON]: { growth: 44, dry: 35.2 }, [PUMPKIN]: { growth: 44, dry: 35.2 }, Malina: { growth: 44, dry: 35.2 } };
+// Every crop of the catalogue (page Plodiny) has the same times; only 'Úroda' (crop not chosen) uses the settings.
+const CROP_TIME = { growth: 44, dry: 35.2 };
 type Farm = Record<string, any>;
 type Settings = { growth: number; dry: number };
-const named = (f: Farm) => f.crop in CROP_TIMES;
-const growthHours = (f: Farm, s: Settings) => CROP_TIMES[f.crop]?.growth ?? s.growth;
-const dryingHours = (f: Farm, s: Settings) => CROP_TIMES[f.crop]?.dry ?? s.dry;
+const named = (f: Farm) => typeof f.crop === 'string' && f.crop !== '' && f.crop !== 'Úroda';
+const growthHours = (f: Farm, s: Settings) => named(f) ? CROP_TIME.growth : s.growth;
+const dryingHours = (f: Farm, s: Settings) => named(f) ? CROP_TIME.dry : s.dry;
 function progress(f: Farm, s: Settings, t = Date.now()) {
   const percent = (stamp: number, hours: number) => Math.max(0, Math.min(100, (t - stamp) / (hours * H) * 100));
   const growth = f.planted ? percent(+(f.growthFrom ?? f.planted), growthHours(f, s)) : 0;

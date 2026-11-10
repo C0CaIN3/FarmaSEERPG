@@ -29,7 +29,7 @@ function farmer(seed,size=32,label=''){
     ${hat}</svg>`;
 }
 const $=s=>document.querySelector(s), E=s=>String(s??'').replace(/[&<>"']/g,v=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[v]));
-const H=3600000,D=24*H, now=()=>Date.now(), uid=()=>crypto.randomUUID(), key='farmdesk-sk-v1', names={water:'Polievanie',overview:'Prehľad',farms:'Farmy',finance:'Ekonomika',alerts:'Upozornenia',history:'Denník prác',settings:'Nastavenia'};
+const H=3600000,D=24*H, now=()=>Date.now(), uid=()=>crypto.randomUUID(), key='farmdesk-sk-v1', names={crops:'Plodiny',water:'Polievanie',overview:'Prehľad',farms:'Farmy',finance:'Ekonomika',alerts:'Upozornenia',history:'Denník prác',settings:'Nastavenia'};
 const types={own:'Vlastná (od štátu)',player:'Prenajatá od hráča'}, categories={sale:'Tržba',rent:'Nájom',wage:'Mzda',seed:'Osivo',invest:'Investícia',other:'Iný výdavok'};
 const fmt=n=>new Intl.NumberFormat('sk-SK',{maximumFractionDigits:2}).format(n), date=t=>new Date(t).toLocaleString('sk-SK',{dateStyle:'short',timeStyle:'short'}), local=t=>t?new Date(t-new Date(t).getTimezoneOffset()*60000).toISOString().slice(0,16):'';
 const forintFormat=new Intl.NumberFormat('en-US',{useGrouping:true,maximumFractionDigits:2});
@@ -96,10 +96,11 @@ const go=p=>{if(p==='settings')settingsTab=null;if(/^#farma-/.test(location.hash
 const btn=(label,action,icon='',style='')=>'<button type="button" class="btn '+style+'" data-a="'+action+'">'+(icon?ic(icon):'')+label+'</button>';
 const link=(label,action)=>'<button class="btnlink" data-a="'+action+'">'+label+ic('arrow')+'</button>';
 const melon='Vodný melón';
-const pumpkin='Tekvica',raspberry='Malina',namedCrops=[melon,pumpkin,raspberry];
+const pumpkin='Tekvica',raspberry='Malina';
+const namedCrops=['Paradajka','Malina','Jahoda','Tekvica','Vodný melón','Žltý melón','Uhorka','TV paprika','Čili paprika','Jablková paprika','Koka','Konope'];
 // Times of the server script, worked out from screenshots (farmdesk/merania): every crop grows in 44 h
 // and dries from a full watering in 35 h 12 min (water runs out 1.25 times faster than the crop grows).
-const CROP_TIMES={[melon]:{growth:44,dry:35.2},[pumpkin]:{growth:44,dry:35.2},[raspberry]:{growth:44,dry:35.2}};
+const CROP_TIMES=Object.fromEntries(namedCrops.map(n=>[n,{growth:44,dry:35.2}]));
 function dryingHours(f){return CROP_TIMES[f.crop]?.dry??db.dry}
 function growthHours(f){return CROP_TIMES[f.crop]?.growth??db.growth}
 // Growth in the game stops while the plant has no water, so the bar can be behind the planting time.
@@ -110,9 +111,7 @@ const cropName=c=>c&&c!=='Úroda'?c:'Neurčená plodina';
 function growthProfile(crop){
   return select('Plodina','crop',[
     ['Úroda','Neurčená · všeobecný odhad '+fmt(db.growth)+' h'],
-    [melon,melon+' · '+fmt(CROP_TIMES[melon].growth)+' h'],
-    [pumpkin,pumpkin+' · '+fmt(CROP_TIMES[pumpkin].growth)+' h'],
-    [raspberry,raspberry+' · '+fmt(CROP_TIMES[raspberry].growth)+' h']
+    ...namedCrops.map(n=>[n,n+' · '+fmt(CROP_TIMES[n].growth)+' h'])
   ],cropOf(crop));
 }
 function progress(f,t=now()){
@@ -160,7 +159,7 @@ function soil(f){
 const soilPill=f=>{const [label,kind]=soil(f);return '<span class="pill soil-'+kind+'" title="Stav pôdy"><i></i>'+label+'</span>'};
 // The plant window from the game: three 246 px bars (Nedvesség, Növekedés, Állapot) in the game's colours,
 // filled to the same pixel, only thicker.
-const GAME_BAR=246,huCrop={[melon]:'Görögdinnye',[pumpkin]:'Sütőtök',[raspberry]:'Málna'};
+const GAME_BAR=246,huCrop=new Proxy({},{get:(o,k)=>CATALOG.find(c=>c.name===k)?.hu});
 function gameBars(f,t=now()){
   const clamp=x=>Math.max(0,Math.min(1,x));
   const grow=f.planted?clamp((t-growthStart(f))/(growthHours(f)*H)):0,water=f.watered?clamp(1-(t-f.watered)/(dryingHours(f)*H)):0;
@@ -612,6 +611,92 @@ function cropsPanel(){
   return '<section class="panel">'+section('Časy pestovania')+'<p>Rast a úbytok vody sa počítajú rovnomerne od posledného sadenia a poliatia.</p><div class="crop-times">'+namedCrops.map(c=>'<div><strong>'+E(c)+'</strong><span>Zber '+hmText(CROP_TIMES[c].growth)+' po zasadení</span><span>Voda vydrží '+hmText(CROP_TIMES[c].dry)+' (pod 25 % po '+hmText(CROP_TIMES[c].dry*.75)+')</span></div>').join('')+'</div><p class="hint">Časy plodín sú nastavené podľa servera. Pre neurčenú plodinu platia všeobecné časy nižšie.</p><form id="timing"><div class="formgrid">'+field('Všeobecný rast do zberu (hodiny)','growth','number',db.growth,'required min=".01" max="8760" step=".01"')+field('Všeobecné vyschnutie zo 100 % (hodiny)','dry','number',db.dry,'required min=".01" max="8760" step=".01"')+'</div><button class="btn primary">Uložiť časy</button></form></section>';
 }
 const hmText=h=>{const m=Math.round(h*60);return Math.floor(m/60)+' h'+(m%60?' '+(m%60)+' min':'')};
+// ---- Crop catalogue (page Plodiny): prices and yields from the game's plant details ----
+// Built-in list of the server's crops; players fill in prices and yields, saved for the whole team.
+const CATALOG=[
+  {name:'Paradajka',hu:'Paradicsom',art:'tomato'},
+  {name:'Malina',hu:'Málna',art:'raspberry',seedPrice:3000,priceMin:1755,priceMax:2700,yieldMin:1,yieldMax:16,recovery:false,weight:45},
+  {name:'Jahoda',hu:'Eper',art:'strawberry'},
+  {name:'Tekvica',hu:'Sütőtök',art:'pumpkin'},
+  {name:'Vodný melón',hu:'Görögdinnye',art:'watermelon'},
+  {name:'Žltý melón',hu:'Sárgadinnye',art:'melon'},
+  {name:'Uhorka',hu:'Uborka',art:'cucumber'},
+  {name:'TV paprika',hu:'TV paprika',art:'tvpepper'},
+  {name:'Čili paprika',hu:'Chilipaprika',art:'chili'},
+  {name:'Jablková paprika',hu:'Almapaprika',art:'bell'},
+  {name:'Koka',hu:'Kokacserje',art:'coca'},
+  {name:'Konope',hu:'Kannabisz',art:'hemp'}
+];
+const catalogNames=CATALOG.map(c=>c.name);
+function cropInfo(name){const base=CATALOG.find(c=>c.name===name)||{name,hu:'',art:'tomato'};return {...base,...(db.catalog?.[name]||{})}}
+// Simple drawings of the crops (no game images are copied).
+function cropArt(kind,size=40){
+  const leaf=(x,y,r=0,c='#4f9b45')=>`<path d="M${x} ${y}c-5-7-1-12 6-12-1 7-2 11-6 12Z" fill="${c}" transform="rotate(${r} ${x} ${y})"/>`;
+  const art={
+    tomato:`<circle cx="32" cy="36" r="20" fill="#e2412f"/><circle cx="25" cy="29" r="5" fill="#f37b67" opacity=".7"/>${leaf(32,18,-40)}${leaf(32,18,40)}${leaf(32,18,160)}<rect x="31" y="10" width="3" height="8" rx="1.5" fill="#3f7d36"/>`,
+    raspberry:`${[[26,26],[34,25],[42,28],[22,34],[30,33],[38,33],[46,36],[26,41],[34,41],[42,43],[30,49],[38,50]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="6" fill="#c92f4c"/><circle cx="${x-1.5}" cy="${y-1.5}" r="2" fill="#ec6f86"/>`).join('')}${leaf(34,20,-50)}${leaf(34,20,50)}`,
+    strawberry:`<path d="M32 58C18 48 12 36 14 28c2-7 10-9 18-7 8-2 16 0 18 7 2 8-4 20-18 30Z" fill="#e0353f"/>${[[24,32],[32,30],[40,32],[28,40],[36,40],[32,48],[22,40],[42,40]].map(([x,y])=>`<ellipse cx="${x}" cy="${y}" rx="1.3" ry="2" fill="#f6d55c"/>`).join('')}${leaf(32,22,-70)}${leaf(32,22,0)}${leaf(32,22,70)}`,
+    pumpkin:`<ellipse cx="32" cy="38" rx="24" ry="18" fill="#e9862b"/><ellipse cx="32" cy="38" rx="15" ry="18" fill="#f39a3d"/><ellipse cx="32" cy="38" rx="6" ry="18" fill="#e9862b"/><path d="M32 21c0-5 2-8 6-9" stroke="#5a7b2c" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+    watermelon:`<path d="M8 30a24 24 0 0 0 48 0Z" fill="#3b8f3a"/><path d="M12 30a20 20 0 0 0 40 0Z" fill="#e9f2c9"/><path d="M15 30a17 17 0 0 0 34 0Z" fill="#e8444b"/>${[[24,36],[32,40],[40,36],[28,44],[36,44]].map(([x,y])=>`<ellipse cx="${x}" cy="${y}" rx="1.3" ry="2.2" fill="#2a1d1d"/>`).join('')}`,
+    melon:`<circle cx="30" cy="34" r="20" fill="#e7d9a8"/><path d="M14 30c8 3 24 3 32 0M12 38c10 3 26 3 36 0" stroke="#c9b77a" stroke-width="1.6" fill="none"/><path d="M38 52a14 14 0 0 1 16-18L44 50Z" fill="#f1a35b"/>`,
+    cucumber:`<rect x="10" y="24" width="46" height="17" rx="8.5" fill="#3e8a3c" transform="rotate(-35 32 32)"/>${[[22,40],[30,34],[38,28],[44,23],[26,32],[34,26]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="1.2" fill="#9fd08f"/>`).join('')}`,
+    tvpepper:`<path d="M20 18c6-2 10 2 12 8 6 16 14 22 22 30-14 0-26-8-32-20-3-6-6-14-2-18Z" fill="#f2cf3a"/><path d="M18 18c-1-5 1-8 5-9" stroke="#4f8a2c" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+    chili:`<path d="M18 16c5-1 8 3 10 9 5 14 10 22 20 30-12 2-22-8-28-20-3-7-5-15-2-19Z" fill="#d42a2a"/><path d="M16 17c-2-5 0-8 4-9" stroke="#4f8a2c" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
+    bell:`<path d="M14 30c0-10 8-14 18-14s18 4 18 14c0 12-4 24-11 24-3 0-5-3-7-3s-4 3-7 3c-7 0-11-12-11-24Z" fill="#f2c430"/><path d="M32 18v32" stroke="#d9a91b" stroke-width="2"/><path d="M32 17c0-5 2-8 6-8" stroke="#4f8a2c" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+    coca:`${[[-60,'#3f7d36'],[-20,'#4f9b45'],[20,'#3f7d36'],[60,'#4f9b45'],[0,'#5aa84d']].map(([r,c])=>`<ellipse cx="32" cy="22" rx="7" ry="15" fill="${c}" transform="rotate(${r} 32 40)"/>`).join('')}<circle cx="26" cy="44" r="3" fill="#c9372c"/><circle cx="38" cy="46" r="3" fill="#c9372c"/>`,
+    hemp:`${[-75,-50,-25,0,25,50,75].map((r,i)=>`<ellipse cx="32" cy="${i===3?16:20}" rx="3.6" ry="${[9,12,15,17,15,12,9][i]}" fill="#4c9a3f" transform="rotate(${r} 32 42)"/>`).join('')}<path d="M32 42v14" stroke="#3a7a30" stroke-width="2.5"/>`
+  }[kind]||'';
+  return `<svg class="crop-art" viewBox="0 0 64 64" width="${size}" height="${size}" style="width:${size}px;height:${size}px" aria-hidden="true">${art}</svg>`;
+}
+function cropPicture(c,size){return c.image?`<img class="crop-art" src="${E(c.image)}" alt="" width="${size}" height="${size}" style="width:${size}px;height:${size}px">`:cropArt(c.art,size)}
+let cropSel=null,cropParcels=120;
+function cropsPage(){
+  const sel=cropSel&&catalogNames.includes(cropSel)?cropSel:null,showing=sel||catalogNames[1];
+  const growing=n=>activeFarms().filter(f=>f.planted&&f.crop===n).length;
+  const list='<nav class="crop-list" aria-label="Plodiny">'+catalogNames.map(n=>{const c=cropInfo(n),g=growing(n);return '<button class="crop-item '+(n===showing?'on':'')+'" data-a="cropsel:'+E(n)+'">'+cropPicture(c,38)+'<span><strong>'+E(n)+'</strong><small>'+E(c.hu)+'</small></span>'+(g?'<em>'+g+'</em>':'')+'</button>'}).join('')+'</nav>';
+  return heading('Plodiny','Ceny semienok a úrody, výnos a možný zisk podľa počtu polí. Údaje zapisujete vy, platia pre celý tím.')+
+    '<div class="crops-shell '+(sel?'has-detail':'')+'">'+list+'<div class="crop-detail">'+cropDetail(showing)+'</div></div>';
+}
+function cropDetail(name){
+  const c=cropInfo(name),n=v=>v!=null&&v!==''&&!isNaN(+v)?+v:null;
+  const seed=n(c.seedPrice),pmin=n(c.priceMin),pmax=n(c.priceMax),ymin=n(c.yieldMin),ymax=n(c.yieldMax);
+  const cost=seed!=null?seed*cropParcels:null;
+  const lo=cost!=null&&pmin!=null&&ymin!=null?pmin*ymin*cropParcels-cost:null,hi=cost!=null&&pmax!=null&&ymax!=null?pmax*ymax*cropParcels-cost:null;
+  const row=(icon,label,value,sub='')=>'<div class="crop-row">'+ic(icon)+'<span>'+label+(sub?'<small>'+sub+'</small>':'')+'</span><b>'+value+'</b></div>';
+  const missing='<em class="crop-missing">nezapísané</em>';
+  const range=(a,b)=>a==null&&b==null?missing:a===b||b==null?money(a??b):a==null?money(b):'<span class="gain">'+money(a)+' – '+money(b)+'</span>';
+  const parcels='<span class="parcel-pick">'+[40,80,120].map(p=>'<button class="'+(p===cropParcels?'on':'')+'" data-a="cropparcels:'+p+'">'+p+' polí</button>').join('')+'</span>';
+  const profit=lo==null&&hi==null?missing:'<span class="'+(lo<0?'loss':'gain')+'">'+money(lo??hi)+'</span> – <span class="'+(hi<0?'loss':'gain')+'">'+money(hi??lo)+'</span>';
+  const farmsNow=activeFarms().filter(f=>f.planted&&f.crop===name);
+  return '<button class="crop-back" data-a="cropsel:">'+ic('arrow')+'Všetky plodiny</button>'+
+    '<div class="crop-hero">'+cropPicture(c,96)+'<div><h2>'+E(name)+'</h2><p>'+E(c.hu||'')+' · rast '+fmt(growthHours({crop:name}))+' h · voda vydrží '+hmText(dryingHours({crop:name}))+'</p></div>'+btn('Upraviť','cropedit:'+name,'settings')+'</div>'+
+    row('wallet','Cena semienka',seed!=null?money(seed)+' / pole':missing)+
+    row('cash','Predajná cena úrody (1 ks)',range(pmin,pmax))+
+    '<div class="crop-row crop-profit">'+ic('chart')+'<span>Možný zisk<small>'+(cost!=null?'Náklad na semienka: '+money(cost):'Doplň cenu semienka')+'</small></span><div>'+parcels+'<b>'+profit+'</b></div></div>'+
+    row('sprout','Vrátenie semienka',c.recovery==null?missing:c.recovery?'Áno':'Nie')+
+    '<div class="crop-tiles"><div class="crop-tile">'+ic('sprout')+'<span><small>Osivo</small><strong>'+E(name)+' – semienko</strong><small>Hmotnosť: '+(n(c.seedWeight)!=null?fmt(c.seedWeight)+' g':'žiadna')+'</small></span></div>'+
+    '<div class="crop-tile">'+cropPicture(c,34)+'<span><small>Úroda</small><strong>'+E(name)+(ymin!=null||ymax!=null?' ('+(ymin??'?')+' – '+(ymax??'?')+' ks z poľa)':'')+'</strong><small>Hmotnosť: '+(n(c.weight)!=null?fmt(c.weight)+' g':'—')+'</small></span></div></div>'+
+    (farmsNow.length?'<p class="hint">Teraz rastie na '+farmsNow.length+' '+(farmsNow.length===1?'farme':'farmách')+': '+farmsNow.map(f=>E(f.name)).join(', ')+'.</p>':'')+
+    '<p class="hint">Zisk = (cena za kus × kusy z poľa × počet polí) − semienka. Rozsah je od najhoršieho po najlepší zber a cenu. Nájom a pracovníci sa sem nerátajú.</p>';
+}
+function cropEditForm(name){
+  const c=cropInfo(name),v=k=>c[k]??'';
+  modal('Upraviť · '+name,form('cropform','<input type="hidden" name="crop" value="'+E(name)+'">'+
+    forintField('Cena semienka za pole','seedPrice',v('seedPrice'))+'<div></div>'+
+    forintField('Predajná cena za kus – najmenej','priceMin',v('priceMin'))+forintField('Predajná cena za kus – najviac','priceMax',v('priceMax'))+
+    field('Úroda z poľa – najmenej (ks)','yieldMin','number',v('yieldMin'),'min="0" max="10000" step="1" inputmode="numeric"')+field('Úroda z poľa – najviac (ks)','yieldMax','number',v('yieldMax'),'min="0" max="10000" step="1" inputmode="numeric"')+
+    field('Hmotnosť plodu (g)','weight','number',v('weight'),'min="0" max="100000" step="1" inputmode="numeric"')+field('Hmotnosť semienka (g)','seedWeight','number',v('seedWeight'),'min="0" max="100000" step="1" inputmode="numeric" placeholder="žiadna"')+
+    select('Vrátenie semienka','recovery',[['','Nezapísané'],['yes','Áno'],['no','Nie']],c.recovery==null?'':c.recovery?'yes':'no')+
+    '<label class="field"><span>Vlastný obrázok (nepovinné)</span><input type="file" name="picture" accept="image/*"></label>'+
+    (c.image?'<label class="checkline wide"><input type="checkbox" name="dropImage"><span><strong>Vrátiť pôvodný obrázok</strong></span></label>':''),'Uložiť'));
+}
+// Small square picture so it fits in the shared settings record.
+async function shrinkImage(file){
+  const url=URL.createObjectURL(file),img=new Image();img.src=url;await img.decode();
+  const c=document.createElement('canvas');c.width=c.height=96;const x=c.getContext('2d'),s=Math.min(img.naturalWidth,img.naturalHeight);
+  x.drawImage(img,(img.naturalWidth-s)/2,(img.naturalHeight-s)/2,s,s,0,0,96,96);URL.revokeObjectURL(url);
+  return c.toDataURL('image/webp',.8);
+}
 function inAppAlertsPanel(){
   return '<section class="panel">'+section(CLOUD?'Keď je appka otvorená':'Upozornenia na termíny')+'<p>Pri otvorenej appke dostaneš pripomienku dva dni pred termínom, deň pred ním a v deň termínu. Termíny si môžeš dať aj do kalendára v telefóne.</p><div class="actiongrid">'+btn(db.sound?'Vypnúť zvuk':'Zapnúť zvuk','sound','bell')+(CLOUD?'':btn(db.notices?'Vypnúť oznámenia':'Povoliť oznámenia','notify','bell'))+btn('Export termínov (.ics)','ics','calendar')+'</div></section>';
 }
@@ -715,9 +800,9 @@ function settings(){
 function render(){
  const count=alerts().length;
  const nav=(p,i)=>`<button class="rail-link ${page===p||page==='farm'&&p==='farms'?'active':''}" title="${names[p]}" aria-label="${names[p]}" aria-current="${page===p?'page':'false'}" data-a="go:${p}">${ic(i)}<span>${names[p]}</span></button>`;
- $('#sidebar').innerHTML=`<button class="rail-logo" data-a="go:overview" aria-label="FarmDesk"><img src="assets/mark-96.png" alt=""></button><nav>${nav('overview','grid')}${nav('farms','barn')}${nav('water','water')}${nav('finance','chart')}${nav('history','log')}${nav('alerts','bell')}</nav><div class="rail-bottom">${nav('settings','settings')}<button class="rail-avatar" data-a="go:settings" title="${E(CLOUD?myName():'Farmár')}">${farmer(CLOUD?me?.user_id:'farmdesk',34,CLOUD?myName():'Farmár')}</button></div>`;
+ $('#sidebar').innerHTML=`<button class="rail-logo" data-a="go:overview" aria-label="FarmDesk"><img src="assets/mark-96.png" alt=""></button><nav>${nav('overview','grid')}${nav('farms','barn')}${nav('water','water')}${nav('crops','sprout')}${nav('finance','chart')}${nav('history','log')}${nav('alerts','bell')}</nav><div class="rail-bottom">${nav('settings','settings')}<button class="rail-avatar" data-a="go:settings" title="${E(CLOUD?myName():'Farmár')}">${farmer(CLOUD?me?.user_id:'farmdesk',34,CLOUD?myName():'Farmár')}</button></div>`;
  $('#top').innerHTML=`<div class="top-id"><button class="iconbtn menu" data-a="menu" aria-label="Menu">${ic('menu')}</button><strong>FarmDesk</strong><span class="divider"></span><span class="server-name">SeeRPG</span></div><div class="top-actions"><button class="search-shortcut" data-a="searchfarm">${ic('search')}<span>Vyhľadať farmu</span></button>${db.demo?'<button class="demo" data-a="go:settings">Ukážkové údaje</button>':''}${CLOUD?cloudTopbar():''}<button class="iconbtn" aria-label="Upozornenia" data-a="go:alerts">${ic('bell')}${count?'<i class="dot"></i>':''}</button></div>`;
- $('#main').innerHTML=page==='overview'?home():page==='farms'?heading('Farmy','Evidencia prenájmov od štátu a od hráčov.',btn('Pridať farmu','new','plus','primary'))+'<div class="filters"><input id="search" aria-label="Vyhľadať farmu" placeholder="Vyhľadať farmu podľa mena alebo čísla (napr. D05)…" value="'+E(query)+'"></div>'+tabs()+'<div id="matches">'+farmsgrid()+'</div>':page==='finance'?finance():page==='settings'?settings():page==='history'?journal():page==='farm'?farmPage():page==='water'?waterPage():noticesPage();document.querySelectorAll('canvas').forEach(paint)}
+ $('#main').innerHTML=page==='overview'?home():page==='farms'?heading('Farmy','Evidencia prenájmov od štátu a od hráčov.',btn('Pridať farmu','new','plus','primary'))+'<div class="filters"><input id="search" aria-label="Vyhľadať farmu" placeholder="Vyhľadať farmu podľa mena alebo čísla (napr. D05)…" value="'+E(query)+'"></div>'+tabs()+'<div id="matches">'+farmsgrid()+'</div>':page==='finance'?finance():page==='settings'?settings():page==='history'?journal():page==='farm'?farmPage():page==='water'?waterPage():page==='crops'?cropsPage():noticesPage();document.querySelectorAll('canvas').forEach(paint)}
 const field=(l,n,t,v='',attr='')=>'<label class="field">'+l+'<input name="'+n+'" type="'+t+'" value="'+E(v)+'" '+attr+'></label>';
 function select(l,n,opts,val,attr=''){return '<label class="field">'+l+'<select name="'+n+'" '+attr+'>'+opts.map(([v,s])=>'<option value="'+E(v)+'" '+(String(val)===String(v)?'selected':'')+'>'+E(s)+'</option>').join('')+'</select></label>'}
 const seq=(n)=>Array.from({length:n},(_,i)=>[i+1,String(i+1)]);
@@ -1106,6 +1191,9 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
  else if(a==='buyindel'){const [fid,bid]=id.split('|'),farm=db.farms.find(x=>x.id===fid);if(farm){farm.buyIns=(farm.buyIns||[]).filter(b=>b.id!==bid);save();render()}}
  else if(a==='settlereopen'&&f)confirmBox('Otvoriť vyúčtovanie znova?','Prevody z tohto vyúčtovania sa prestanú rátať v Ekonomike, kým ho znova neuzavrieš.','settlereopenok:'+id);
  else if(a==='settlereopenok'&&f){const st=settlementFor(f);if(st?.closed)f.settlements=(f.settlements||[]).filter(x=>x!==st.closed);save();close();render()}else if(a==='back'){if(/^#farma-/.test(location.hash)&&history.length>1)history.back();else go(prevPage||'overview')}else if(a==='waterview')go('water');
+ else if(a==='cropsel'){cropSel=id||null;render();scrollTo(0,0)}
+ else if(a==='cropparcels'){cropParcels=[40,80,120].includes(+id)?+id:120;render()}
+ else if(a==='cropedit')cropEditForm(id);
 else if(a==='moneyview'){moneyView=id==='me'?'me':'all';try{localStorage.setItem('farmdesk-money-view',moneyView)}catch{}render()}else if(a==='waterspan'){waterHours=[12,24,48].includes(+id)?+id:24;render()}
  else if(a==='claim'&&f){const c=activeClaim(f);if(c&&!claimMine(c)){toast('Túto farmu už berie '+claimName(c)+'.');return}f.waterClaim={by:CLOUD?me?.user_id:null,name:CLOUD?myName():'Ja',at:now()};save();render();toast('Farma '+f.name+' je tvoja na poliatie.')}
  else if(a==='unclaim'&&f){delete f.waterClaim;save();render()}
@@ -1257,6 +1345,19 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
      if(d.category==='sale'&&d.harvested&&sold?.planted&&!sold.archived)harvestFromSale(sold,at);
    }
  }
+ else if(id==='cropform'){
+   const name=d.crop;if(!catalogNames.includes(name))return;
+   const num=k=>{const raw=String(d[k]??'').trim();if(!raw)return null;const v=Number(k.startsWith('price')||k==='seedPrice'?ungroupAmount(raw):raw);return isFinite(v)&&v>=0?v:NaN};
+   const entry={};for(const k of ['seedPrice','priceMin','priceMax','yieldMin','yieldMax','weight','seedWeight']){const v=num(k);if(Number.isNaN(v)){toast('Skontroluj číslo v poli.');return}if(v!=null)entry[k]=v}
+   if(entry.priceMin!=null&&entry.priceMax!=null&&entry.priceMin>entry.priceMax){toast('Najnižšia cena je vyššia ako najvyššia.');return}
+   if(entry.yieldMin!=null&&entry.yieldMax!=null&&entry.yieldMin>entry.yieldMax){toast('Najmenej kusov je viac ako najviac.');return}
+   if(d.recovery)entry.recovery=d.recovery==='yes';
+   const old=db.catalog?.[name]||{};
+   const file=e.target.elements.picture?.files?.[0];
+   const finish=()=>{db.catalog={...(db.catalog||{}),[name]:entry};save();close();render();toast(name+' uložené.')};
+   if(file){shrinkImage(file).then(img=>{entry.image=img;finish()},()=>toast('Obrázok sa nepodarilo načítať.'));return}
+   if(old.image&&!d.dropImage)entry.image=old.image;
+   finish();return}
  else if(id==='dealform'){
    const f=db.farms.find(x=>x.id===d.farm);if(!f)return;
    const shares={};for(const [k,v] of Object.entries(d))if(k.startsWith('share_')&&+v>0)shares[k.slice(6)]=Math.round(+v*100)/100;
@@ -1374,6 +1475,7 @@ function recordList(state=db){
   if(state.workPrices)st.workPrices=state.workPrices;
   if(state.melonHours!=null)st.melonHours=state.melonHours;
   if(state.melonDryHours!=null)st.melonDryHours=state.melonDryHours;
+  if(state.catalog)st.catalog=state.catalog;
   out.push({kind:'settings',id:'main',data:st});
   return out;
 }
@@ -1391,6 +1493,7 @@ function applyRecords(list){
       if(+d.growth>0)next.growth=+d.growth;if(+d.dry>0)next.dry=+d.dry;
       if(+d.melonHours>0)next.melonHours=+d.melonHours;if(+d.melonDryHours>0)next.melonDryHours=+d.melonDryHours;
       if(d.workPrices&&typeof d.workPrices==='object')next.workPrices=d.workPrices;
+      if(d.catalog&&typeof d.catalog==='object')next.catalog=d.catalog;
     }
   }
   db=next;
