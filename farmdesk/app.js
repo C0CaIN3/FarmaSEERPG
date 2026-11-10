@@ -658,22 +658,36 @@ function cropDetail(name){
   const seed=n(c.seedPrice),pmin=n(c.priceMin),pmax=n(c.priceMax),ymin=n(c.yieldMin),ymax=n(c.yieldMax);
   const cost=seed!=null?seed*cropParcels:null;
   const lo=cost!=null&&pmin!=null&&ymin!=null?pmin*ymin*cropParcels-cost:null,hi=cost!=null&&pmax!=null&&ymax!=null?pmax*ymax*cropParcels-cost:null;
+  // Every field gives a random number of pieces, so over many fields the harvest evens out near the average.
+  // The price of a sale is what really moves the result, so the usual range keeps the whole price range.
+  const ok=lo!=null&&hi!=null,yAvg=ok?(ymin+ymax)/2:0,pAvg=ok?(pmin+pmax)/2:0;
+  const ySd=ok?Math.sqrt(((ymax-ymin+1)**2-1)/12):0,pieces=yAvg*cropParcels,spread=2*ySd*Math.sqrt(cropParcels);
+  const expect=ok?Math.round(pieces*pAvg-cost):null;
+  const usualLo=ok?Math.round(Math.max(ymin*cropParcels,pieces-spread)*pmin-cost):null,usualHi=ok?Math.round(Math.min(ymax*cropParcels,pieces+spread)*pmax-cost):null;
+  const real=cropCycles().filter(c=>c.crop===name&&c.size===cropParcels&&c.revenue>0);
+  const realAvg=real.length?Math.round(real.reduce((n,c)=>n+c.revenue-c.cost,0)/real.length):null;
   const row=(icon,label,value,sub='')=>'<div class="crop-row">'+ic(icon)+'<span>'+label+(sub?'<small>'+sub+'</small>':'')+'</span><b>'+value+'</b></div>';
   const missing='<em class="crop-missing">nezapísané</em>';
   const range=(a,b)=>a==null&&b==null?missing:a===b||b==null?money(a??b):a==null?money(b):'<span class="gain">'+money(a)+' – '+money(b)+'</span>';
   const parcels='<span class="parcel-pick">'+[40,80,120].map(p=>'<button class="'+(p===cropParcels?'on':'')+'" data-a="cropparcels:'+p+'">'+p+' polí</button>').join('')+'</span>';
-  const profit=lo==null&&hi==null?missing:'<span class="'+(lo<0?'loss':'gain')+'">'+money(lo??hi)+'</span> – <span class="'+(hi<0?'loss':'gain')+'">'+money(hi??lo)+'</span>';
+  const tone=v=>v<0?'loss':'gain';
+  const profit=!ok?missing:'<span class="crop-expect '+tone(expect)+'">'+money(expect)+'</span>';
+  const profitSub=ok?'<div class="crop-ranges"><div><span>Bežne</span><b><span class="'+tone(usualLo)+'">'+money(usualLo)+'</span> – <span class="'+tone(usualHi)+'">'+money(usualHi)+'</span></b></div>'+
+    '<div><span>Úroda spolu</span><b>asi '+fmt(Math.round(pieces))+' ks (± '+fmt(Math.round(spread))+')</b></div>'+
+    '<div><span>Priemerná cena</span><b>'+money(Math.round(pAvg))+' / ks</b></div>'+
+    '<div class="crop-extreme"><span>Najhorší / najlepší prípad</span><b>'+money(lo)+' – '+money(hi)+'</b></div>'+
+    (realAvg!=null?'<div class="crop-real"><span>Podľa vašich predajov ('+real.length+(real.length===1?' cyklus':real.length<5?' cykly':' cyklov')+')</span><b class="'+tone(realAvg)+'">'+money(realAvg)+'</b></div>':'')+'</div>':'';
   const farmsNow=activeFarms().filter(f=>f.planted&&f.crop===name);
   return '<button class="crop-back" data-a="cropsel:">'+ic('arrow')+'Všetky plodiny</button>'+
     '<div class="crop-hero">'+cropPicture(c,96)+'<div><h2>'+E(name)+'</h2><p>'+E(c.hu||'')+' · rast '+fmt(growthHours({crop:name}))+' h · voda vydrží '+hmText(dryingHours({crop:name}))+'</p></div>'+btn('Upraviť','cropedit:'+name,'settings')+'</div>'+
     row('wallet','Cena semienka',seed!=null?money(seed)+' / pole':missing)+
     row('cash','Predajná cena úrody (1 ks)',range(pmin,pmax))+
-    '<div class="crop-row crop-profit">'+ic('chart')+'<span>Možný zisk<small>'+(cost!=null?'Náklad na semienka: '+money(cost):'Doplň cenu semienka')+'</small></span><div>'+parcels+'<b>'+profit+'</b></div></div>'+
+    '<div class="crop-row crop-profit">'+ic('chart')+'<span>Očakávaný zisk<small>'+(cost!=null?'Náklad na semienka: '+money(cost):'Doplň cenu semienka')+'</small></span><div>'+parcels+'<b>'+profit+'</b></div>'+profitSub+'</div>'+
     row('sprout','Vrátenie semienka',c.recovery==null?missing:c.recovery?'Áno':'Nie')+
-    '<div class="crop-tiles"><div class="crop-tile">'+ic('sprout')+'<span><small>Osivo</small><strong>'+E(name)+' – semienko</strong><small>Hmotnosť: '+(n(c.seedWeight)!=null?fmt(c.seedWeight)+' g':'žiadna')+'</small></span></div>'+
+    '<div class="crop-tiles"><div class="crop-tile">'+ic('sprout')+'<span><small>Osivo</small><strong>'+E(name)+' – semienko</strong><small>Hmotnosť: '+(n(c.seedWeight)?fmt(c.seedWeight)+' g':'žiadna')+'</small></span></div>'+
     '<div class="crop-tile">'+cropPicture(c,34)+'<span><small>Úroda</small><strong>'+E(name)+(ymin!=null||ymax!=null?' ('+(ymin??'?')+' – '+(ymax??'?')+' ks z poľa)':'')+'</strong><small>Hmotnosť: '+(n(c.weight)!=null?fmt(c.weight)+' g':'—')+'</small></span></div></div>'+
     (farmsNow.length?'<p class="hint">Teraz rastie na '+farmsNow.length+' '+(farmsNow.length===1?'farme':'farmách')+': '+farmsNow.map(f=>E(f.name)).join(', ')+'.</p>':'')+
-    '<p class="hint">Zisk = (cena za kus × kusy z poľa × počet polí) − semienka. Rozsah je od najhoršieho po najlepší zber a cenu. Nájom a pracovníci sa sem nerátajú.</p>';
+    '<p class="hint">Očakávaný zisk = priemerné kusy z poľa × počet polí × priemerná cena − semienka. Každé pole dá iný počet kusov, ale na mnohých poliach sa to vyrovná, preto „bežne“ počíta s priemernou úrodou (± kolísanie) a celým rozsahom ceny. Najhorší prípad by znamenal najmenej kusov na každom poli a najnižšiu cenu naraz, to sa takmer nestane. Nájom a pracovníci sa sem nerátajú.</p>';
 }
 function cropEditForm(name){
   const c=cropInfo(name),v=k=>c[k]??'';

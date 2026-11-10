@@ -195,3 +195,7 @@ input.switch:checked{background:var(--growth)}input.switch:checked::before{trans
 }
 @media(min-width:641px) and (max-width:1000px){:root{--rail:172px}}
 @media(min-width:641px){#sidebar button.rail-avatar{width:100%!important;height:auto!important;padding:8px 10px!important;background:#ffffff08!important;border-radius:10px}#sidebar button.rail-avatar:hover{background:#ffffff12!important}.top-id>strong,.top-id>.divider,.top-id>.server-name{display:none}}
+.crop-profit{flex-wrap:wrap}.crop-expect{font-size:20px;font-weight:700}
+.crop-ranges{flex-basis:100%;display:grid;gap:5px;margin-top:8px;padding-top:10px;border-top:1px solid #ffffff10}.crop-ranges>div{display:flex;justify-content:space-between;gap:10px;font-size:12px}.crop-ranges span{color:var(--soft)}.crop-ranges b{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.crop-extreme b{color:#8b979e;font-weight:500}.crop-real b{font-size:13px}
+.crop-profit>div.crop-ranges{justify-items:stretch;width:100%}
