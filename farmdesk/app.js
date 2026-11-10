@@ -650,8 +650,42 @@ function cropsPage(){
   const sel=cropSel&&catalogNames.includes(cropSel)?cropSel:null,showing=sel||catalogNames[1];
   const growing=n=>activeFarms().filter(f=>f.planted&&f.crop===n).length;
   const list='<nav class="crop-list" aria-label="Plodiny">'+catalogNames.map(n=>{const c=cropInfo(n),g=growing(n);return '<button class="crop-item '+(n===showing?'on':'')+'" data-a="cropsel:'+E(n)+'">'+cropPicture(c,38)+'<span><strong>'+E(n)+'</strong><small>'+E(c.hu)+'</small></span>'+(g?'<em>'+g+'</em>':'')+'</button>'}).join('')+'</nav>';
-  return heading('Plodiny','Ceny semienok a úrody, výnos a možný zisk podľa počtu polí. Údaje zapisujete vy, platia pre celý tím.')+
+  return heading('Plodiny','Ceny semienok a úrody, výnos a možný zisk podľa počtu polí. Údaje zapisujete vy, platia pre celý tím.')+(sel&&innerWidth<=760?'':cropCompare())+
     '<div class="crops-shell '+(sel?'has-detail':'')+'">'+list+'<div class="crop-detail">'+cropDetail(showing)+'</div></div>';
+}
+// Expected result of one crop for a number of fields, from the prices and yields in the catalogue,
+// plus the real average from harvests and sales recorded on the farms (scaled to the same number of fields).
+function cropEstimate(name,fields=cropParcels){
+  const c=cropInfo(name),n=v=>v!=null&&v!==''&&!isNaN(+v)?+v:null;
+  const seed=n(c.seedPrice),pmin=n(c.priceMin),pmax=n(c.priceMax),ymin=n(c.yieldMin),ymax=n(c.yieldMax);
+  const ok=seed!=null&&pmin!=null&&pmax!=null&&ymin!=null&&ymax!=null;
+  const cycles=cropCycles().filter(x=>x.crop===name&&x.revenue>0&&x.size>0);
+  const real=cycles.length?{n:cycles.length,profit:Math.round(cycles.reduce((t,x)=>t+(x.revenue-x.cost)/x.size,0)/cycles.length*fields),
+    perPiece:(()=>{const w=cycles.filter(x=>x.pieces>0);return w.length?Math.round(w.reduce((t,x)=>t+x.revenue,0)/w.reduce((t,x)=>t+x.pieces,0)):null})(),
+    piecesPerField:(()=>{const w=cycles.filter(x=>x.pieces>0);return w.length?w.reduce((t,x)=>t+x.pieces,0)/w.reduce((t,x)=>t+x.size,0):null})()}:null;
+  if(!ok)return {name,ok,real};
+  const cost=seed*fields,yAvg=(ymin+ymax)/2,pAvg=(pmin+pmax)/2,ySd=Math.sqrt(((ymax-ymin+1)**2-1)/12),pieces=yAvg*fields,spread=2*ySd*Math.sqrt(fields);
+  return {name,ok,real,cost,yAvg,pAvg,pieces,spread,
+    expect:Math.round(pieces*pAvg-cost),
+    usualLo:Math.round(Math.max(ymin*fields,pieces-spread)*pmin-cost),usualHi:Math.round(Math.min(ymax*fields,pieces+spread)*pmax-cost),
+    lo:Math.round(pmin*ymin*fields-cost),hi:Math.round(pmax*ymax*fields-cost)};
+}
+function cropCompare(){
+  const rows=catalogNames.map(n=>cropEstimate(n)).filter(r=>r.ok||r.real);
+  if(!rows.length)return '';
+  const score=r=>r.real?.profit??r.expect??-Infinity;
+  rows.sort((a,b)=>score(b)-score(a));
+  const best=rows[0];
+  const tone=v=>v<0?'loss':'gain';
+  const body=rows.map((r,i)=>'<tr class="'+(i===0?'best-row':'')+'" data-a="cropsel:'+E(r.name)+'" role="button" tabindex="0"><th scope="row"><span class="cmp-name">'+cropPicture(cropInfo(r.name),26)+E(r.name)+(i===0?' <span class="pill ready">najlepšie</span>':'')+'</span></th>'+
+    '<td><b class="'+(r.ok?tone(r.expect):'')+'">'+(r.ok?money(r.expect):'—')+'</b></td>'+
+    '<td>'+(r.ok?money(r.usualLo)+' – '+money(r.usualHi):'—')+'</td>'+
+    '<td>'+(r.ok?fmt(Math.round(r.yAvg*10)/10)+' ks':'—')+'</td>'+
+    '<td>'+(r.ok?money(Math.round(r.pAvg)):'—')+'</td>'+
+    '<td>'+(r.real?'<b class="'+tone(r.real.profit)+'">'+money(r.real.profit)+'</b><small>'+r.real.n+(r.real.n===1?' cyklus':r.real.n<5?' cykly':' cyklov')+'</small>':'<small>zatiaľ nie</small>')+'</td></tr>').join('');
+  return '<section class="panel crop-compare">'+section('Porovnanie plodín · '+cropParcels+' polí','<span class="parcel-pick">'+[40,80,120].map(p=>'<button class="'+(p===cropParcels?'on':'')+'" data-a="cropparcels:'+p+'">'+p+'</button>').join('')+'</span>')+
+    '<div class="tablewrap"><table><thead><tr><th>Plodina</th><th>Očakávaný zisk</th><th>Bežne</th><th>Kusy z poľa (priem.)</th><th>Cena (priem.)</th><th>Skutočne podľa predajov</th></tr></thead><tbody>'+body+'</tbody></table></div>'+
+    '<p class="hint">Všetky plodiny rastú rovnako dlho (44 h), takže stačí porovnať zisk za cyklus. Poradie je podľa skutočných predajov, ak už sú, inak podľa očakávaného zisku z cien v katalógu. Skutočné čísla sa prepočítajú na '+cropParcels+' polí, aby sa dali porovnať farmy rôznej veľkosti. Presnosť rastie s každým zberom, pri ktorom zapíšete plodinu a predaj.</p></section>';
 }
 function cropDetail(name){
   const c=cropInfo(name),n=v=>v!=null&&v!==''&&!isNaN(+v)?+v:null;
