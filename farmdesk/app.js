@@ -627,7 +627,7 @@ async function loadHistory(force=false){
   historyState.loading=false;
   if(page==='settings'&&settingsTab==='history'&&!$('#modal').open)render();
 }
-const fieldNames={name:'názov',loc:'budova',floor:'poschodie',door:'dvere',size:'veľkosť',type:'typ prenájmu',due:'termín nájmu',term:'termín',rentAmount:'cena nájmu',leaseDays:'doba prenájmu',owner:'prenajímateľ',phone:'telefón',account:'účet',reminders:'pripomienky',assignments:'dohody s pracovníkmi',notes:'poznámka',createdAt:'dátum pridania'};
+const fieldNames={shareDeal:'dohodu o podieloch',buyIns:'prevody medzi hráčmi',name:'názov',loc:'budova',floor:'poschodie',door:'dvere',size:'veľkosť',type:'typ prenájmu',due:'termín nájmu',term:'termín',rentAmount:'cena nájmu',leaseDays:'doba prenájmu',owner:'prenajímateľ',phone:'telefón',account:'účet',reminders:'pripomienky',assignments:'dohody s pracovníkmi',notes:'poznámka',createdAt:'dátum pridania'};
 function histFarmName(h){const d=h.new_data||h.old_data||{};if(h.kind==='farm')return d.name||'Farma';return d.farm?(db.farms.find(f=>f.id===d.farm)?.name||'Odstránená farma'):'Všeobecné'}
 function describeChange(h){
   const n=h.new_data||{},o=h.old_data||{},d=h.op==='delete'?o:n;
@@ -1093,6 +1093,10 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
  else if(a==='install'&&installPrompt){installPrompt.prompt();installPrompt.userChoice.finally(()=>{installPrompt=null;render()})}
  else if(a==='settle'&&f){const st=settlementFor(f);if(st)confirmBox('Uzavrieť vyúčtovanie?',(st.transfers.length?st.transfers.map(t=>playerName(t.from)+' pošle '+playerName(t.to)+' '+money(t.amount)).join(' · ')+'. ':'Nikto nikomu nič neposiela. ')+'Po uzavretí sa prevody započítajú hráčom v Ekonomike.','settleok:'+id)}
  else if(a==='settleok'&&f){closeSettlement(f);save();close();render();toast('Vyúčtovanie je uzavreté.')}
+ else if(a==='deal'&&f)dealForm(f);
+ else if(a==='dealoff'&&f){delete f.shareDeal;save();close();render();toast('Dohoda bola zrušená. Delí sa podľa vkladu.')}
+ else if(a==='buyin'&&f)buyInForm(f);
+ else if(a==='buyindel'){const [fid,bid]=id.split('|'),farm=db.farms.find(x=>x.id===fid);if(farm){farm.buyIns=(farm.buyIns||[]).filter(b=>b.id!==bid);save();render()}}
  else if(a==='settlereopen'&&f)confirmBox('Otvoriť vyúčtovanie znova?','Prevody z tohto vyúčtovania sa prestanú rátať v Ekonomike, kým ho znova neuzavrieš.','settlereopenok:'+id);
  else if(a==='settlereopenok'&&f){const st=settlementFor(f);if(st?.closed)f.settlements=(f.settlements||[]).filter(x=>x!==st.closed);save();close();render()}else if(a==='back'){if(/^#farma-/.test(location.hash)&&history.length>1)history.back();else go(prevPage||'overview')}else if(a==='waterview')go('water');
 else if(a==='moneyview'){moneyView=id==='me'?'me':'all';try{localStorage.setItem('farmdesk-money-view',moneyView)}catch{}render()}else if(a==='waterspan'){waterHours=[12,24,48].includes(+id)?+id:24;render()}
@@ -1246,6 +1250,20 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
      if(d.category==='sale'&&d.harvested&&sold?.planted&&!sold.archived)harvestFromSale(sold,at);
    }
  }
+ else if(id==='dealform'){
+   const f=db.farms.find(x=>x.id===d.farm);if(!f)return;
+   const shares={};for(const [k,v] of Object.entries(d))if(k.startsWith('share_')&&+v>0)shares[k.slice(6)]=Math.round(+v*100)/100;
+   const total=Object.values(shares).reduce((n,v)=>n+v,0);
+   if(Math.abs(total-100)>=0.01){toast('Podiely musia byť spolu 100 %.');return}
+   f.shareDeal={shares,labor:!!d.labor,at:now(),by:me?.user_id||null};save();close();render();toast('Dohoda uložená: '+dealText(f.shareDeal)+'.');return}
+ else if(id==='buyinform'){
+   const f=db.farms.find(x=>x.id===d.farm),amount=Number(ungroupAmount(d.amount)),at=new Date(d.at).getTime();
+   if(!f)return;
+   if(d.from===d.to){toast('Vyber dvoch rôznych hráčov.');return}
+   if(!(amount>0)){toast('Zadaj sumu.');return}
+   if(!(at>0)||at>now()+60000){toast('Zadaj platný čas.');return}
+   f.buyIns=[...(f.buyIns||[]),{id:uid(),from:d.from,to:d.to,amount:cents(amount),at,note:(d.note||'').trim().slice(0,120)}];
+   save();close();render();toast(playerName(d.from)+' poslal '+playerName(d.to)+' '+money(cents(amount))+'.');return}
  else if(id==='workprices'){
    const prices={};
    for(const k of jobShown){const n=Number(ungroupAmount(d['price_'+k]||'0'));if(!isAmount(n)){toast('Skontroluj cenu práce '+jobs[k][0]+'.');return}prices[k]=n}
@@ -1494,6 +1512,7 @@ function playerTotals(){
   for(const x of db.tx){const r=add(recordMeta('tx',x.id)?.created_by??me?.user_id);if(x.category==='sale')r.rev+=x.amount;else r.cost+=x.amount}
   // Money passed between players in closed settlements moves profit from the seller to the investors.
   for(const f of db.farms)for(const st of f.settlements||[])for(const t of st.transfers||[]){add(t.from).adj-=t.amount;add(t.to).adj+=t.amount}
+  for(const f of db.farms)for(const b of f.buyIns||[]){add(b.from).cost+=b.amount;add(b.to).cost-=b.amount}
   return [...rows].map(([uid,r])=>({uid,...r,profit:r.rev-r.cost+r.adj}));
 }
 function myMoney(){return playerTotals().find(r=>r.uid===me?.user_id)||{uid:me?.user_id,rev:0,cost:0,adj:0,profit:0}}
@@ -1538,10 +1557,19 @@ function settlementFor(f){
     const value=jobValue(f,l.action),crew=l.players?.length?l.players:[recordMeta('log',l.id)?.created_by??me?.user_id];
     for(const uid of crew){const p=add(uid);p.labor=cents(p.labor+value/crew.length);p.jobs+=1/crew.length}
   }
-  const people=[...per.values()].filter(p=>p.invested||p.received||p.labor);
+  // Money one player paid another for part of the farm moves investment from the receiver to the payer.
+  const buyIns=(f.buyIns||[]).filter(b=>b.at>=period.start&&b.at<period.end);
+  for(const b of buyIns){add(b.from).invested+=b.amount;add(b.to).invested-=b.amount}
+  const deal=dealFor(f);
+  if(deal)for(const uid of Object.keys(deal.shares))add(uid);
+  const people=[...per.values()].filter(p=>p.invested||p.received||p.labor||deal?.shares[p.uid]);
   const invested=people.reduce((n,p)=>n+p.invested,0),labor=people.reduce((n,p)=>n+p.labor,0),revenue=people.reduce((n,p)=>n+p.received,0);
-  const stakes=invested+labor;
-  for(const p of people){p.stake=p.invested+p.labor;p.share=stakes?p.stake/stakes:0;p.due=Math.round(revenue*p.share)}
+  const stakes=deal?100:invested+labor;
+  if(deal){
+    // Agreed shares: costs (and own work, if it counts) go back to whoever paid them, the rest is split by the shares.
+    const back=p=>p.invested+(deal.labor?p.labor:0),pool=revenue-people.reduce((n,p)=>n+back(p),0);
+    for(const p of people){p.stake=back(p);p.share=(deal.shares[p.uid]||0)/100;p.due=Math.round(back(p)+pool*p.share)}
+  }else for(const p of people){p.stake=p.invested+p.labor;p.share=stakes?p.stake/stakes:0;p.due=Math.round(revenue*p.share)}
   if(people.length&&stakes){const top=people.reduce((a,b)=>b.share>a.share?b:a);top.due+=Math.round(revenue)-people.reduce((n,p)=>n+p.due,0)}
   for(const p of people){p.profit=cents(p.due-p.invested);p.balance=cents(p.due-p.received)}
   // Who sends money to whom: largest debts paid to largest claims first.
@@ -1556,17 +1584,50 @@ function settlementFor(f){
     }
   }
   const closed=(f.settlements||[]).find(st=>st.start===period.start&&st.end===period.end)||null;
-  return {period,people,invested,labor,stakes,revenue,transfers,closed};
+  return {period,people,invested,labor,stakes,revenue,transfers,closed,deal,buyIns};
+}
+function dealFor(f){
+  const d=f.shareDeal;
+  if(!d||typeof d!=='object'||!d.shares)return null;
+  const total=Object.values(d.shares).reduce((n,v)=>n+(+v||0),0);
+  return Math.abs(total-100)<0.01?d:null;
+}
+const dealText=d=>Object.entries(d.shares).filter(([,v])=>+v>0).sort((a,b)=>b[1]-a[1]).map(([uid,v])=>playerName(uid)+' '+fmt(+v)+' %').join(' · ');
+function dealForm(f){
+  const d=f.shareDeal,active=members.filter(m=>m.status==='active');
+  const rows=active.map(m=>'<div class="deal-row">'+farmer(m.user_id,26,m.name)+'<span>'+E(m.name)+'</span><input type="number" name="share_'+E(m.user_id)+'" min="0" max="100" step="0.01" inputmode="decimal" value="'+(d?.shares?.[m.user_id]??'')+'" placeholder="0"><b>%</b></div>').join('');
+  modal('Dohoda o podieloch · '+f.name,form('dealform','<input type="hidden" name="farm" value="'+E(f.id)+'">'+
+    '<p class="wide hint">Pri vyúčtovaní sa z tržby najprv vrátia náklady tomu, kto ich zaplatil. Zvyšok (zisk alebo strata) sa rozdelí podľa podielov. Spolu musí byť 100 %.</p>'+
+    '<div class="wide deal-rows">'+rows+'</div><p class="wide deal-sum" id="deal-sum"></p>'+
+    '<label class="checkline wide"><input type="checkbox" name="labor" '+(d?.labor?'checked':'')+'><span><strong>Rátať aj vlastnú prácu</strong><small>Zapnuté: hodnota vlastnej práce sa vráti ako náklad, ešte pred delením. Vypnuté: práca je zahrnutá v podiele.</small></span></label>'+
+    (d?'<div class="wide actiongrid">'+btn('Zrušiť dohodu','dealoff:'+f.id,'x','danger')+'</div>':''),'Uložiť dohodu'));
+  dealSum();
+}
+function dealSum(){
+  const fm=$('#dealform'),out=$('#deal-sum');if(!fm||!out)return;
+  const total=[...fm.querySelectorAll('input[name^="share_"]')].reduce((n,i)=>n+(+i.value||0),0);
+  out.textContent='Spolu '+fmt(Math.round(total*100)/100)+' %'+(Math.abs(total-100)<0.01?'':' · musí byť 100 %');out.classList.toggle('loss',Math.abs(total-100)>=0.01);
+}
+function buyInForm(f){
+  const active=members.filter(m=>m.status==='active'),opts=active.map(m=>[m.user_id,m.name]);
+  const other=active.find(m=>m.user_id!==me?.user_id)?.user_id;
+  modal('Prevod medzi hráčmi · '+f.name,form('buyinform','<input type="hidden" name="farm" value="'+E(f.id)+'">'+
+    '<p class="wide hint">Keď jeden hráč pošle druhému peniaze za časť farmy (napríklad polovicu jeho investície). Náklady farmy sa nemenia, len sa presunie, kto koľko vložil.</p>'+
+    select('Kto poslal','from',opts,other||me?.user_id)+select('Komu','to',opts,me?.user_id)+
+    forintField('Suma','amount','',{required:true})+field('Kedy','at','datetime-local',local(now()),'required max="'+local(now())+'"')+
+    field('Poznámka','note','text','','maxlength="120" placeholder="napr. polovica semienok a nájmu"'),'Zapísať prevod'));
 }
 function settlementBox(f){
   const st=settlementFor(f);
   if(!st)return '';
-  const {period,people,invested,labor,stakes,revenue,transfers,closed}=st;
-  const head=`<section class="contract-box settle-box"><h3>Vyúčtovanie hráčov</h3><p class="account-dates">Nájom ${date(period.start)} – ${date(period.end)} · delí sa podľa peňazí a vlastnej práce</p>`;
+  const {period,people,invested,labor,stakes,revenue,transfers,closed,deal,buyIns}=st;
+  const tools='<div class="actiongrid settle-tools">'+btn(deal?'Upraviť dohodu':'Dohoda o podieloch','deal:'+f.id,'user')+btn('Prevod medzi hráčmi','buyin:'+f.id,'wallet')+'</div>';
+  const buyList=buyIns.length?'<div class="buyin-list">'+buyIns.map(b=>'<div class="transfer">'+farmer(b.from,22,playerName(b.from))+'<span><strong>'+E(playerName(b.from))+'</strong> poslal <strong>'+E(playerName(b.to))+'</strong>'+(b.note?'<small>'+E(b.note)+'</small>':'')+'</span><b>'+money(b.amount)+'</b>'+btn('','buyindel:'+f.id+'|'+b.id,'x','small')+'</div>').join('')+'</div>':'';
+  const head=`<section class="contract-box settle-box"><h3>Vyúčtovanie hráčov</h3><p class="account-dates">Nájom ${date(period.start)} – ${date(period.end)} · ${deal?'delí sa podľa dohody: <strong>'+E(dealText(deal))+'</strong>'+(deal.labor?' (práca sa ráta)':''):'delí sa podľa peňazí a vlastnej práce'}</p>${tools}${buyList}`;
   if(!people.length)return head+empty('V tomto nájme zatiaľ nikto nič nezaplatil, neodpracoval ani nepredal.')+'</section>';
   const signed=n=>n?money(n):'—';
-  const table=`<div class="tablewrap"><table><thead><tr><th>Hráč</th><th>Peniaze</th><th>Práca</th><th>Podiel</th><th>Má dostať</th><th>Zisk</th></tr></thead><tbody>${people.sort((a,b)=>b.stake-a.stake).map(p=>`<tr><th scope="row"><span class="player-cell">${farmer(p.uid,22,playerName(p.uid))}${E(playerName(p.uid))}</span></th><td>${signed(p.invested)}</td><td title="${fmt(Math.round(p.jobs*10)/10)} prác">${signed(p.labor)}</td><td>${stakes?fmt(Math.round(p.share*1000)/10)+' %':'—'}</td><td>${money(p.due)}</td><td class="${p.profit<0?'loss':p.profit>0?'gain':''}">${money(p.profit)}</td></tr>`).join('')}<tr class="total-row"><th scope="row">Spolu</th><td>${money(invested)}</td><td>${money(labor)}</td><td>100 %</td><td>${money(revenue)}</td><td class="${revenue-invested<0?'loss':revenue-invested>0?'gain':''}">${money(cents(revenue-invested))}</td></tr></tbody></table></div>`;
-  const note='<p class="hint">Práca = hodnota prác, ktoré ste spravili sami (ceny v Nastaveniach). Zisk = čo má hráč dostať mínus peniaze, ktoré vložil.</p>';
+  const table=`<div class="tablewrap"><table><thead><tr><th>Hráč</th><th>Peniaze</th><th>Práca</th><th>${deal?'Dohodnutý podiel':'Podiel'}</th><th>Má dostať</th><th>Zisk</th></tr></thead><tbody>${people.sort((a,b)=>b.stake-a.stake).map(p=>`<tr><th scope="row"><span class="player-cell">${farmer(p.uid,22,playerName(p.uid))}${E(playerName(p.uid))}</span></th><td>${signed(p.invested)}</td><td title="${fmt(Math.round(p.jobs*10)/10)} prác">${signed(p.labor)}</td><td>${stakes?fmt(Math.round(p.share*1000)/10)+' %':'—'}</td><td>${money(p.due)}</td><td class="${p.profit<0?'loss':p.profit>0?'gain':''}">${money(p.profit)}</td></tr>`).join('')}<tr class="total-row"><th scope="row">Spolu</th><td>${money(invested)}</td><td>${money(labor)}</td><td>100 %</td><td>${money(revenue)}</td><td class="${revenue-invested<0?'loss':revenue-invested>0?'gain':''}">${money(cents(revenue-invested))}</td></tr></tbody></table></div>`;
+  const note=deal?'<p class="hint">Má dostať = vrátené náklady'+(deal.labor?' a práca':'')+' + podiel zo zisku (alebo straty). Peniaze zahŕňajú aj prevody medzi hráčmi. Zisk = čo má hráč dostať mínus peniaze, ktoré vložil.</p>':'<p class="hint">Práca = hodnota prác, ktoré ste spravili sami (ceny v Nastaveniach). Zisk = čo má hráč dostať mínus peniaze, ktoré vložil.</p>';
   if(!stakes)return head+table+'<p class="hint">Nikto zatiaľ nič nevložil ani neodpracoval, takže nie je podľa čoho deliť.</p></section>';
   if(!revenue)return head+table+note+'<p class="hint">Po predaji úrody tu uvidíš, kto komu koľko pošle. Kto predá, zapíše predaj na tejto farme.</p></section>';
   const transferRows=list=>list.length?list.map(t=>`<div class="transfer">${farmer(t.from,26,playerName(t.from))}<span><strong>${E(playerName(t.from))}</strong> pošle <strong>${E(playerName(t.to))}</strong></span>${farmer(t.to,26,playerName(t.to))}<b>${money(t.amount)}</b></div>`).join(''):'<p class="hint">Peniaze sú už rozdelené správne, nikto nikomu nič neposiela.</p>';
@@ -1602,7 +1663,7 @@ function closeSettlement(f){
   const st=settlementFor(f);
   if(!st||!st.revenue||!st.stakes||st.closed)return;
   f.settlements=[...(f.settlements||[]),{start:st.period.start,end:st.period.end,closedAt:now(),closedBy:me?.user_id||null,invested:cents(st.invested),labor:cents(st.labor),revenue:cents(st.revenue),
-    shares:st.people.map(p=>({uid:p.uid,invested:cents(p.invested),labor:cents(p.labor),received:cents(p.received),due:p.due})),transfers:st.transfers}];
+    shares:st.people.map(p=>({uid:p.uid,invested:cents(p.invested),labor:cents(p.labor),received:cents(p.received),due:p.due})),transfers:st.transfers,...(st.deal?{deal:{shares:{...st.deal.shares},labor:!!st.deal.labor}}:{})}];
 }
 // ---- Push notifications to this device (sent by the farmdesk-notify Edge Function) ----
 const pushCategories=[
@@ -1785,3 +1846,4 @@ document.addEventListener('submit',async e=>{
 });
 document.body.insertAdjacentHTML('beforeend','<div class="mobileShade" data-a="menu"></div>');if(CLOUD)cloudStart();else{render();check();openFromHash()}
 window.addEventListener('hashchange',()=>{if(!CLOUD||cloudReady)openFromHash()});document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(!CLOUD||cloudReady)){check();refreshDuePanel();if(CLOUD)scheduleRefresh(100)}});setInterval(()=>{if(CLOUD&&!cloudReady)return;check();refreshDuePanel();if(!$('#modal').open&&!document.activeElement.matches('input,select,button')&&page!=='settings')render()},30000);
+document.addEventListener('input',e=>{if(e.target.form?.id==='dealform')dealSum()});

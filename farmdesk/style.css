@@ -150,3 +150,6 @@ input.switch:checked{background:var(--growth)}input.switch:checked::before{trans
 .gbar.water i{background:#5db6e5}.gbar.growth i{background:#72cc72}.gbar.state i{background:#f0c850}
 .cardmeters .game-bars{margin:10px 0 0;padding:10px 12px 12px}
 .cardmeters{grid-template-columns:1fr}
+/* Share agreement and transfers between players */
+.settle-tools{margin:8px 0 10px}.buyin-list{display:grid;gap:4px;margin-bottom:10px}.buyin-list .transfer small{display:block;font-size:10px;color:var(--soft)}
+.deal-rows{display:grid;gap:6px}.deal-row{display:grid;grid-template-columns:auto 1fr 90px auto;gap:8px;align-items:center;font-size:13px}.deal-row input{text-align:right}.deal-sum{font-size:12px;font-weight:600;color:#afe7ae;margin:0}.deal-sum.loss{color:#ff9292}
