@@ -97,7 +97,7 @@ const btn=(label,action,icon='',style='')=>'<button type="button" class="btn '+s
 const link=(label,action)=>'<button class="btnlink" data-a="'+action+'">'+label+ic('arrow')+'</button>';
 const melon='Vodný melón';
 const pumpkin='Tekvica',raspberry='Malina';
-const namedCrops=['Paradajka','Malina','Jahoda','Tekvica','Vodný melón','Žltý melón','Uhorka','TV paprika','Čili paprika','Jablková paprika','Koka','Konope'];
+const namedCrops=['Paradajka','Malina','Jahoda','Tekvica','Vodný melón','Žltý melón','Uhorka','TV paprika','Čili paprika','Jablková paprika'];
 // Times of the server script, worked out from screenshots (farmdesk/merania): every crop grows in 44 h
 // and dries from a full watering in 35 h 12 min (water runs out 1.25 times faster than the crop grows).
 const CROP_TIMES=Object.fromEntries(namedCrops.map(n=>[n,{growth:44,dry:35.2}]));
@@ -623,9 +623,7 @@ const CATALOG=[
   {name:'Uhorka',hu:'Uborka',art:'cucumber'},
   {name:'TV paprika',hu:'TV paprika',art:'tvpepper'},
   {name:'Čili paprika',hu:'Chilipaprika',art:'chili'},
-  {name:'Jablková paprika',hu:'Almapaprika',art:'bell'},
-  {name:'Koka',hu:'Kokacserje',art:'coca'},
-  {name:'Konope',hu:'Kannabisz',art:'hemp'}
+  {name:'Jablková paprika',hu:'Almapaprika',art:'bell'}
 ];
 const catalogNames=CATALOG.map(c=>c.name);
 function cropInfo(name){const base=CATALOG.find(c=>c.name===name)||{name,hu:'',art:'tomato'};return {...base,...(db.catalog?.[name]||{})}}
@@ -643,8 +641,6 @@ function cropArt(kind,size=40){
     tvpepper:`<path d="M20 18c6-2 10 2 12 8 6 16 14 22 22 30-14 0-26-8-32-20-3-6-6-14-2-18Z" fill="#f2cf3a"/><path d="M18 18c-1-5 1-8 5-9" stroke="#4f8a2c" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
     chili:`<path d="M18 16c5-1 8 3 10 9 5 14 10 22 20 30-12 2-22-8-28-20-3-7-5-15-2-19Z" fill="#d42a2a"/><path d="M16 17c-2-5 0-8 4-9" stroke="#4f8a2c" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
     bell:`<path d="M14 30c0-10 8-14 18-14s18 4 18 14c0 12-4 24-11 24-3 0-5-3-7-3s-4 3-7 3c-7 0-11-12-11-24Z" fill="#f2c430"/><path d="M32 18v32" stroke="#d9a91b" stroke-width="2"/><path d="M32 17c0-5 2-8 6-8" stroke="#4f8a2c" stroke-width="4" fill="none" stroke-linecap="round"/>`,
-    coca:`${[[-60,'#3f7d36'],[-20,'#4f9b45'],[20,'#3f7d36'],[60,'#4f9b45'],[0,'#5aa84d']].map(([r,c])=>`<ellipse cx="32" cy="22" rx="7" ry="15" fill="${c}" transform="rotate(${r} 32 40)"/>`).join('')}<circle cx="26" cy="44" r="3" fill="#c9372c"/><circle cx="38" cy="46" r="3" fill="#c9372c"/>`,
-    hemp:`${[-75,-50,-25,0,25,50,75].map((r,i)=>`<ellipse cx="32" cy="${i===3?16:20}" rx="3.6" ry="${[9,12,15,17,15,12,9][i]}" fill="#4c9a3f" transform="rotate(${r} 32 42)"/>`).join('')}<path d="M32 42v14" stroke="#3a7a30" stroke-width="2.5"/>`
   }[kind]||'';
   return `<svg class="crop-art" viewBox="0 0 64 64" width="${size}" height="${size}" style="width:${size}px;height:${size}px" aria-hidden="true">${art}</svg>`;
 }
