@@ -333,14 +333,40 @@ document.addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('bellpop')){closeBell();document.querySelector('#top .bell')?.focus()}});
 // Fotky polí sa pri prekreslení (každých 30 s) nevymieňajú: použije sa ten istý, už vykreslený obrázok, takže nebliká.
 const photoPool=()=>{const m=new Map();document.querySelectorAll('main img[src^="crops/"]').forEach(i=>{const k=i.getAttribute('src');(m.get(k)||m.set(k,[]).get(k)).push(i)});return m};
-function keepPhotos(pool){document.querySelectorAll('main img[src^="crops/"]').forEach(n=>{const old=pool.get(n.getAttribute('src'))?.shift();if(old&&old!==n){old.alt=n.alt;old.className=n.className;n.replaceWith(old)}})}
+function keepPhotos(pool){document.querySelectorAll('main img[src^="crops/"]').forEach(n=>{const old=pool.get(n.getAttribute('src'))?.shift();if(old&&old!==n){syncAttrs(old,n);n.replaceWith(old)}})}
 // Menu, horná lišta a spodná lišta sa prepíšu len vtedy, keď sa naozaj zmenili.
 // Inak by sa pri automatickom prekreslení (každých 30 s) vymenili prvky pod myšou a blikali.
 const innerDesc=Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML');
 function guardHtml(el){if(!el||el.__guard)return;el.__guard=true;let last=null;
   Object.defineProperty(el,'innerHTML',{configurable:true,get(){return innerDesc.get.call(this)},set(v){if(el.__lock||v===last)return;last=v;innerDesc.set.call(this,v)}})}
+// Obsah stránky sa pri prekreslení tej istej stránky neprepisuje celý: existujúce prvky sa len upravia
+// (texty, atribúty), takže riadok pod myšou ostane ten istý a nebliká. Pri prechode na inú stránku sa obsah vymení normálne.
+function syncAttrs(a,b){
+  for(const {name} of [...a.attributes])if(!b.hasAttribute(name))a.removeAttribute(name);
+  for(const {name,value} of [...b.attributes])if(a.getAttribute(name)!==value)a.setAttribute(name,value);
+  if((a.tagName==='INPUT'||a.tagName==='TEXTAREA')&&a!==document.activeElement&&a.value!==b.value)a.value=b.value;
+  if(a.tagName==='OPTION')a.selected=b.selected;
+}
+function morph(a,b){
+  const ac=[...a.childNodes],bc=[...b.childNodes];
+  for(let i=0;i<bc.length;i++){
+    const x=ac[i],y=bc[i];
+    if(!x){a.appendChild(y);continue}
+    if(x.nodeType!==y.nodeType||x.nodeName!==y.nodeName||(x.nodeType===1&&(x.getAttribute('data-w')!==y.getAttribute('data-w')||x.id!==y.id))){a.replaceChild(y,x);continue}
+    if(x.nodeType===3||x.nodeType===8){if(x.nodeValue!==y.nodeValue)x.nodeValue=y.nodeValue;continue}
+    if(x.tagName==='IMG'&&x.getAttribute('src')===y.getAttribute('src')){syncAttrs(x,y);continue}
+    syncAttrs(x,y);morph(x,y);
+  }
+  for(let i=ac.length-1;i>=bc.length;i--)ac[i].remove();
+}
+let mainPage=null;
+function guardMain(el){if(!el||el.__morph)return;el.__morph=true;
+  Object.defineProperty(el,'innerHTML',{configurable:true,get(){return innerDesc.get.call(this)},set(v){
+    const key=page+':'+(page==='farm'?farmPageId:'');
+    if(key!==mainPage||!this.firstChild){mainPage=key;innerDesc.set.call(this,v);return}
+    const t=document.createElement('template');t.innerHTML=v;morph(this,t.content)}})}
 const shellRender=render;
-render=function(){document.documentElement.classList.add('no-anim');requestAnimationFrame(()=>requestAnimationFrame(()=>document.documentElement.classList.remove('no-anim')));if(page!=='overview')homeEdit=false;if(page==='alerts')page='overview';closeBell();const pool=photoPool();const side=$('#sidebar'),top=$('#top');guardHtml(side);guardHtml(top);side.__lock=top.__lock=true;try{shellRender()}finally{side.__lock=top.__lock=false}shell();
+render=function(){document.documentElement.classList.add('no-anim');requestAnimationFrame(()=>requestAnimationFrame(()=>document.documentElement.classList.remove('no-anim')));if(page!=='overview')homeEdit=false;if(page==='alerts')page='overview';closeBell();const pool=photoPool();const side=$('#sidebar'),top=$('#top');guardHtml(side);guardHtml(top);guardMain($('#main'));side.__lock=top.__lock=true;try{shellRender()}finally{side.__lock=top.__lock=false}shell();
   if(page==='farm'){const f=db.farms.find(x=>x.id===farmPageId),b=document.querySelector('main .detail-size-banner');if(f&&b&&cropPhoto(f))b.outerHTML=farmBanner(f,'farm-photo detail-photo')}
   keepPhotos(pool)};
 render();
