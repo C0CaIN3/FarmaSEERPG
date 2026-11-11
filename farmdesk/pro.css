@@ -268,3 +268,43 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 .cardheading>svg{color:var(--t3)}
 /* Pri automatickom prekreslení (každých 30 s) sa prvky pod myšou nesmú znova animovať, inak blikajú. */
 html.no-anim *,html.no-anim *:before,html.no-anim *:after{transition:none!important;animation:none!important}
+/* ---------- zvonček: okno upozornení ---------- */
+.bell-dot{position:absolute;top:8px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--t3);box-shadow:0 0 0 2px var(--s1)}
+#bellpop{width:min(400px,calc(100vw - 20px))!important;max-height:min(560px,75vh)!important;padding:0}
+.bp-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px!important}
+.bp-head strong{display:block;font-size:15px;font-weight:500}
+.bp-head span{display:block;margin-top:2px;font-size:12px;color:var(--t3)}
+.bp-list{overflow-y:auto;padding:4px 8px 8px;overscroll-behavior:contain}
+.bp-group{display:flex;align-items:center;gap:6px;margin:10px 8px 6px;font-size:12px;color:var(--t3)}
+.bp-group span{min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--s3);color:var(--t2);font-size:11px;line-height:18px;text-align:center}
+.bp-row{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:4px;border-radius:var(--r2)}
+.bp-row:hover{background:var(--s2)}
+.bp-row.is-new:before{content:'';position:absolute;left:-4px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:var(--gold)}
+.bp-main{display:grid;grid-template-columns:34px minmax(0,1fr);grid-template-rows:auto auto;column-gap:10px;align-items:center;min-width:0;padding:6px;border:0;background:none;color:var(--t1);text-align:left;border-radius:var(--r3)}
+.bp-ico{grid-row:1/3;width:34px;height:34px;border-radius:var(--r2);display:grid;place-items:center;background:var(--s3);color:var(--t2)}
+.bp-ico svg{width:16px;height:16px}
+.bp-txt{min-width:0}
+.bp-txt strong{display:block;font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bp-txt small{display:flex;align-items:center;gap:5px;margin-top:1px;font-size:12px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bp-txt small img{flex:none;object-fit:contain}
+.bp-val{grid-column:2;font-style:normal;font-size:12px;font-family:"Ubuntu Mono",monospace;color:var(--t2);margin-top:3px}
+.bp-act{height:30px;padding:0 10px;border-radius:var(--r3);border:1px solid var(--b2);background:var(--s2);color:var(--t1);font-size:12px;font-weight:500;white-space:nowrap}
+.bp-act:hover{background:var(--s3);border-color:var(--b3)}
+/* farby podľa typu */
+.t-late .bp-ico{background:var(--danger-soft);color:var(--danger-t)}.t-late .bp-val{color:var(--danger-t)}
+.t-water .bp-ico{background:var(--water-soft);color:var(--water-t)}.t-water .bp-val{color:var(--water-t)}
+.t-harvest .bp-ico{background:var(--growth-soft);color:var(--growth-t)}.t-harvest .bp-val{color:var(--growth-t)}
+.t-due .bp-ico{background:var(--warn-soft);color:var(--warn-t)}.t-due .bp-val{color:var(--warn-t)}
+.t-water .bp-act,.t-harvest .bp-act{background:var(--gold);border-color:var(--gold);color:var(--gold-t)}
+.t-water .bp-act:hover,.t-harvest .bp-act:hover{background:var(--gold-h)}
+.bp-empty{display:grid;justify-items:center;gap:4px;padding:28px 16px;text-align:center}
+.bp-empty span{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--growth-soft);color:var(--growth-t);margin-bottom:6px}
+.bp-empty strong{font-size:14px;font-weight:500}.bp-empty small{font-size:12px;color:var(--t3);max-width:260px}
+.bp-foot{display:flex;align-items:center;justify-content:center;gap:7px;padding:12px;border:0;border-top:1px solid var(--b1);background:none;color:var(--t2);font-size:13px}
+.bp-foot svg{width:15px;height:15px}.bp-foot:hover{color:var(--t1);background:var(--s2)}
+@media(max-width:640px){
+  #bellpop{left:8px!important;right:8px!important;width:auto!important;max-height:calc(100vh - 160px)!important}
+  .bp-row{grid-template-columns:1fr;gap:4px;padding:6px 4px}
+  .bp-act{justify-self:stretch;height:38px;margin-left:50px}
+}
+.bp-txt small .crop-art{width:14px!important;height:14px!important;flex:none}

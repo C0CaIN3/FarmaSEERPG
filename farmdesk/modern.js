@@ -274,32 +274,61 @@ card=function(f){
 const GROUPS=[['Hospodárstvo',[['overview','grid'],['farms','barn'],['crops','sprout']]],['Práca',[['water','water'],['history','log']]],['Peniaze',[['finance','chart']]],['Systém',[['settings','settings']]]];
 const groupOf=p=>(GROUPS.find(([,items])=>items.some(([k])=>k===p))||GROUPS[0])[0];
 function shell(){
-  const cur=page==='farm'?'farms':page,count=alerts().length,who=CLOUD?myName():'Farmár';
+  const cur=page==='farm'?'farms':page,count=alerts().length,fresh=unseenCount(),who=CLOUD?myName():'Farmár';
   document.body.dataset.page=page;
   const link=([p,i])=>`<button class="s-link ${cur===p?'on':''}" data-a="go:${p}" aria-current="${cur===p?'page':'false'}">${ic(i)}<span>${names[p]}</span>${p==='alerts'&&count?'<em>'+count+'</em>':''}</button>`;
   $('#sidebar').innerHTML=`<button class="s-brand" data-a="go:overview" aria-label="FarmDesk"><img src="assets/mark-96.png" alt=""><span><strong>FarmDesk</strong><small>SeeRPG</small></span></button>
     <nav>${GROUPS.map(([g,items])=>`<div class="s-group"><p>${g}</p>${items.map(link).join('')}</div>`).join('')}</nav>
     <button class="s-user" data-a="go:settings">${farmer(CLOUD?me?.user_id:'farmdesk',36,who)}<span><strong>${E(who)}</strong><small>${CLOUD?(isLeader()?'Leader':'Hráč'):'Ukážka na tomto zariadení'}</small></span></button>`;
   $('#top').innerHTML=`<div class="t-left"><button class="iconbtn menu" data-a="menu" aria-label="Menu">${ic('menu')}</button><div class="t-crumb"><small>${groupOf(cur)}</small><strong>${page==='farm'?'Detail farmy':names[cur]}</strong></div></div>
-    <div class="t-right"><button class="t-search" data-a="searchfarm">${ic('search')}<span>Vyhľadať farmu</span></button>${db.demo?'<button class="demo" data-a="go:settings">Ukážkové údaje</button>':''}${CLOUD?cloudTopbar():''}<button class="iconbtn bell" aria-label="Upozornenia${count?', '+count+' nových':''}" aria-haspopup="dialog" aria-expanded="false" data-a="bell">${ic('bell')}${count?'<i class="bell-n">'+count+'</i>':''}</button><button class="btn primary t-add" data-a="work">${ic('plus')}<span>Zapísať prácu</span></button></div>`;
+    <div class="t-right"><button class="t-search" data-a="searchfarm">${ic('search')}<span>Vyhľadať farmu</span></button>${db.demo?'<button class="demo" data-a="go:settings">Ukážkové údaje</button>':''}${CLOUD?cloudTopbar():''}<button class="iconbtn bell ${count?'has':''}" aria-label="Upozornenia${fresh?', '+fresh+' nových':''}" aria-haspopup="dialog" aria-expanded="false" data-a="bell">${ic('bell')}${fresh?'<i class="bell-n">'+fresh+'</i>':count?'<i class="bell-dot"></i>':''}</button><button class="btn primary t-add" data-a="work">${ic('plus')}<span>Zapísať prácu</span></button></div>`;
   let bar=$('#tabbar');if(!bar){bar=document.createElement('nav');guardHtml(bar);bar.id='tabbar';bar.setAttribute('aria-label','Rýchla navigácia');document.body.appendChild(bar)}
   const tab=(p,i,l)=>`<button class="${cur===p?'on':''}" data-a="go:${p}">${ic(i)}<span>${l}</span></button>`;
   bar.innerHTML=tab('overview','grid','Prehľad')+tab('farms','barn','Farmy')+`<button class="tab-add" data-a="work" aria-label="Zapísať prácu">${ic('plus')}</button>`+tab('water','water','Voda')+`<button data-a="menu">${ic('menu')}<span>Viac</span></button>`;
 }
 // ---- Upozornenia iba v zvončeku ----
+// Každé upozornenie má typ (nájom po termíne, voda, zber, blížiaci sa termín), poradie podľa naliehavosti a rýchlu akciu.
+const SEEN_KEY='farmdesk-bell-seen';
+function bellItems(){
+  const t=now();
+  return alerts().map(a=>{
+    const f=a.f,{w}=progress(f,t);
+    const type=a.kind==='overdue'?'late':a.icon==='water'?'water':a.icon==='basket'?'harvest':'due';
+    const urgent=type==='late'||type==='harvest'||(type==='water'&&w<=10);
+    const rank={late:0,water:w<=10?1:3,harvest:2,due:4}[type];
+    const action=type==='water'?['Zapísať poliatie','work:'+f.id]:type==='harvest'?['Zapísať zber','work:'+f.id]:['Otvoriť farmu','farm:'+f.id];
+    const title=type==='late'?(a.title||'Nájom')+' je po termíne':type==='due'?(a.title||'Nájom')+' sa blíži':type==='water'?(w<=10?'Pole takmer bez vody':'Farma potrebuje vodu'):'Úroda je pripravená na zber';
+    const detail=type==='water'?'Voda '+w+' %':type==='harvest'?'Rast 100 %':String(a.detail).replace(/^O /,'o ');
+    return {key:f.id+':'+type,f,type,urgent,rank,action,title,detail};
+  }).sort((a,b)=>a.rank-b.rank);
+}
+const seenKeys=()=>{try{return new Set(JSON.parse(localStorage.getItem(SEEN_KEY)||'[]'))}catch{return new Set()}};
+function markSeen(items){try{localStorage.setItem(SEEN_KEY,JSON.stringify(items.map(x=>x.key)))}catch{}}
+const unseenCount=()=>{const s=seenKeys();return bellItems().filter(x=>!s.has(x.key)).length};
 function bellPanel(){
-  const list=alerts();
-  const rows=list.map(a=>`<button type="button" class="bp-row k-${a.kind}" data-a="farm:${a.f.id}"><span class="bp-ico">${ic(a.icon)}</span><span class="bp-txt"><strong>${E(a.title)}</strong><small>${E(a.f.name)}</small></span><em>${E(a.detail)}</em></button>`).join('');
-  return `<div class="bp-head"><strong>Upozornenia</strong><span>${list.length?list.length+(list.length===1?' úloha':list.length<5?' úlohy':' úloh'):'Nič nečaká'}</span></div><div class="bp-list">${rows||'<p class="bp-empty">Žiadna farma teraz nevyžaduje pozornosť.</p>'}</div>`;
+  const items=bellItems(),seen=seenKeys();
+  const ico={late:'calendar',water:'water',harvest:'basket',due:'calendar'};
+  const row=x=>{const c=CATALOG.find(c=>c.name===x.f.crop);
+    return `<div class="bp-row t-${x.type} ${seen.has(x.key)?'':'is-new'}">
+      <button type="button" class="bp-main" data-a="farm:${x.f.id}"><span class="bp-ico">${ic(ico[x.type])}</span>
+        <span class="bp-txt"><strong>${E(x.title)}</strong><small>${c?cropPicture(cropInfo(c.name),14):''}${E(x.f.name)}</small></span>
+        <em class="bp-val">${E(x.detail)}</em></button>
+      <button type="button" class="bp-act" data-a="${x.action[1]}">${E(x.action[0])}</button></div>`};
+  const now_=items.filter(x=>x.urgent),soon=items.filter(x=>!x.urgent);
+  const group=(label,list)=>list.length?`<p class="bp-group">${label}<span>${list.length}</span></p>`+list.map(row).join(''):'';
+  const newN=items.filter(x=>!seen.has(x.key)).length;
+  return `<div class="bp-head"><div><strong>Upozornenia</strong><span>${items.length?(newN?newN+(newN===1?' nové':newN<5?' nové':' nových'):'Všetky si už videl'):'Nič nečaká'}</span></div></div>
+    <div class="bp-list">${items.length?group('Treba hneď',now_)+group('Čoskoro',soon):`<div class="bp-empty"><span>${ic('check')}</span><strong>Všetko je v poriadku</strong><small>Žiadna farma teraz nepotrebuje vodu, zber ani platbu.</small></div>`}</div>
+    <button type="button" class="bp-foot" data-a="settab:alerts">${ic('bell')}Notifikácie do telefónu</button>`;
 }
 function closeBell(){document.getElementById('bellpop')?.remove();document.querySelectorAll('[data-a="bell"]').forEach(b=>b.setAttribute('aria-expanded','false'))}
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a="bell"]');
   if(b){e.stopImmediatePropagation();e.preventDefault();if(document.getElementById('bellpop')){closeBell();return}
-    const pop=document.createElement('div');pop.id='bellpop';pop.setAttribute('role','dialog');pop.setAttribute('aria-label','Upozornenia');pop.innerHTML=bellPanel();document.body.appendChild(pop);
+    const pop=document.createElement('div');pop.id='bellpop';pop.setAttribute('role','dialog');pop.setAttribute('aria-label','Upozornenia');pop.innerHTML=bellPanel();document.body.appendChild(pop);markSeen(bellItems());document.querySelectorAll('.bell-n').forEach(n=>n.remove());
     const top=document.querySelector('#top .bell')||b,r=top.getBoundingClientRect();pop.style.top=(r.bottom+8)+'px';pop.style.right=Math.max(10,innerWidth-r.right)+'px';
     top.setAttribute('aria-expanded','true');pop.querySelector('button')?.focus({preventScroll:true});return}
-  if(!e.target.closest('#bellpop'))closeBell();else if(e.target.closest('[data-a^="farm:"]'))setTimeout(closeBell);
+  if(!e.target.closest('#bellpop'))closeBell();else if(e.target.closest('[data-a^="farm:"],[data-a^="work:"],[data-a^="settab:"]'))setTimeout(closeBell);
 },true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('bellpop')){closeBell();document.querySelector('#top .bell')?.focus()}});
 // Fotky polí sa pri prekreslení (každých 30 s) nevymieňajú: použije sa ten istý, už vykreslený obrázok, takže nebliká.
