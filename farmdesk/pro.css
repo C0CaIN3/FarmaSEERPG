@@ -1,0 +1,268 @@
+/* ==========================================================================
+   FarmDesk · Pro
+   Jeden ucelený systém: neutrálna grafitová škála, zlatá SeeRPG len na
+   hlavné akcie, farby stavov z hry. Bez žiar, prechodov a efektov.
+   Rytmus 4 px · zaoblenie 12 / 8 / 6 · písmo Ubuntu.
+   ========================================================================== */
+:root{
+  /* plochy */
+  --bg:#0f1012;--s1:#16181b;--s2:#1c1f23;--s3:#24282d;--s4:#2c3137;
+  --b1:#24272c;--b2:#30353b;--b3:#3d434a;
+  /* text */
+  --t1:#eceef0;--t2:#a7adb4;--t3:#737a83;
+  /* značka a stavy */
+  --gold:#f0c850;--gold-h:#f5d570;--gold-t:#1d1606;--gold-soft:#f0c8501a;
+  --water:#4b93b8;--water-t:#8cc0dc;--water-soft:#4b93b81f;
+  --growth:#5ca45c;--growth-t:#8fca8f;--growth-soft:#5ca45c1f;
+  --warn:#c9a23f;--warn-t:#e3c56d;--warn-soft:#c9a23f1f;
+  --danger:#d9534f;--danger-t:#f0918e;--danger-soft:#d9534f1f;
+  /* tvary */
+  --r1:12px;--r2:8px;--r3:6px;
+  --sh:0 1px 2px #0000004d;
+  /* premenné, ktoré používajú staršie vrstvy */
+  --lime:var(--gold);--crop:var(--growth);--crop-2:var(--growth);--harvest:var(--warn);--alert:var(--danger);--red:var(--danger);--purple:var(--water);
+  --ink:var(--t1);--soft:var(--t2);--muted:var(--t3);--panel:var(--s1);--line:var(--b1);
+  font-family:Ubuntu,"Segoe UI",Arial,sans-serif;
+}
+html,body{background:var(--bg)!important;color:var(--t1)}
+body{-webkit-font-smoothing:antialiased;font-size:14px}
+body,button,input,select,textarea{font-family:Ubuntu,"Segoe UI",Arial,sans-serif!important}
+.workspace,main{background:transparent!important}
+main>*{animation:none!important}
+
+/* ---------- typografia ---------- */
+h1{font-size:28px!important;font-weight:500!important;letter-spacing:-.015em!important;color:var(--t1)}
+h2{font-size:16px!important;font-weight:500!important;letter-spacing:0!important}
+h3{font-weight:500!important;letter-spacing:0!important}
+.m-title h1{font-size:28px!important}
+.m-title p,.pagetitle p{color:var(--t3)!important;font-size:13px!important;font-weight:400!important;font-family:Ubuntu,sans-serif!important}
+small{color:var(--t3)}
+.pb-chip,.q-row em,.ff-txt em,.chart-readout,.ledger-plot text,.queue-body time,.k-week{font-family:"Ubuntu Mono",ui-monospace,monospace!important;letter-spacing:0!important}
+.k-val,.k-split b,.q-row b,.pb-label b,.m-score>b,.k-counts b,.ff-txt b,.money-mini b,.matrix td,.termcell,.total,.m-ring b,.fp-size b{font-variant-numeric:tabular-nums}
+/* popisky bez veľkých písmen */
+.s-group p,.ff-txt small,.summary-label,.statlabel,.matrix th,.feed-label,.k-sub,.pb-label small,.q-head>span,.k-split small,.k-main small{text-transform:none!important;letter-spacing:0!important}
+.t-crumb small{display:none!important}
+
+/* ---------- efekty vypnuté ---------- */
+.fx-grain,.fx-sun,body:before,.m-hero:before,.k-card:before,.m-money:before{display:none!important;content:none!important}
+.farm-photo img,.m-tile-bg img{animation:none!important;transform:none!important;filter:none!important}
+.wgrid>.wg{animation:none!important}
+
+/* ---------- panely ---------- */
+.k-card,.k-money,.k-money.is-me,.m-money,.m-hero,.report-panel,.crop-panel,.portfolio,.task-pane,.panel,.listpanel,.farmcard,.map-pane,.stat,.summary-card,.m-tile{
+  background:var(--s1)!important;border:1px solid var(--b1)!important;border-radius:var(--r1)!important;box-shadow:var(--sh)!important}
+.k-card,.m-money,.report-panel,.crop-panel,.task-pane,.portfolio{padding:20px!important}
+.wgrid{gap:16px!important}
+.work-head,.k-top,.m-head{margin-bottom:4px}
+
+/* ---------- bočné menu ---------- */
+#sidebar{background:var(--bg)!important;border-right:1px solid var(--b1)!important}
+.s-brand{padding:6px 8px 20px!important}
+.s-brand strong{font-size:16px!important;font-weight:700!important;color:var(--t1)!important}
+.s-brand small{color:var(--t3)!important;font-weight:400}
+.s-group p{font-size:12px!important;font-weight:400!important;color:var(--t3)!important;margin:6px 0 6px 10px!important}
+#sidebar nav{gap:18px!important}
+#sidebar button.s-link{min-height:36px;padding:0 10px!important;gap:10px;border-radius:var(--r2)!important;color:var(--t2)!important;font-size:14px;font-weight:400;background:transparent!important;box-shadow:none!important}
+#sidebar button.s-link svg{padding:0!important;width:18px;height:18px;background:none!important;box-shadow:none!important;color:var(--t3)!important}
+#sidebar button.s-link:hover{background:var(--s2)!important;color:var(--t1)!important}
+#sidebar button.s-link.on{background:var(--s2)!important;color:var(--t1)!important;font-weight:500;box-shadow:inset 0 0 0 1px var(--b1)!important}
+#sidebar button.s-link.on svg{color:var(--gold)!important}
+#sidebar button.s-link.on:before{display:none!important}
+.s-link em{background:var(--danger)!important;border-radius:999px!important;box-shadow:none!important}
+#sidebar button.s-user{background:var(--s1)!important;border:1px solid var(--b1)!important;border-radius:var(--r1)!important;box-shadow:none!important}
+
+/* ---------- horná lišta ---------- */
+#top{background:var(--bg)!important;backdrop-filter:none!important;border-bottom:1px solid var(--b1)!important;height:64px!important}
+.t-crumb strong{font-size:15px!important;font-weight:500!important}
+.t-search{height:38px!important;background:var(--s1)!important;border:1px solid var(--b1)!important;border-radius:var(--r2)!important;box-shadow:none!important;color:var(--t3)!important;font-size:13px}
+.t-search:after{content:'Ctrl K';margin-left:auto;font:400 11px "Ubuntu Mono",monospace;color:var(--t3);padding:1px 6px;border:1px solid var(--b2);border-radius:4px}
+#top .iconbtn,#top .demo{height:38px;background:var(--s1)!important;border:1px solid var(--b1)!important;border-radius:var(--r2)!important;box-shadow:none!important}
+#top .iconbtn{width:38px!important}
+#top .demo{font-size:12px;color:var(--t2)}
+.bell-n{background:var(--danger)!important;box-shadow:0 0 0 2px var(--bg)!important}
+
+/* ---------- tlačidlá ---------- */
+.btn{min-height:36px;border-radius:var(--r2)!important;background:var(--s2)!important;border:1px solid var(--b2)!important;color:var(--t1)!important;box-shadow:none!important;font-weight:500!important;font-size:13px}
+.btn:hover{background:var(--s3)!important;border-color:var(--b3)!important}
+.btn.primary,.t-add,#tabbar .tab-add{background:var(--gold)!important;border:1px solid var(--gold)!important;color:var(--gold-t)!important;box-shadow:none!important;font-weight:500!important}
+.btn.primary:hover,.t-add:hover{background:var(--gold-h)!important;border-color:var(--gold-h)!important}
+.t-add{height:38px;min-height:38px}
+
+/* ---------- segmenty a záložky ---------- */
+.k-seg,.tabs,.range-tabs{background:var(--bg)!important;border:1px solid var(--b1)!important;border-radius:var(--r2)!important;padding:3px!important;box-shadow:none!important}
+.k-seg button,.tabs button,.range-tabs button{border-radius:var(--r3)!important;color:var(--t3)!important;background:transparent!important;font-weight:500;min-height:30px!important;font-size:13px}
+.k-seg button.on,.tabs .sel,.range-tabs .on{color:var(--t1)!important}
+.tabs .sel,.range-tabs .on,.crop-item.on{background:var(--s3)!important;color:var(--t1)!important;box-shadow:none!important}
+.k-thumb{top:3px!important;bottom:3px!important;left:3px!important;width:calc(50% - 3px)!important;border-radius:var(--r3)!important;background:var(--s3)!important;box-shadow:none!important}
+.k-money.is-me .k-thumb{background:var(--s3)!important}
+.k-seg button.on svg{color:var(--gold)!important}
+.crop-item.on small,.crop-item.on strong{color:var(--t1)!important}
+
+/* ---------- peniaze ---------- */
+.k-face{gap:16px!important}
+.k-sub{color:var(--t3)!important;font-size:12px}
+.k-main small,.k-split small{color:var(--t3)!important;font-size:12px!important}
+.k-card .k-val,.k-team .k-val,.k-me .k-val{font-size:40px!important;font-weight:500!important;letter-spacing:-.02em!important;color:var(--t1)!important;background:none!important;-webkit-background-clip:border-box!important;background-clip:border-box!important}
+.k-card .k-val.neg{color:var(--danger-t)!important}
+.k-card .k-spark{height:44px}
+.k-spark .area{display:none!important}
+.k-team .k-spark .line{stroke:var(--gold)!important;stroke-width:1.75}
+.k-me .k-spark .line{stroke:var(--water)!important;stroke-width:1.75}
+.k-split{border-top:1px solid var(--b1)!important;padding-top:16px!important}
+.k-split b{font-size:15px!important;font-weight:500!important}
+.k-more{color:var(--t2)!important;font-weight:500;text-decoration:none!important}.k-more:hover{color:var(--t1)!important}
+.m-score>b,.m-score>b.cost{color:var(--t1)!important;font-weight:500!important}
+.m-barrow{grid-template-columns:80px minmax(0,1fr) 44px!important}
+.m-barrow i{height:6px!important;background:var(--s3)!important;border-radius:999px!important}
+.m-barrow b{background:var(--water)!important;border-radius:999px!important}
+.m-chip,.k-link{border-radius:var(--r2)!important;border:1px solid var(--b2)!important;background:transparent!important;color:var(--t2)!important;box-shadow:none!important}
+.k-link:hover,.m-link:hover{border-color:var(--b3)!important;color:var(--t1)!important}
+
+/* ---------- stav fariem ---------- */
+.k-counts{gap:10px!important}
+.k-counts>div{background:var(--s2)!important;border:1px solid var(--b1)!important;border-radius:var(--r2)!important;box-shadow:none!important;padding:12px 14px!important}
+.k-counts b{font-size:28px!important;font-weight:500!important;color:var(--t1)!important}
+.k-counts .off.zero b{color:var(--t3)!important}
+.k-counts span{color:var(--t2)!important}
+.k-counts .on i{background:var(--growth)!important;box-shadow:none!important}.k-counts .off i{background:var(--danger)!important}.k-counts .off.zero i{background:var(--b3)!important}
+.k-ratio{height:4px!important;background:var(--s3)!important}.k-ratio i{background:var(--growth)!important}
+.q-sec{border-top:1px solid var(--b1)!important;padding-top:14px!important}
+.q-head>span{font-weight:500!important}
+.q-head button{color:var(--t3)!important}.q-head button:hover{color:var(--t1)!important}
+.q-row{background:transparent!important;border:0!important;border-radius:var(--r2)!important;padding:8px!important;margin:0 -8px}
+.q-row:hover{background:var(--s2)!important}
+.q-name{font-weight:400!important}
+.q-row em{color:var(--t3)!important}
+.q-bar{height:4px!important;background:var(--s3)!important}
+.q-bar.w i{background:var(--water)!important}.q-bar.g i{background:var(--growth)!important}
+.q-row.low .q-bar.w i{background:var(--warn)!important}.q-row.low b,.q-row.low em{color:var(--warn-t)!important}
+.q-row.crit .q-bar.w i{background:var(--danger)!important}.q-row.crit b,.q-row.crit em{color:var(--danger-t)!important}
+.q-row.ripe b,.q-row.ripe em{color:var(--growth-t)!important}
+.q-sec .q-head>span svg{color:var(--water)!important}.q-sec+.q-sec .q-head>span svg{color:var(--growth)!important}
+.q-badge{border-radius:999px!important;border:0!important;background:var(--s3)!important;color:var(--t2)!important;font-weight:500}
+.q-badge.crit{background:var(--danger-soft)!important;color:var(--danger-t)!important}
+.q-badge.ripe{background:var(--growth-soft)!important;color:var(--growth-t)!important}
+
+/* ---------- stav rastliny ---------- */
+.pb{background:var(--s2)!important;border:1px solid var(--b1)!important;border-radius:var(--r1)!important;box-shadow:none!important;padding:16px!important;gap:14px!important}
+.pb-art,.pb-ico{background:var(--s3)!important;border-radius:var(--r2)!important;box-shadow:none!important}
+.pb-head strong{font-weight:500!important}
+.pb-state{background:var(--s3)!important;color:var(--t2)!important;border:0!important;border-radius:999px!important;font-weight:500}
+.pb-label>span{font-weight:400!important;color:var(--t1)!important}
+.pb-label small{color:var(--t3)!important}
+.pb-label b{font-size:20px!important;font-weight:500!important}
+.pb-label b i{color:var(--t3)!important}
+.pb-track{height:8px!important;background:var(--s4)!important;border-radius:999px!important;box-shadow:none!important}
+.pb-track>i{box-shadow:none!important;border-radius:999px!important}
+.water .pb-track>i{background:var(--water)!important}
+.water.low .pb-track>i{background:var(--warn)!important}
+.water.crit .pb-track>i{background:var(--danger)!important}
+.growth .pb-track>i{background:var(--growth)!important}
+.pb-track>em{background:var(--s2)!important;width:2px!important}
+.water .pb-label span svg{color:var(--water)!important}.growth .pb-label span svg{color:var(--growth)!important}
+.water.low .pb-label b{color:var(--warn-t)!important}.water.crit .pb-label b{color:var(--danger-t)!important}
+.pb-chip{background:transparent!important;border:1px solid var(--b2)!important;border-radius:var(--r3)!important;color:var(--t2)!important;font-size:12px!important}
+.pb-chip b{color:var(--t1)!important;font-weight:400!important}
+.pb-chip.low b{color:var(--water-t)!important}
+.pb-chip.warn{border-color:#c9a23f55!important}.pb-chip.warn b{color:var(--warn-t)!important}
+.pb-chip.crit{background:transparent!important;border-color:#d9534f55!important}.pb-chip.crit b{color:var(--danger-t)!important}
+.pb-chip.ready{border-color:#5ca45c55!important}.pb-chip.ready b{color:var(--growth-t)!important}
+
+/* ---------- karty fariem ---------- */
+.farmcard{transition:border-color .15s!important;overflow:hidden}
+.farmcard:hover{transform:none!important;border-color:var(--b3)!important;box-shadow:var(--sh)!important}
+.farm-photo:after{background:linear-gradient(180deg,#0f101259 0%,#0000 35%,#16181b 97%)!important}
+.fp-size,.fp-crop{background:#0f1012cc!important;backdrop-filter:blur(6px)!important;border:1px solid #ffffff1a!important;border-radius:var(--r3)!important;color:var(--t1)!important;font-weight:500!important;font-size:12px!important}
+.fp-size.s40 svg,.fp-size.s40 b{color:var(--growth-t)}.fp-size.s80 svg,.fp-size.s80 b{color:var(--water-t)}.fp-size.s120 svg,.fp-size.s120 b{color:var(--warn-t)}
+.cardheading h3{font-size:18px!important;font-weight:500!important}
+.cardmeta{color:var(--t3)!important;font-size:12px!important}
+.farm-facts{gap:0!important;margin-top:14px!important;border:1px solid var(--b1);border-radius:var(--r2);overflow:hidden}
+.ff{background:transparent!important;border:0!important;border-bottom:1px solid var(--b1)!important;border-radius:0!important;padding:10px 12px!important}
+.ff:last-child{border-bottom:0!important}
+.ff-ico{width:auto!important;height:auto!important;background:none!important;box-shadow:none!important;color:var(--t3)!important}
+.ff-ico svg{width:16px!important;height:16px!important}
+.ff-txt small{font-size:13px!important;color:var(--t2)!important;font-weight:400!important}
+.ff-txt b{font-size:13px!important;font-weight:500!important;color:var(--t1)!important}
+.ff-txt em{color:var(--t3)!important}
+.ff.st-ready,.ff.st-warn,.ff.due-late,.ff.due-soon{background:transparent!important}
+.ff.st-ready b{color:var(--growth-t)!important}.ff.st-ready .ff-ico{color:var(--growth)!important;background:none!important}
+.ff.st-warn b{color:var(--warn-t)!important}.ff.st-warn .ff-ico{color:var(--warn)!important;background:none!important}
+.ff.due-late{background:var(--danger-soft)!important}.ff.due-late b{color:var(--danger-t)!important}.ff.due-late .ff-ico{color:var(--danger)!important;background:none!important}
+.ff.due-soon b{color:var(--warn-t)!important}.ff.due-soon .ff-ico{color:var(--warn)!important;background:none!important}
+.ff.soil-raw b{color:var(--danger-t)!important}
+.ff-working{border-radius:var(--r2)!important;background:var(--water-soft)!important;border:0!important;color:var(--water-t)!important}
+.detail-photo{position:relative!important;inset:auto!important;height:220px!important;overflow:hidden;-webkit-mask:none!important;mask:none!important;z-index:0;margin:-1px -1px 16px;border-radius:var(--r1) var(--r1) 0 0!important}
+.detail-photo:after{background:linear-gradient(180deg,#0000 55%,#16181b 100%)!important}
+.farm-hero{overflow:hidden}.farm-hero .pb{max-width:none!important}
+
+/* karty fariem na Prehľade */
+.m-tile{padding:6px!important}
+.m-tile-top{border-radius:var(--r2)!important;background:var(--s2)!important}
+.m-tile-bg,.m-tile-bg img{border-radius:var(--r2)!important}
+.m-tile-bg:after{background:linear-gradient(180deg,#0f101266,#0000 45%)!important}
+.m-tile-body{background:transparent!important;padding:12px 8px 6px!important}
+.m-tile-body strong{font-weight:500!important}
+.m-tile-row>b{font-weight:500!important}.m-tile-row>b.pos{color:var(--growth-t)!important}.m-tile-row>b.neg{color:var(--danger-t)!important}
+.m-tile:hover{transform:none!important;border-color:var(--b3)!important}
+.m-badge{border-radius:var(--r3)!important;background:#0f1012cc!important;backdrop-filter:blur(6px);border:1px solid #ffffff1a!important;color:var(--t1)!important;font-weight:500}
+.m-badge.ready{background:var(--growth)!important;color:#0d1f0d!important;border-color:transparent!important}
+.m-round{border-radius:var(--r2)!important;background:#0f1012cc!important;border:1px solid #ffffff1a!important;color:var(--t1)!important}
+.m-round:hover{background:var(--gold)!important;color:var(--gold-t)!important;border-color:var(--gold)!important}
+.m-ring{--c:var(--water)!important}.m-ring.g{--c:var(--growth)!important}.m-ring.low{--c:var(--warn)!important}
+.m-ring b{background:var(--s1)!important;font-weight:500}
+
+/* ---------- tabuľky, grafy, formuláre, okná ---------- */
+.matrix th{color:var(--t3)!important;font-weight:400!important;font-size:12px}
+.matrix td{border-color:var(--b1)!important}
+.matrix tbody tr:hover{background:var(--s2)!important}
+.matrix-meter>i{height:4px!important;border-radius:999px!important;background:var(--s3)!important}
+.matrix-meter b{border-radius:999px!important;background:var(--growth)!important}
+.matrix-meter.water b{background:var(--water)!important}
+.rev-line{stroke:var(--gold)!important;stroke-width:2}.cost-line{stroke:var(--t3)!important}
+.crosshair circle{fill:var(--gold)!important}
+.chart-readout{background:var(--s3)!important;border:1px solid var(--b2)!important;border-radius:var(--r2)!important;backdrop-filter:none!important;color:var(--t1)!important}
+input,select,textarea,.filters input,#search{background:var(--bg)!important;border:1px solid var(--b2)!important;border-radius:var(--r2)!important;color:var(--t1)!important;box-shadow:none!important}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-shadow:0 0 0 3px var(--gold-soft)!important;outline:0}
+#modal{background:var(--s1)!important;border:1px solid var(--b2)!important;border-radius:var(--r1)!important;box-shadow:0 24px 64px -16px #000c!important}
+#modal::backdrop{background:#000000a6!important;backdrop-filter:none!important}
+#toast{background:var(--s3)!important;border:1px solid var(--b2)!important;border-radius:var(--r2)!important;box-shadow:var(--sh)!important}
+.pill{border-radius:var(--r3)!important}
+:focus-visible{outline:2px solid var(--gold)!important;outline-offset:2px}
+
+/* ---------- zvonček ---------- */
+#bellpop{background:var(--s1)!important;border:1px solid var(--b2)!important;border-radius:var(--r1)!important;box-shadow:0 20px 48px -12px #000c!important;animation:none!important}
+.bp-head{border-bottom:1px solid var(--b1)!important}
+.bp-row{border-radius:var(--r2)!important}.bp-row:hover{background:var(--s2)!important}
+.bp-ico{background:var(--s3)!important;border-radius:var(--r2)!important}
+
+/* ---------- úprava plochy ---------- */
+.wg-bar{background:var(--s1)!important;border:1px dashed var(--b3)!important;border-radius:var(--r1)!important;color:var(--t2)!important}
+.wg-bar b{color:var(--t1)!important}
+.wg-bar>span:first-child>svg,.wg-name svg{color:var(--gold)!important}
+.wg-edit{background:#0f1012d9!important;border:1px dashed var(--b3)!important;border-radius:var(--r1)!important;backdrop-filter:none!important}
+.wg.drop .wg-edit{border:1px solid var(--gold)!important;background:var(--gold-soft)!important}
+.wg-tools button{background:var(--s2)!important;border:1px solid var(--b2)!important;border-radius:var(--r2)!important;box-shadow:none!important}
+.wg-tools button:hover:not(:disabled){border-color:var(--b3)!important;color:var(--t1)!important;background:var(--s3)!important}
+.wg-tools .wg-del:hover{background:var(--danger)!important;border-color:var(--danger)!important;color:#fff!important}
+.wg-addtile{border:1px dashed var(--b3)!important;border-radius:var(--r1)!important;color:var(--t3)!important}
+.wg-addtile:hover{border-color:var(--t3)!important;color:var(--t1)!important}
+.wg-option{background:var(--s2)!important;border:1px solid var(--b1)!important;border-radius:var(--r2)!important}
+.wg-option:hover{border-color:var(--b3)!important}.wg-option svg{color:var(--gold)!important}
+
+/* ---------- mobil ---------- */
+#tabbar{background:var(--s1)!important;backdrop-filter:none!important;border:1px solid var(--b2)!important;border-radius:16px!important;box-shadow:0 12px 32px -8px #000c!important}
+#tabbar button{color:var(--t3)!important}
+#tabbar .on{color:var(--t1)!important}#tabbar .on svg{color:var(--gold)}
+#tabbar .on span{text-decoration:none!important}
+#tabbar .tab-add{border-radius:12px!important}
+@media(max-width:900px){.t-search:after{display:none}}
+@media(max-width:640px){
+  .k-card,.m-money,.report-panel,.crop-panel,.task-pane,.portfolio{padding:16px!important}
+  .k-card .k-val,.k-team .k-val,.k-me .k-val{font-size:32px!important}
+  h1,.m-title h1{font-size:24px!important}
+}
+#top .iconbtn{position:relative;display:grid!important;place-items:center;padding:0!important}
+.bell-n{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;color:#fff;font:500 11px/18px Ubuntu,sans-serif;font-style:normal;text-align:center}
+#bellpop{position:fixed;z-index:30;width:min(380px,calc(100vw - 20px));max-height:min(520px,70vh);display:flex;flex-direction:column;overflow:hidden}
+@media(min-width:641px){#top .menu{display:none!important}}
+.cardheading>svg{color:var(--t3)}

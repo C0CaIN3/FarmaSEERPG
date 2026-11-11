@@ -26,10 +26,14 @@ await writeFile('_site/index.html', page);
 // FarmDesk (shared farm tracker) lives in its own folder with its own Supabase project.
 await mkdir('_site/farmdesk/assets', { recursive: true });
 await mkdir('_site/farmdesk/icons', { recursive: true });
+await mkdir('_site/farmdesk/crops/icons', { recursive: true });
 await build({ entryPoints: ['farmdesk/cloud.mjs'], bundle: true, minify: true, format: 'iife', target: ['es2022'], outfile: '_site/farmdesk/cloud.js', legalComments: 'eof' });
-for (const name of ['app.js', 'art.js', 'style.css', 'config.js', 'assets/mark.svg', 'assets/mark-96.png', 'assets/favicon-64.png', 'manifest.webmanifest', 'sw.js', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png']) await copyFile(`farmdesk/${name}`, `_site/farmdesk/${name}`);
+const { readdir } = await import('node:fs/promises');
+for (const name of (await readdir('farmdesk/crops')).filter(n => n.endsWith('.jpg'))) await copyFile(`farmdesk/crops/${name}`, `_site/farmdesk/crops/${name}`);
+for (const name of await readdir('farmdesk/crops/icons')) await copyFile(`farmdesk/crops/icons/${name}`, `_site/farmdesk/crops/icons/${name}`);
+for (const name of ['app.js', 'art.js', 'modern.js', 'modern.css', 'pro.css', 'style.css', 'config.js', 'assets/mark.svg', 'assets/mark-96.png', 'assets/favicon-64.png', 'manifest.webmanifest', 'sw.js', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png', 'icons/apple-touch-icon.png']) await copyFile(`farmdesk/${name}`, `_site/farmdesk/${name}`);
 let desk = await readFile('farmdesk/index.html', 'utf8');
-for (const name of ['style.css', 'config.js', 'cloud.js', 'art.js', 'app.js']) {
+for (const name of ['style.css', 'modern.css', 'pro.css', 'config.js', 'cloud.js', 'art.js', 'app.js', 'modern.js']) {
   const tag = name.endsWith('.css') ? `href="${name}"` : `src="${name}"`;
   if (!desk.includes(tag)) throw new Error(`farmdesk/index.html does not reference ${name}`);
   const v = await version(`farmdesk/${name}`);

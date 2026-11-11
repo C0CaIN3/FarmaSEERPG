@@ -1,7 +1,7 @@
 // FarmDesk service worker: makes the app installable and lets it open without a connection.
 // Network first, so every player always gets the newest version; the cache is only a fallback.
 // Only this site's own files are cached; the shared database (Supabase) is never touched here.
-const CACHE = 'farmdesk-shell-v3';
+const CACHE = 'farmdesk-shell-v4';
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(['./', './index.html'])).then(() => self.skipWaiting()));
