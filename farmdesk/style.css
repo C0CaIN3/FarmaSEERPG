@@ -202,3 +202,4 @@ input.switch:checked{background:var(--growth)}input.switch:checked::before{trans
 .crop-compare{margin-bottom:16px}.crop-compare tr[data-a]{cursor:pointer}.crop-compare tr[data-a]:hover td,.crop-compare tr[data-a]:hover th{background:#ffffff06}
 .crop-compare td small{display:block;font-size:10px;color:var(--soft)}.crop-compare td,.crop-compare th{white-space:nowrap}.cmp-name{display:inline-flex;align-items:center;gap:8px}
 .crop-compare .best-row th,.crop-compare .best-row td{background:#26301f}
+.gbar-times{display:flex;flex-wrap:wrap;gap:4px 10px;margin:-1px 0 3px;font-size:10px;color:#c9d3d8}.gbar-when b{font-weight:600;color:#8b979e;margin-right:4px}.gbar-when.warn{color:#f5d579}.gbar-when.late{color:#ff9d9d}.gbar-when.ready{color:#afe7ae}

@@ -165,8 +165,21 @@ function gameBars(f,t=now()){
   const grow=f.planted?clamp((t-growthStart(f))/(growthHours(f)*H)):0,water=f.watered?clamp(1-(t-f.watered)/(dryingHours(f)*H)):0;
   const px=x=>Math.round(x*GAME_BAR),bar=(cls,label,hu,v,shown)=>'<div class="gbar-label"><span>'+label+' <small>'+hu+'</small></span><b>'+shown+'</b></div><div class="gbar '+cls+'" role="img" aria-label="'+label+' '+shown+'"><i style="width:'+(px(v)/GAME_BAR*100)+'%"></i></div>';
   const {g,w}=progress(f,t);
+  // When the water reaches 25 %, 10 % and 0 %, and when the crop is ripe.
+  const dry=f.watered?f.watered+dryingHours(f)*H:null,ripe=f.planted?growthStart(f)+growthHours(f)*H:null;
+  const at=p=>f.watered+dryingHours(f)*H*(1-p/100);
+  const mark=(label,stamp,cls='')=>'<span class="gbar-when '+cls+'"><b>'+label+'</b>'+whenText(stamp,t)+'</span>';
+  const waterWhen=!f.planted||!f.watered?'':dry<=t?'<div class="gbar-times">'+mark('bez vody od',dry,'late')+'</div>':
+    '<div class="gbar-times">'+[[25,''],[10,'warn'],[0,'late']].filter(([p])=>at(p)>t).map(([p,c])=>mark(p+' %',at(p),c)).join('')+'</div>';
+  const growWhen=!f.planted?'':'<div class="gbar-times">'+(ripe<=t?mark('zrelé od',ripe,'ready'):mark('zber (100 %)',ripe,'ready')+(dry&&dry<ripe?'<span class="gbar-when late"><b>pozor</b>voda dôjde skôr</span>':''))+'</div>';
   return '<div class="game-bars">'+(f.planted?'<strong>'+E(cropName(f.crop))+(huCrop[f.crop]?' <small>'+huCrop[f.crop]+'</small>':'')+'</strong>':'')+
-    bar('water','Voda','Nedvesség',water,w+' %')+bar('growth','Rast','Növekedés',grow,g+' %')+bar('state','Stav','Állapot',f.planted?1:0,f.planted?'—':'')+'</div>';
+    bar('water','Voda','Nedvesség',water,w+' %')+waterWhen+bar('growth','Rast','Növekedés',grow,g+' %')+growWhen+bar('state','Stav','Állapot',f.planted?1:0,f.planted?'—':'')+'</div>';
+}
+// "dnes 19:24", "zajtra 04:10", "st 13:10" (or a date further away).
+function whenText(stamp,t=now()){
+  const d=new Date(stamp),day=x=>{const c=new Date(x);c.setHours(0,0,0,0);return c.getTime()},diff=Math.round((day(stamp)-day(t))/D);
+  const hm=d.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
+  return (diff===0?'dnes':diff===1?'zajtra':diff===-1?'včera':diff>1&&diff<7?d.toLocaleDateString('sk-SK',{weekday:'short'}):d.toLocaleDateString('sk-SK',{day:'numeric',month:'numeric'}))+' '+hm;
 }
 const metric=(label,key,n,w='')=>'<div class="metric '+w+'">'+ic(key)+label+'<b>'+n+' %</b></div><div class="bar '+w+'"><i style="width:'+n+'%"></i></div>';
 // Capacity is read directly from the farm, including older saved records.
