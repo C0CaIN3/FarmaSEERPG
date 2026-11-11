@@ -236,7 +236,7 @@ cropPicture=function(c,size){
 };
 
 // ---- Fotky plodín z hry namiesto grafiky veľkosti farmy ----
-const CROP_PHOTO={'Jablková paprika':'jablkova-paprika','Žltý melón':'sietovany-melon','TV paprika':'tv-paprika','Tekvica':'tekvica','Malina':'malina','Vodný melón':'vodny-melon','Uhorka':'uhorka','Jahoda':'jahoda','Čili paprika':'cili-paprika'};
+const CROP_PHOTO={'Paradajka':'paradajka','Jablková paprika':'jablkova-paprika','Žltý melón':'sietovany-melon','TV paprika':'tv-paprika','Tekvica':'tekvica','Malina':'malina','Vodný melón':'vodny-melon','Uhorka':'uhorka','Jahoda':'jahoda','Čili paprika':'cili-paprika'};
 const cropPhoto=f=>!f.planted?'crops/nezasadene.jpg':CROP_PHOTO[f.crop]?'crops/'+CROP_PHOTO[f.crop]+'.jpg':null;
 const SIZE_LABEL={40:'Malá farma',80:'Stredná farma',120:'Veľká farma'};
 function farmBanner(f,cls='farm-photo'){
