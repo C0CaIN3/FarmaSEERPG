@@ -45,7 +45,7 @@ const ring=(v,k,l)=>`<span class="m-ring ${k} ${k==='w'&&v<=25?'low':''}" style=
 function farmTile(f){
   const {g,w}=progress(f),{profit}=periodMoney(f);
   return `<article class="m-tile" data-a="farm:${f.id}" role="button" tabindex="0" aria-label="Otvoriť farmu ${E(f.name)}">
-    <div class="m-tile-top">${stateBadge(f)}<button type="button" class="m-round" data-a="work:${f.id}" aria-label="Zapísať prácu na ${E(f.name)}">${ic('plus')}</button>${cropPhoto(f)?`<span class="m-tile-bg"><img src="${cropPhoto(f)}" alt="" loading="lazy"><i class="fx-sun"></i><i class="fx-grain"></i></span>`:`<div class="m-tile-art">${farmArt(f,96)}</div>`}</div>
+    <div class="m-tile-top">${stateBadge(f)}<button type="button" class="m-round" data-a="work:${f.id}" aria-label="Zapísať prácu na ${E(f.name)}">${ic('plus')}</button>${cropPhoto(f)?`<span class="m-tile-bg"><img src="${cropPhoto(f).replace('crops/','crops/sm/')}" alt="" decoding="sync"><i class="fx-sun"></i><i class="fx-grain"></i></span>`:`<div class="m-tile-art">${farmArt(f,96)}</div>`}</div>
     <div class="m-tile-body"><strong>${E(f.name)}</strong><span class="m-tile-row"><b class="${profit<0?'neg':profit>0?'pos':''}">${profit>0?'+':''}${money(profit)}</b>
       ${f.planted?`<span class="m-levels">${ring(w,'w','Voda')}${ring(g,'g','Rast')}</span>`:'<span class="m-muted">nezasadená</span>'}</span></div></article>`;
 }
@@ -242,7 +242,7 @@ const SIZE_LABEL={40:'Malá farma',80:'Stredná farma',120:'Veľká farma'};
 function farmBanner(f,cls='farm-photo'){
   const src=cropPhoto(f),sz=`<span class="fp-size s${f.size}">${ic('barn')}<b>${f.size}</b> polí<em>${SIZE_LABEL[f.size]||''}</em></span>`;
   if(!src)return `<div class="farm-size-banner size-${f.size}">${capacityGraphic(f.size)}</div>`;
-  return `<div class="${cls}"><img src="${src}" alt="${E(cropName(f.crop))} na farme ${E(f.name)}" loading="lazy"><i class="fx-sun" aria-hidden="true"></i><i class="fx-grain" aria-hidden="true"></i>${sz}<span class="fp-crop">${f.planted?E(cropName(f.crop)):'Nezasadené'}</span></div>`;
+  return `<div class="${cls}"><img src="${src}" srcset="${src.replace('crops/','crops/sm/')} 1024w, ${src} 2048w" sizes="(max-width: 640px) 100vw, 480px" alt="${E(cropName(f.crop))} na farme ${E(f.name)}" decoding="sync"><i class="fx-sun" aria-hidden="true"></i><i class="fx-grain" aria-hidden="true"></i>${sz}<span class="fp-crop">${f.planted?E(cropName(f.crop)):'Nezasadené'}</span></div>`;
 }
 // v ukážke dostanú farmy plodiny, aby bolo vidno fotky
 if(db.demo)['Tekvica','Malina','Vodný melón'].forEach((c,i)=>{const f=db.farms.find(x=>x.id==='ex'+i);if(f&&(!f.crop||f.crop==='Úroda'))f.crop=c});
@@ -302,7 +302,11 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('#bellpop'))closeBell();else if(e.target.closest('[data-a^="farm:"]'))setTimeout(closeBell);
 },true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('bellpop')){closeBell();document.querySelector('#top .bell')?.focus()}});
+// Fotky polí sa pri prekreslení (každých 30 s) nevymieňajú: použije sa ten istý, už vykreslený obrázok, takže nebliká.
+const photoPool=()=>{const m=new Map();document.querySelectorAll('main img[src^="crops/"]').forEach(i=>{const k=i.getAttribute('src');(m.get(k)||m.set(k,[]).get(k)).push(i)});return m};
+function keepPhotos(pool){document.querySelectorAll('main img[src^="crops/"]').forEach(n=>{const old=pool.get(n.getAttribute('src'))?.shift();if(old&&old!==n){old.alt=n.alt;old.className=n.className;n.replaceWith(old)}})}
 const shellRender=render;
-render=function(){if(page!=='overview')homeEdit=false;if(page==='alerts')page='overview';closeBell();shellRender();shell();
-  if(page==='farm'){const f=db.farms.find(x=>x.id===farmPageId),b=document.querySelector('main .detail-size-banner');if(f&&b&&cropPhoto(f))b.outerHTML=farmBanner(f,'farm-photo detail-photo')}};
+render=function(){if(page!=='overview')homeEdit=false;if(page==='alerts')page='overview';closeBell();const pool=photoPool();shellRender();shell();
+  if(page==='farm'){const f=db.farms.find(x=>x.id===farmPageId),b=document.querySelector('main .detail-size-banner');if(f&&b&&cropPhoto(f))b.outerHTML=farmBanner(f,'farm-photo detail-photo')}
+  keepPhotos(pool)};
 render();
