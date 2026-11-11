@@ -266,3 +266,5 @@ input:focus,select:focus,textarea:focus{border-color:var(--gold)!important;box-s
 #bellpop{position:fixed;z-index:30;width:min(380px,calc(100vw - 20px));max-height:min(520px,70vh);display:flex;flex-direction:column;overflow:hidden}
 @media(min-width:641px){#top .menu{display:none!important}}
 .cardheading>svg{color:var(--t3)}
+/* Pri automatickom prekreslení (každých 30 s) sa prvky pod myšou nesmú znova animovať, inak blikajú. */
+html.no-anim *,html.no-anim *:before,html.no-anim *:after{transition:none!important;animation:none!important}

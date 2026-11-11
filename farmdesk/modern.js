@@ -282,7 +282,7 @@ function shell(){
     <button class="s-user" data-a="go:settings">${farmer(CLOUD?me?.user_id:'farmdesk',36,who)}<span><strong>${E(who)}</strong><small>${CLOUD?(isLeader()?'Leader':'Hráč'):'Ukážka na tomto zariadení'}</small></span></button>`;
   $('#top').innerHTML=`<div class="t-left"><button class="iconbtn menu" data-a="menu" aria-label="Menu">${ic('menu')}</button><div class="t-crumb"><small>${groupOf(cur)}</small><strong>${page==='farm'?'Detail farmy':names[cur]}</strong></div></div>
     <div class="t-right"><button class="t-search" data-a="searchfarm">${ic('search')}<span>Vyhľadať farmu</span></button>${db.demo?'<button class="demo" data-a="go:settings">Ukážkové údaje</button>':''}${CLOUD?cloudTopbar():''}<button class="iconbtn bell" aria-label="Upozornenia${count?', '+count+' nových':''}" aria-haspopup="dialog" aria-expanded="false" data-a="bell">${ic('bell')}${count?'<i class="bell-n">'+count+'</i>':''}</button><button class="btn primary t-add" data-a="work">${ic('plus')}<span>Zapísať prácu</span></button></div>`;
-  let bar=$('#tabbar');if(!bar){bar=document.createElement('nav');bar.id='tabbar';bar.setAttribute('aria-label','Rýchla navigácia');document.body.appendChild(bar)}
+  let bar=$('#tabbar');if(!bar){bar=document.createElement('nav');guardHtml(bar);bar.id='tabbar';bar.setAttribute('aria-label','Rýchla navigácia');document.body.appendChild(bar)}
   const tab=(p,i,l)=>`<button class="${cur===p?'on':''}" data-a="go:${p}">${ic(i)}<span>${l}</span></button>`;
   bar.innerHTML=tab('overview','grid','Prehľad')+tab('farms','barn','Farmy')+`<button class="tab-add" data-a="work" aria-label="Zapísať prácu">${ic('plus')}</button>`+tab('water','water','Voda')+`<button data-a="menu">${ic('menu')}<span>Viac</span></button>`;
 }
@@ -305,8 +305,13 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElement
 // Fotky polí sa pri prekreslení (každých 30 s) nevymieňajú: použije sa ten istý, už vykreslený obrázok, takže nebliká.
 const photoPool=()=>{const m=new Map();document.querySelectorAll('main img[src^="crops/"]').forEach(i=>{const k=i.getAttribute('src');(m.get(k)||m.set(k,[]).get(k)).push(i)});return m};
 function keepPhotos(pool){document.querySelectorAll('main img[src^="crops/"]').forEach(n=>{const old=pool.get(n.getAttribute('src'))?.shift();if(old&&old!==n){old.alt=n.alt;old.className=n.className;n.replaceWith(old)}})}
+// Menu, horná lišta a spodná lišta sa prepíšu len vtedy, keď sa naozaj zmenili.
+// Inak by sa pri automatickom prekreslení (každých 30 s) vymenili prvky pod myšou a blikali.
+const innerDesc=Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML');
+function guardHtml(el){if(!el||el.__guard)return;el.__guard=true;let last=null;
+  Object.defineProperty(el,'innerHTML',{configurable:true,get(){return innerDesc.get.call(this)},set(v){if(el.__lock||v===last)return;last=v;innerDesc.set.call(this,v)}})}
 const shellRender=render;
-render=function(){if(page!=='overview')homeEdit=false;if(page==='alerts')page='overview';closeBell();const pool=photoPool();shellRender();shell();
+render=function(){document.documentElement.classList.add('no-anim');requestAnimationFrame(()=>requestAnimationFrame(()=>document.documentElement.classList.remove('no-anim')));if(page!=='overview')homeEdit=false;if(page==='alerts')page='overview';closeBell();const pool=photoPool();const side=$('#sidebar'),top=$('#top');guardHtml(side);guardHtml(top);side.__lock=top.__lock=true;try{shellRender()}finally{side.__lock=top.__lock=false}shell();
   if(page==='farm'){const f=db.farms.find(x=>x.id===farmPageId),b=document.querySelector('main .detail-size-banner');if(f&&b&&cropPhoto(f))b.outerHTML=farmBanner(f,'farm-photo detail-photo')}
   keepPhotos(pool)};
 render();
