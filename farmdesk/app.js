@@ -549,31 +549,39 @@ function cropCycles(){
     harvests.forEach((h,i)=>{
       const prev=harvests[i-1]?.at??-Infinity,next=harvests[i+1]?.at??Infinity;
       const rows=db.tx.filter(x=>x.farm===f.id);
-      const sales=rows.filter(x=>x.category==='sale'&&x.at>=h.at&&x.at<next);
+      const early=15*60000;// predaj zapísaný so zberom môže byť o pár sekúnd skôr ako zber
+      const sales=rows.filter(x=>x.category==='sale'&&x.at>=h.at-early&&x.at<(next===Infinity?Infinity:next-early));
       const spent=rows.filter(x=>(x.category==='seed'||x.category==='wage')&&x.at>prev&&x.at<=h.at).reduce((n,x)=>n+x.amount,0);
       const revenue=sales.reduce((n,x)=>n+x.amount,0);
       const hours=Math.max(0,(h.at-h.cycleAt)/H);
-      out.push({farm:f,crop:h.crop||'Úroda',size:h.size||f.size,hours,pieces:h.pieces??null,revenue,cost:spent+rentShare(f,h.cycleAt,h.at),at:h.at});
+      const rent=rentShare(f,h.cycleAt,h.at);
+      out.push({farm:f,crop:h.crop||'Úroda',size:h.size||f.size,hours,pieces:h.pieces??null,revenue,cost:spent+rent,noRent:!rent,at:h.at});
     });
   }
   return out;
 }
 function cropReport(){
-  const cycles=cropCycles().filter(c=>c.hours>0);
-  const head=section('Úroda · čo sa najviac oplatí');
-  if(!cycles.length)return '<section class="panel crop-report">'+head+empty('Zatiaľ žiadny dokončený cyklus. Pri zápise Zberu môžeš zadať, koľko kusov ste zobrali. Predaj zapíš na farmu, z ktorej úroda je.')+'</section>';
-  const groups=new Map();
-  for(const c of cycles){const k=c.crop+'|'+c.size;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(c)}
-  const sum=(l,k)=>l.reduce((n,c)=>n+c[k],0);
-  const rows=[...groups.values()].map(l=>{
-    const withPieces=l.filter(c=>c.pieces!=null),hours=sum(l,'hours'),profit=sum(l,'revenue')-sum(l,'cost');
-    return {crop:l[0].crop,size:l[0].size,n:l.length,pieces:withPieces.length?sum(withPieces,'pieces')/withPieces.length:null,cost:sum(l,'cost')/l.length,hours:hours/l.length,revenue:sum(l,'revenue')/l.length,perHour:hours?profit/hours:0};
-  }).sort((a,b)=>b.perHour-a.perHour);
+  // Úroda je platná, keď rástla aspoň 6 h (kratšie sú zápisy, kde sa sadenie zapísalo až pri predaji) a má tržbu.
+  const all=cropCycles(),cycles=all.filter(c=>c.hours>=6&&c.revenue>0);
+  const head=section('Ktorá plodina sa oplatí');
+  if(!cycles.length)return '<section class="panel crop-report">'+head+empty('Zatiaľ žiadna dokončená úroda s predajom. Keď predáš úrodu na farme, objaví sa tu, koľko zarobila.')+'</section>';
+  const known=cycles.filter(c=>c.crop!=='Úroda'),unknown=cycles.filter(c=>c.crop==='Úroda');
+  const groups=new Map();for(const c of known){if(!groups.has(c.crop))groups.set(c.crop,[]);groups.get(c.crop).push(c)}
+  const avg=(l,f)=>l.reduce((n,c)=>n+f(c),0)/l.length;
+  const rows=[...groups.values()].map(l=>({crop:l[0].crop,n:l.length,list:l,rev:avg(l,c=>c.revenue),cost:avg(l,c=>c.cost),profit:avg(l,c=>c.revenue-c.cost),
+    perField:avg(l,c=>(c.revenue-c.cost)/c.size),sizes:[...new Set(l.map(c=>c.size))].sort((a,b)=>a-b),noRent:l.some(c=>c.noRent)})).sort((a,b)=>b.perField-a.perField);
   const best=rows[0];
-  const body=rows.map((r,i)=>`<tr class="${i===0&&r.perHour>0?'best-row':''}"><th scope="row">${E(cropName(r.crop))}${i===0&&r.perHour>0?' <span class="pill ready">najlepšie</span>':''}</th><td>${r.size} polí</td><td>${r.n}</td><td>${r.pieces==null?'—':fmt(Math.round(r.pieces))}</td><td>${money(cents(r.cost))}</td><td>${money(cents(r.revenue))}</td><td>${fmt(Math.round(r.hours*10)/10)} h</td><td class="${r.perHour<0?'loss':r.perHour>0?'gain':''}">${money(cents(r.perHour))}</td></tr>`).join('');
-  return '<section class="panel crop-report">'+head+(best.perHour>0?'<p class="crop-best">'+ic('chart')+'Najviac zarába <strong>'+E(cropName(best.crop))+'</strong> na farme s <strong>'+best.size+' poliami</strong>: približne '+money(cents(best.perHour))+' za hodinu.</p>':'')+
-    `<div class="tablewrap"><table><thead><tr><th>Plodina</th><th>Veľkosť</th><th>Cyklov</th><th>Ø kusov</th><th>Náklad na cyklus</th><th>Ø tržba</th><th>Ø dĺžka</th><th>Zisk / hod.</th></tr></thead><tbody>${body}</tbody></table></div>`+
-    '<p class="hint">Cyklus je od zasadenia po zber. Náklad na cyklus = semienka a mzdy od predošlého zberu + pomerná časť nájmu za čas rastu. Tržba = predaje na farme po zbere (do ďalšieho zberu). Vlastná práca hráčov sa sem neráta.</p></section>';
+  const line=(r,i)=>`<tr class="${i===0?'best-row':''}"><th scope="row"><span class="cmp-name">${cropPicture(cropInfo(r.crop),24)}${E(cropName(r.crop))}${i===0?' <span class="pill ready">najlepšie</span>':''}</span></th>
+    <td>${r.n}× <small>${r.sizes.join(' / ')} polí</small></td><td>${money(Math.round(r.rev))}</td><td>${money(Math.round(r.cost))}${r.noRent?' <small title="Pri niektorej úrode nebol zapísaný nájom">bez nájmu</small>':''}</td>
+    <td class="${r.profit<0?'loss':'gain'}">${money(Math.round(r.profit))}</td><td class="${r.perField<0?'loss':'gain'}"><b>${money(Math.round(r.perField))}</b></td></tr>`;
+  const unk=unknown.length?`<tr class="muted-row"><th scope="row">Neurčená plodina</th><td>${unknown.length}× <small>${[...new Set(unknown.map(c=>c.size))].join(' / ')} polí</small></td><td>${money(Math.round(avg(unknown,c=>c.revenue)))}</td><td>${money(Math.round(avg(unknown,c=>c.cost)))}</td><td>${money(Math.round(avg(unknown,c=>c.revenue-c.cost)))}</td><td>${money(Math.round(avg(unknown,c=>(c.revenue-c.cost)/c.size)))}</td></tr>`:'';
+  const skipped=all.length-cycles.length;
+  return '<section class="panel crop-report">'+head+
+    (best?'<p class="crop-best">'+ic('chart')+'Najviac zarába <strong>'+E(cropName(best.crop))+'</strong>: z jedného poľa priemerne <strong>'+money(Math.round(best.perField))+'</strong> čistého na jednu úrodu. Na farme so 120 poľami je to asi '+money(Math.round(best.perField*120))+'.</p>':'')+
+    `<div class="tablewrap"><table><thead><tr><th>Plodina</th><th>Úrod</th><th>Tržba za úrodu</th><th>Náklady za úrodu</th><th>Zisk za úrodu</th><th>Zisk z 1 poľa</th></tr></thead><tbody>${rows.map(line).join('')}${unk}</tbody></table></div>`+
+    '<p class="hint"><b>Ako to čítať:</b> každý riadok je priemer všetkých predaných úrod danej plodiny. <b>Náklady</b> sú semienka, pracovník a nájom za čas, keď úroda rástla. <b>Zisk z 1 poľa</b> je zisk vydelený počtom polí, takže sa dajú porovnať malé aj veľké farmy; podľa neho je poradie. Všetky plodiny rastú rovnako dlho (44 h).'+
+    (unknown.length?' <b>Neurčená plodina</b> sú úrody, pri ktorých nebolo vybraté, čo bolo zasadené; do poradia sa nerátajú.':'')+
+    (skipped?' Nezapočítané: '+skipped+'× úroda bez predaja alebo s neúplným zápisom sadenia.':'')+'</p></section>';
 }
 function farmResults() {
   if(!db.farms.length)return empty('Zatiaľ bez fariem.');

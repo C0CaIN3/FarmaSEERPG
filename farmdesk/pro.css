@@ -322,3 +322,7 @@ html.no-anim *,html.no-anim *:before,html.no-anim *:after{transition:none!import
 .farm-move:hover svg,.farm-move:focus-visible svg{opacity:1}
 @media(hover:none){.farm-move svg{opacity:.7}}
 .dialogbody .hint{font-size:13px;color:var(--t2);margin:0}
+.crop-report td small{color:var(--t3);font-size:11px;margin-left:4px}
+.crop-report .muted-row th,.crop-report .muted-row td{color:var(--t3)}
+.crop-report .hint b{color:var(--t2);font-weight:500}
+.crop-report .cmp-name{display:inline-flex;align-items:center;gap:8px}
