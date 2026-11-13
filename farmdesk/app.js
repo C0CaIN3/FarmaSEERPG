@@ -1,4 +1,4 @@
-const paths={search:'M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0Zm-2 5 6 6',brand:'M2 10 12 3l10 7M4 12l8-5 8 5M4 15l8-5 8 5M4 18l8-5 8 5M5 21l7-5 7 5',leaf:'M4 20C4 9 11 4 21 3c0 12-6 18-15 15m0 0L17 8',sprout:'M12 21v-9M12 15C4 16 3 11 3 7c6 0 9 3 9 8Zm0-3c0-6 4-9 10-9 0 6-4 10-10 9Z',grid:'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',barn:'M2 11l4-7 6-2 6 2 4 7M4 10v11h16V10M8 21V11h8v10m-8-9 8 8m0-8-8 8',wallet:'M3 7h17v13H3z M3 7V5l14-3v5m3 4h-6v5h6m-4-2.5h.2',bell:'M4 17h16l-2-3V9a6 6 0 0 0-12 0v5Zm6 3a2 2 0 0 0 4 0',settings:'M4 6h8m4 0h4M4 12h2m4 0h10M4 18h10m4 0h2M12 3v6M7 9v6m8 0v6',water:'M12 2C9 7 5 11 5 15a7 7 0 0 0 14 0c0-4-4-8-7-13Z',basket:'M2 10h20l-3 11H5z M6 10l5-7m7 7-5-7m-4 10 1 5m4-5-1 5',pin:'M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 0 1 14 0ZM14 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0',plus:'M12 5v14M5 12h14',right:'m9 5 7 7-7 7',arrow:'M3 12h17m-6-6 6 6-6 6',clock:'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Zm-10-6v6l4 3',history:'M3 11a9 9 0 1 1 1 6M3 4v7h7m2-5v6l4 2',calendar:'M3 5h18v16H3z M3 10h18M7 3v5m10-5v5',user:'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-2a8 8 0 0 1 16 0v2',key:'M14 14a6 6 0 1 0-4-4l-7 7v4h4v-3h3l4-4Z',x:'m6 6 12 12M6 18 18 6',menu:'M3 6h18M3 12h18M3 18h18',chart:'M3 20h18M6 17v-6m6 6V7m6 10V3',work:'M4 19 16 7m-5-4c5-2 10 3 10 8l-5-4Z',log:'M5 3h14v18H5z M8 8h8m-8 4h8m-8 4h5',cash:'M2 5h20v14H2z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',check:'m4 12 5 5L20 6',home:'M2 11 12 3l10 8M5 9v12h14V9'};
+const paths={edit:'M4 20h4L19 9l-4-4L4 16v4ZM14 6l4 4',search:'M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0Zm-2 5 6 6',brand:'M2 10 12 3l10 7M4 12l8-5 8 5M4 15l8-5 8 5M4 18l8-5 8 5M5 21l7-5 7 5',leaf:'M4 20C4 9 11 4 21 3c0 12-6 18-15 15m0 0L17 8',sprout:'M12 21v-9M12 15C4 16 3 11 3 7c6 0 9 3 9 8Zm0-3c0-6 4-9 10-9 0 6-4 10-10 9Z',grid:'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',barn:'M2 11l4-7 6-2 6 2 4 7M4 10v11h16V10M8 21V11h8v10m-8-9 8 8m0-8-8 8',wallet:'M3 7h17v13H3z M3 7V5l14-3v5m3 4h-6v5h6m-4-2.5h.2',bell:'M4 17h16l-2-3V9a6 6 0 0 0-12 0v5Zm6 3a2 2 0 0 0 4 0',settings:'M4 6h8m4 0h4M4 12h2m4 0h10M4 18h10m4 0h2M12 3v6M7 9v6m8 0v6',water:'M12 2C9 7 5 11 5 15a7 7 0 0 0 14 0c0-4-4-8-7-13Z',basket:'M2 10h20l-3 11H5z M6 10l5-7m7 7-5-7m-4 10 1 5m4-5-1 5',pin:'M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 0 1 14 0ZM14 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0',plus:'M12 5v14M5 12h14',right:'m9 5 7 7-7 7',arrow:'M3 12h17m-6-6 6 6-6 6',clock:'M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Zm-10-6v6l4 3',history:'M3 11a9 9 0 1 1 1 6M3 4v7h7m2-5v6l4 2',calendar:'M3 5h18v16H3z M3 10h18M7 3v5m10-5v5',user:'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-2a8 8 0 0 1 16 0v2',key:'M14 14a6 6 0 1 0-4-4l-7 7v4h4v-3h3l4-4Z',x:'m6 6 12 12M6 18 18 6',menu:'M3 6h18M3 12h18M3 18h18',chart:'M3 20h18M6 17v-6m6 6V7m6 10V3',work:'M4 19 16 7m-5-4c5-2 10 3 10 8l-5-4Z',log:'M5 3h14v18H5z M8 8h8m-8 4h8m-8 4h5',cash:'M2 5h20v14H2z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',check:'m4 12 5 5L20 6',home:'M2 11 12 3l10 8M5 9v12h14V9'};
 const ic=k=>'<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="'+(paths[k]||paths.leaf)+'"/></svg>';
 // Hand-drawn farmer portraits. The same seed (player id or worker name) always gives the same farmer.
 function farmer(seed,size=32,label=''){
@@ -1035,6 +1035,13 @@ function farmLeasePeriod(f,rows,current=now()){
     periods.sort((a,b)=>a.start-b.start)[0]||null;
 }
 
+// Každý pohyb farmy so sumou; klik ho otvorí na úpravu.
+function farmMovements(rows){
+  if(!rows.length)return '';
+  const list=[...rows].sort((a,b)=>b.at-a.at);
+  return '<div class="farm-moves"><h4>Pohyby farmy <span>'+list.length+'</span></h4>'+list.map(x=>{const inc=x.category==='sale';
+    return '<button type="button" class="farm-move '+(inc?'in':'out')+'" data-a="edittx:'+x.id+'" aria-label="Upraviť '+E(categories[x.category])+' '+money(x.amount)+'"><span class="fm-what"><strong>'+E(categories[x.category])+'</strong><small>'+date(x.at)+(x.desc?' · '+E(x.desc):'')+'</small></span><b>'+(inc?'+':'−')+money(x.amount)+'</b>'+ic('edit')+'</button>'}).join('')+'</div>';
+}
 function farmAccounts(f){
   const rows=db.tx.filter(x=>x.farm===f.id),current=now();
   const period=farmLeasePeriod(f,rows,current);
@@ -1058,7 +1065,7 @@ function farmAccounts(f){
     ${period?'<p class="account-dates">'+periodLabel+' · '+date(period.start)+' – '+date(period.end)+'</p>':'<p class="account-dates">Dátumy nájomného obdobia nie sú zadané.</p>'}
     <div class="tablewrap"><table><thead><tr><th scope="col">Položka</th><th scope="col">${periodLabel}</th><th scope="col">Celá evidencia</th></tr></thead><tbody>
     ${expenses}${line('Náklady spolu',part.cost,all.cost,'subtotal')}${line('Tržby z úrody',part.rev,all.rev)}${line('Čistý zisk',part.profit,all.profit,'profit')}
-    </tbody></table></div><div class="actiongrid">${btn('Nákup semienok','seed:'+f.id,'sprout')}${btn('Predaj úrody','sale:'+f.id,'cash')}</div></section>`;
+    </tbody></table></div>${farmMovements(rows)}<div class="actiongrid">${btn('Nákup semienok','seed:'+f.id,'sprout')}${btn('Predaj úrody','sale:'+f.id,'cash')}</div></section>`;
 }
 
 // A farm opens as its own page (#farma-<id>), not as a dialog, so it has room and the back button works.
@@ -1171,9 +1178,10 @@ function saleHarvestBox(f,category){
   if(category!=='sale'||!f?.planted||f.archived)return '';
   return '<label class="checkline"><input type="checkbox" name="harvested" checked><span><strong>Úroda je zozbieraná, farma sa vynuluje</strong><small>Zapíše sa Zber ('+E(cropName(f.crop))+') a farma bude znova neopracovaná: treba kopať, rýľovať a sadiť.</small></span></label>';
 }
-function harvestFromSale(f,at){
+function harvestFromSale(f,at,saleId=null){
   const t=Math.max(at,f.planted+60000),stamp=Math.min(t,now());
-  const log={id:uid(),farm:f.id,action:jobs.harvest[0],icon:jobs.harvest[1],who:CLOUD?myName():'Ja',at:stamp,fee:0,cycleAt:f.planted,performer:'self',crop:f.crop||'Úroda',size:f.size,fromSale:true};
+  const log={id:uid(),farm:f.id,action:jobs.harvest[0],icon:jobs.harvest[1],who:CLOUD?myName():'Ja',at:stamp,fee:0,cycleAt:f.planted,performer:'self',crop:f.crop||'Úroda',size:f.size,fromSale:true,saleId,
+    before:{planted:f.planted,watered:f.watered??null,growthFrom:f.growthFrom??null,crop:f.crop||'Úroda'}};
   if(CLOUD&&me?.user_id)log.players=[me.user_id];
   db.logs.push(log);
   f.crop='Úroda';f.planted=null;f.watered=null;delete f.waterClaim;delete f.growthFrom;
@@ -1192,6 +1200,35 @@ function tx(id,category,prepaid=false){
     '<div class="wide">'+field('Poznámka','desc','text','','maxlength="150"')+'</div>','Uložiť pohyb'));
 }
 
+// Zber, ktorý zapísal predaj: nájde sa podľa farmy a času predaja (staršie záznamy nemajú väzbu).
+function saleHarvest(x){
+  if(x?.category!=='sale')return null;
+  return db.logs.find(l=>l.fromSale&&l.farm===x.farm&&(l.saleId?l.saleId===x.id:Math.abs(l.at-x.at)<5*60000))||null;
+}
+// „Nepredal som všetko“: farma sa vráti do stavu pred predajom (zasadená), zber z predaja sa odstráni.
+function undoSaleHarvest(x){
+  const l=saleHarvest(x),f=db.farms.find(f=>f.id===x.farm);
+  if(!l||!f||f.planted)return false;
+  const b=l.before||{planted:l.cycleAt,watered:l.at,growthFrom:null,crop:l.crop};
+  f.planted=b.planted||l.cycleAt;f.watered=b.watered??null;f.crop=b.crop||l.crop||'Úroda';
+  if(b.growthFrom)f.growthFrom=b.growthFrom;else delete f.growthFrom;
+  db.logs=db.logs.filter(y=>y.id!==l.id);
+  return true;
+}
+function editTx(id){
+  const x=db.tx.find(x=>x.id===id);if(!x)return;
+  const linked=!!(x.rentEnd||x.workId),f=db.farms.find(f=>f.id===x.farm);
+  const h=saleHarvest(x),canUndo=h&&f&&!f.planted;
+  modal('Upraviť pohyb',form('txform','<input type="hidden" name="txid" value="'+E(x.id)+'">'+
+    (linked?'<input type="hidden" name="farm" value="'+E(x.farm||'')+'"><input type="hidden" name="category" value="'+E(x.category)+'">'+
+      '<p class="wide hint">'+E(categories[x.category])+' · '+E(fname(x.farm))+'. Pohyb je prepojený s '+(x.rentEnd?'nájmom':'prácou')+', preto sa dá zmeniť len suma, dátum a poznámka.</p>':
+      select('Farma','farm',[['','Všeobecné'],...farmopts()],x.farm||'')+select('Kategória','category',Object.entries(categories),x.category))+
+    forintField('Suma','amount',x.amount,{required:true})+
+    field('Dátum a čas','at','datetime-local',local(x.at),'required max="'+local(Math.max(now(),x.at))+'"')+
+    '<div class="wide">'+field('Poznámka','desc','text',x.desc||'','maxlength="150"')+'</div>'+
+    (canUndo?'<label class="checkline wide"><input type="checkbox" name="undoHarvest"><span><strong>Nepredal som všetko, úroda je ešte na farme</strong><small>Farma sa vráti do stavu pred predajom: znova bude zasadená ('+E(cropName(h.crop))+') a zber z predaja sa odstráni. Lišty skontroluj v detaile farmy.</small></span></label>':''),
+  'Uložiť zmeny'));
+}
 function calc(){modal('Kalkulácia pestovateľského cyklu','<form id="calcform"><div class="formgrid">'+field('Počet polí','plots','number',40,'min="1" max="120"')+field('Výnos na pole (kusy)','yield','number',1,'min="0" step="any"')+forintField('Cena za kus','price',0,{precise:true})+forintField('Nájom za cyklus','rent',0,{precise:true})+forintField('Osivo a vstupy','inputs',0,{precise:true})+forintField('Mzdy za cyklus','wages',0,{precise:true})+forintField('Investícia na začiatku','investment',0,{precise:true})+'</div><div id="calcresult" class="calcresult"></div></form>');calculate()}
 function calculate(){
   const form=$('#calcform'),d=Object.fromEntries(new FormData(form));
@@ -1280,7 +1317,7 @@ else if(a==='moneyview'){moneyView=id==='me'?'me':'all';try{localStorage.setItem
  else if(a==='seed'||a==='sale')tx(id,a);else if(a==='rent')tx(id,'rent');else if(a==='rentpaid')tx(id,'rent',true);else if(a==='paywork')payout(db.logs.find(l=>l.id===id));else if(a==='tx')tx(id);else if(a==='calc')calc();else if(a==='ics')calendar();else if(a==='backup')download('farmdesk-zaloha.json',JSON.stringify(db,null,2),'application/json');else if(a==='restore'){if(CLOUD&&!isLeader())toast('Spoločnú zálohu môže obnoviť iba leader.');else $('#file').click()}else if(a==='clear')confirmBox('Odstrániť ukážkové údaje?','Odstránia sa tri vzorové farmy a ich vzorové pohyby a práce. Vlastné záznamy sa zachovajú.','clearok');else if(a==='clearok'){let used=new Set([...db.logs,...db.tx].filter(x=>!x.sample).map(x=>x.farm));db.farms=db.farms.filter(x=>!x.sample||used.has(x.id));db.logs=db.logs.filter(x=>!x.sample);db.tx=db.tx.filter(x=>!x.sample);db.demo=false;save();close();render();toast('Ukážkové údaje boli odstránené.')}
  else if(a==='sound'){db.sound=!db.sound;if(db.sound){try{audioCtx??=new AudioContext();await audioCtx.resume();beep()}catch{db.sound=false;toast('Zvuk sa nepodarilo zapnúť.')}}save();render()}
  else if(a==='notify'){if(db.notices)db.notices=false;else{try{db.notices=(await Notification.requestPermission())==='granted';if(!db.notices)toast('Povoľ oznámenia v nastaveniach prehliadača.')}catch{toast('Prehliadač nepodporuje systémové oznámenia.')}}save();render()}
- else if(a==='txview'){let x=db.tx.find(x=>x.id===id);modal(categories[x.category]+' · '+money(x.amount),'<p>'+E(fname(x.farm))+' · '+date(x.at)+'</p><p>'+E(x.desc)+'</p>'+btn('Odstrániť pohyb','deltx:'+id,'x','danger'))}else if(a==='deltx')confirmBox('Odstrániť pohyb?','Pohyb sa odstráni z nákladov alebo tržieb. Pri prepojenej platbe sa upraví aj splatnosť nájmu alebo stav odmeny.','deltxok:'+id);else if(a==='deltxok'){removeMovement(id);save();close();render()}
+ else if(a==='txview'){let x=db.tx.find(x=>x.id===id);if(!x)return;modal(categories[x.category]+' · '+money(x.amount),'<p>'+E(fname(x.farm))+' · '+date(x.at)+'</p>'+(x.desc?'<p>'+E(x.desc)+'</p>':'')+'<div class="actions">'+btn('Odstrániť pohyb','deltx:'+id,'x','danger')+btn('Upraviť','edittx:'+id,'edit','primary')+'</div>')}else if(a==='edittx')editTx(id);else if(a==='deltx')confirmBox('Odstrániť pohyb?','Pohyb sa odstráni z nákladov alebo tržieb. Pri prepojenej platbe sa upraví aj splatnosť nájmu alebo stav odmeny.','deltxok:'+id);else if(a==='deltxok'){removeMovement(id);save();close();render()}
  else if(a==='restoreok'&&pendingRestore){db=CLOUD?{...pendingRestore,demo:false,sound:db.sound,notices:db.notices,sent:db.sent,farms:pendingRestore.farms.map(f=>({...f,sample:false}))}:pendingRestore;pendingRestore=null;save();close();render();toast('Záloha bola obnovená.')}
 });
 document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=Object.fromEntries(new FormData(e.target)),f=db.farms.find(x=>x.id===d.farm);
@@ -1397,9 +1434,18 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
      if(at>now()){toast('Úhradu zapíš po zaplatení v hre.');return}
      if(!saveRent(f,d,at,amount))return;
    }else{
-     db.tx.push({id:uid(),category:d.category,farm:d.farm,desc:d.desc||'',amount,at});
-     const sold=db.farms.find(x=>x.id===d.farm);
-     if(d.category==='sale'&&d.harvested&&sold?.planted&&!sold.archived)harvestFromSale(sold,at);
+     const old=d.txid&&db.tx.find(x=>x.id===d.txid);
+     if(old){
+       // Oprava existujúceho pohybu: suma, dátum a poznámka; pri voľnom pohybe aj farma a kategória.
+       const linked=!!(old.rentEnd||old.workId);
+       Object.assign(old,{amount,at,desc:d.desc||''},linked?{}:{farm:d.farm,category:d.category});
+       if(old.workId){const l=db.logs.find(x=>x.id===old.workId);if(l)l.fee=amount}
+       if(d.undoHarvest)undoSaleHarvest(old);
+     }else{
+       const id=uid();db.tx.push({id,category:d.category,farm:d.farm,desc:d.desc||'',amount,at});
+       const sold=db.farms.find(x=>x.id===d.farm);
+       if(d.category==='sale'&&d.harvested&&sold?.planted&&!sold.archived)harvestFromSale(sold,at,id);
+     }
    }
  }
  else if(id==='cropform'){
