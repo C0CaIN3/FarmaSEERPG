@@ -326,3 +326,7 @@ html.no-anim *,html.no-anim *:before,html.no-anim *:after{transition:none!import
 .crop-report .muted-row th,.crop-report .muted-row td{color:var(--t3)}
 .crop-report .hint b{color:var(--t2);font-weight:500}
 .crop-report .cmp-name{display:inline-flex;align-items:center;gap:8px}
+.crop-compare .sim-btn{margin-right:10px;height:30px;padding:0 12px;border-radius:var(--r3);border:1px solid var(--b2);background:var(--s2);color:var(--t1);font:500 12.5px/1 Ubuntu,sans-serif;cursor:pointer}
+.crop-compare .sim-btn:hover{border-color:var(--gold);color:var(--gold)}
+.sim-table td small{display:block;color:var(--t3);font-size:11px}
+.sim-table .cmp-name{display:inline-flex;align-items:center;gap:8px}

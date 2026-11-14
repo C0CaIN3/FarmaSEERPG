@@ -643,7 +643,7 @@ const CATALOG=[
   {name:'Žltý melón',hu:'Sárgadinnye',art:'melon'},
   {name:'Uhorka',hu:'Uborka',art:'cucumber'},
   {name:'TV paprika',hu:'TV paprika',art:'tvpepper'},
-  {name:'Čili paprika',hu:'Chilipaprika',art:'chili'},
+  {name:'Čili paprika',hu:'Chilipaprika',art:'chili',seedPrice:3000,priceMin:6766,priceMax:7322,yieldMin:7,yieldMax:11,recovery:false},
   {name:'Jablková paprika',hu:'Almapaprika',art:'bell'}
 ];
 const catalogNames=CATALOG.map(c=>c.name);
@@ -691,6 +691,20 @@ function cropEstimate(name,fields=cropParcels){
     usualLo:Math.round(Math.max(ymin*fields,pieces-spread)*pmin-cost),usualHi:Math.round(Math.min(ymax*fields,pieces+spread)*pmax-cost),
     lo:Math.round(pmin*ymin*fields-cost),hi:Math.round(pmax*ymax*fields-cost)};
 }
+// Simulácia ako v hre: každé pole dá náhodný počet kusov (najmenej–najviac z katalógu), celá úroda sa predá za náhodnú cenu z rozsahu.
+function cropSimulate(fields=cropParcels){
+  const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+  const rows=catalogNames.map(n=>{const c=cropInfo(n),v=k=>c[k]!=null&&c[k]!==''&&!isNaN(+c[k])?+c[k]:null;
+    const seed=v('seedPrice'),pmin=v('priceMin'),pmax=v('priceMax'),ymin=v('yieldMin'),ymax=v('yieldMax');
+    if([seed,pmin,pmax,ymin,ymax].some(x=>x==null))return null;
+    let pieces=0,lo=Infinity,hi=0;for(let i=0;i<fields;i++){const k=rnd(ymin,ymax);pieces+=k;lo=Math.min(lo,k);hi=Math.max(hi,k)}
+    const price=rnd(Math.round(pmin),Math.round(pmax)),rev=pieces*price,cost=seed*fields;
+    return {n,pieces,lo,hi,price,rev,cost,profit:rev-cost}}).filter(Boolean).sort((a,b)=>b.profit-a.profit);
+  if(!rows.length){modal('Simulácia úrody',empty('Žiadna plodina nemá v katalógu vyplnené ceny a kusy z poľa.'));return}
+  modal('Simulácia úrody · '+fields+' polí','<p class="hint">Ako v hre: každé zo '+fields+' polí dalo náhodný počet kusov podľa katalógu a celá úroda sa predala za náhodnú cenu. Nájom a pracovník nie sú započítané.</p><div class="tablewrap"><table class="sim-table"><thead><tr><th>Plodina</th><th>Kusy</th><th>Cena / ks</th><th>Tržba</th><th>Semienka</th><th>Zisk</th></tr></thead><tbody>'+
+    rows.map((r,i)=>'<tr class="'+(i===0?'best-row':'')+'"><th scope="row"><span class="cmp-name">'+cropPicture(cropInfo(r.n),22)+E(r.n)+'</span></th><td>'+fmt(r.pieces)+' ks<small>'+r.lo+'–'+r.hi+' na pole</small></td><td>'+money(r.price)+'</td><td>'+money(r.rev)+'</td><td>'+money(r.cost)+'</td><td><b class="'+(r.profit<0?'loss':'gain')+'">'+money(r.profit)+'</b></td></tr>').join('')+
+    '</tbody></table></div><div class="actions">'+[40,80,120].map(p=>btn(p+' polí','cropsim:'+p,'',p===fields?'primary':'')).join('')+btn('Znova','cropsim:'+fields)+'</div>');
+}
 function cropCompare(){
   const rows=catalogNames.map(n=>cropEstimate(n)).filter(r=>r.ok||r.real);
   if(!rows.length)return '';
@@ -704,7 +718,7 @@ function cropCompare(){
     '<td>'+(r.ok?fmt(Math.round(r.yAvg*10)/10)+' ks':'—')+'</td>'+
     '<td>'+(r.ok?money(Math.round(r.pAvg)):'—')+'</td>'+
     '<td>'+(r.real?'<b class="'+tone(r.real.profit)+'">'+money(r.real.profit)+'</b><small>'+r.real.n+(r.real.n===1?' cyklus':r.real.n<5?' cykly':' cyklov')+'</small>':'<small>zatiaľ nie</small>')+'</td></tr>').join('');
-  return '<section class="panel crop-compare">'+section('Porovnanie plodín · '+cropParcels+' polí','<span class="parcel-pick">'+[40,80,120].map(p=>'<button class="'+(p===cropParcels?'on':'')+'" data-a="cropparcels:'+p+'">'+p+'</button>').join('')+'</span>')+
+  return '<section class="panel crop-compare">'+section('Porovnanie plodín · '+cropParcels+' polí','<button class="sim-btn" data-a="cropsim:'+cropParcels+'">Simulovať úrodu</button><span class="parcel-pick">'+[40,80,120].map(p=>'<button class="'+(p===cropParcels?'on':'')+'" data-a="cropparcels:'+p+'">'+p+'</button>').join('')+'</span>')+
     '<div class="tablewrap"><table><thead><tr><th>Plodina</th><th>Očakávaný zisk</th><th>Bežne</th><th>Kusy z poľa (priem.)</th><th>Cena (priem.)</th><th>Skutočne podľa predajov</th></tr></thead><tbody>'+body+'</tbody></table></div>'+
     '<p class="hint">Všetky plodiny rastú rovnako dlho (44 h), takže stačí porovnať zisk za cyklus. Poradie je podľa skutočných predajov, ak už sú, inak podľa očakávaného zisku z cien v katalógu. Skutočné čísla sa prepočítajú na '+cropParcels+' polí, aby sa dali porovnať farmy rôznej veľkosti. Presnosť rastie s každým zberom, pri ktorom zapíšete plodinu a predaj.</p></section>';
 }
@@ -1294,6 +1308,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
  else if(a==='settlereopen'&&f)confirmBox('Otvoriť vyúčtovanie znova?','Prevody z tohto vyúčtovania sa prestanú rátať v Ekonomike, kým ho znova neuzavrieš.','settlereopenok:'+id);
  else if(a==='settlereopenok'&&f){const st=settlementFor(f);if(st?.closed)f.settlements=(f.settlements||[]).filter(x=>x!==st.closed);save();close();render()}else if(a==='back'){if(/^#farma-/.test(location.hash)&&history.length>1)history.back();else go(prevPage||'overview')}else if(a==='waterview')go('water');
  else if(a==='cropsel'){cropSel=id||null;render();scrollTo(0,0)}
+ else if(a==='cropsim')cropSimulate([40,80,120].includes(+id)?+id:cropParcels);
  else if(a==='cropparcels'){cropParcels=[40,80,120].includes(+id)?+id:120;render()}
  else if(a==='cropedit')cropEditForm(id);
 else if(a==='moneyview'){moneyView=id==='me'?'me':'all';try{localStorage.setItem('farmdesk-money-view',moneyView)}catch{}render()}else if(a==='waterspan'){waterHours=[12,24,48].includes(+id)?+id:24;render()}
