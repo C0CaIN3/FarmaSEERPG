@@ -791,7 +791,7 @@ async function loadHistory(force=false){
   historyState.loading=false;
   if(page==='settings'&&settingsTab==='history'&&!$('#modal').open)render();
 }
-const fieldNames={shareDeal:'dohodu o podieloch',buyIns:'prevody medzi hráčmi',name:'názov',loc:'budova',floor:'poschodie',door:'dvere',size:'veľkosť',type:'typ prenájmu',due:'termín nájmu',term:'termín',rentAmount:'cena nájmu',leaseDays:'doba prenájmu',owner:'prenajímateľ',phone:'telefón',account:'účet',reminders:'pripomienky',assignments:'dohody s pracovníkmi',notes:'poznámka',createdAt:'dátum pridania'};
+const fieldNames={keys:'zapísaných hráčov',shareDeal:'dohodu o podieloch',buyIns:'prevody medzi hráčmi',name:'názov',loc:'budova',floor:'poschodie',door:'dvere',size:'veľkosť',type:'typ prenájmu',due:'termín nájmu',term:'termín',rentAmount:'cena nájmu',leaseDays:'doba prenájmu',owner:'prenajímateľ',phone:'telefón',account:'účet',reminders:'pripomienky',assignments:'dohody s pracovníkmi',notes:'poznámka',createdAt:'dátum pridania'};
 function histFarmName(h){const d=h.new_data||h.old_data||{};if(h.kind==='farm')return d.name||'Farma';return d.farm?(db.farms.find(f=>f.id===d.farm)?.name||'Odstránená farma'):'Všeobecné'}
 function describeChange(h){
   const n=h.new_data||{},o=h.old_data||{},d=h.op==='delete'?o:n;
@@ -968,7 +968,7 @@ function agreementForm(f,a=null){
     (a?'<input type="hidden" name="farm" value="'+E(f.id)+'">':select('Farma','farm',activeFarms().map(x=>[x.id,x.name]),f.id))+'<input type="hidden" name="assignment" value="'+E(a?.id||'')+'">'+
     select('Dohodnutá práca','job',Object.entries(jobs).map(([key,v])=>[key,v[0]]),a?.job||'plant')+
     field('Meno pracovníka','who','text',a?.who||'','required maxlength="80" list="workers"')+
-    phoneField(a?.who||'')+'<datalist id="workers">'+Object.keys(db.workers||{}).map(n=>'<option value="'+E(n)+'"></option>').join('')+'</datalist>'+
+    keyHint(f,a?.who||'')+phoneField(a?.who||'')+'<datalist id="workers">'+[...new Set([...farmKeys(f),...Object.keys(db.workers||{})])].map(n=>'<option value="'+E(n)+'"></option>').join('')+'</datalist>'+
     forintField('Odmena za túto prácu','fee',a?.fee??'',{required:true})+
     field('Plánovaný čas (voliteľné)','plannedAt','datetime-local',local(a?.plannedAt));
   modal(a?'Upraviť dohodu':'Zapísať prácu',form('agreementform',fields,'Uložiť dohodu')+(a?btn('Zrušiť dohodu','canceljob:'+a.id,'x','danger'):''));
@@ -1105,6 +1105,30 @@ function openFromHash(){
   const m=location.hash.match(/^#farma-(.+)$/),f=m&&db.farms.find(x=>x.id===decodeURIComponent(m[1]));
   if(f)detail(f);else if(page==='farm')go(prevPage||'overview');
 }
+// ---- Kto je v hre zapísaný na farme (má právo na nej pracovať) ----
+const farmKeys=f=>Array.isArray(f?.keys)?f.keys:[];
+const sameName=(a,b)=>String(a||'').trim().toLowerCase()===String(b||'').trim().toLowerCase();
+const hasKey=(f,name)=>!!name&&farmKeys(f).some(n=>sameName(n,name));
+function keyPeople(){return [...new Set([...db.farms.flatMap(farmKeys),...db.logs.map(l=>l.who),...db.farms.map(f=>f.worker),...Object.keys(db.workers||{})].filter(n=>n&&n!=='Ja'&&n!=='Úroda'))].sort((a,b)=>a.localeCompare(b,'sk'))}
+function keysBox(f){
+  const list=farmKeys(f);
+  const chips=list.map((n,i)=>'<span class="key-chip"><button type="button" class="key-name" data-a="keywho:'+E(n)+'" title="Kde všade je zapísaný">'+ic('user')+E(n)+'</button><button type="button" class="key-del" data-a="keydel:'+E(f.id)+'|'+i+'" aria-label="Odstrániť '+E(n)+'">'+ic('x')+'</button></span>').join('');
+  return '<section class="contract-box farm-keys"><h3>'+ic('key')+'Zapísaní na farme <span class="total">'+list.length+'</span></h3>'+
+    '<p class="hint">Hráči, ktorí majú v hre na tejto farme právo robiť. Pri zadávaní práce hneď uvidíš, či tam pracovníka môžeš poslať.</p>'+
+    (chips?'<div class="key-chips">'+chips+'</div>':'')+
+    (f.archived?'':'<form id="keyform" class="key-add"><input type="hidden" name="farm" value="'+E(f.id)+'"><input name="name" maxlength="60" required placeholder="Meno hráča, napr. Nolan Whitaker" list="keypeople" autocomplete="off" aria-label="Meno hráča"><datalist id="keypeople">'+keyPeople().filter(n=>!hasKey(f,n)).map(n=>'<option value="'+E(n)+'"></option>').join('')+'</datalist><button type="submit" class="btn">'+ic('plus')+'Zapísať</button></form>')+'</section>';
+}
+function keyWho(name){
+  const on=activeFarms().filter(f=>hasKey(f,name)),off=activeFarms().filter(f=>!hasKey(f,name));
+  const line=f=>'<button class="water-line" data-a="farm:'+f.id+'"><span><strong>'+E(f.name)+'</strong><small>'+E(placeText(f))+' · '+f.size+' polí</small></span></button>';
+  modal(name,'<p class="hint">Farmy, kde je '+E(name)+' zapísaný a môžeš ho tam poslať robiť.</p>'+(on.map(line).join('')||empty('Zatiaľ nie je zapísaný na žiadnej farme.'))+(off.length?'<details class="key-off"><summary>Kde nie je zapísaný ('+off.length+')</summary>'+off.map(line).join('')+'</details>':''));
+}
+// Pod menom pracovníka vo formulári práce: či má na vybranej farme právo.
+function keyHint(f,name){
+  if(!f)return '';const ok=hasKey(f,name),list=farmKeys(f);
+  const txt=!name?(list.length?'Zapísaní na tejto farme: '+list.join(', '):'Na tejto farme zatiaľ nemáš zapísaného nikoho.'):ok?name+' je zapísaný na tejto farme.':name+' nie je zapísaný na tejto farme. Skontroluj, či má v hre právo, alebo ho zapíš v detaile farmy.';
+  return '<p class="wide key-hint '+(name?(ok?'ok':'no'):'')+'" data-keyhint>'+ic('key')+E(txt)+'</p>';
+}
 function farmPage(){
   const f=db.farms.find(x=>x.id===farmPageId);
   if(!f)return heading('Farma sa nenašla','Farma bola odstránená alebo ešte nie je načítaná.',btn('Späť na farmy','go:farms','arrow'));
@@ -1115,7 +1139,7 @@ function farmPage(){
   const history=[...db.logs].filter(l=>l.farm===f.id).sort((a,b)=>b.at-a.at);
   const journal='<section class="contract-box farm-journal"><h3>Práce na farme <span class="total">'+history.length+'</span></h3>'+(history.slice(0,12).map(l=>row(l.icon,l.action,withPhone(l.who)+(l.fee>0?' · '+money(l.fee):'')+byLine('log',l.id,'zapísal'),date(l.at),l.icon==='water'?'blue':'')).join('')||empty('Na tejto farme zatiaľ nie je zapísaná práca.'))+(history.length>12?'<p class="hint">Staršie práce nájdeš v Denníku prác.</p>':'')+'</section>';
   return `<div class="pagetitle farm-title"><div><button class="btnlink back-link" data-a="back">${ic('arrow')}Späť</button><h1>${E(f.name)}${f.door?' <span class="door-tag">'+E(doorLabel(f.door))+'</span>':''}</h1><p>${E(placeText(f))} · ${types[f.type]} · ${f.size} polí</p></div>${actions}</div>
-  <div class="farm-page"><div class="farm-col"><section class="panel farm-hero"><div class="detail-size-banner size-${f.size}">${capacityGraphic(f.size)}</div><div class="inline"><span class="pill ${cls}"><i></i>${s}</span>${soilPill(f)}${workingPill(f)}</div><div data-farm-timer="${E(f.id)}">${duePanel(f)}</div>${gameBars(f)}<div class="details">${props}</div></section>${ongoingBox(f)}${agreements(f)}</div>
+  <div class="farm-page"><div class="farm-col"><section class="panel farm-hero"><div class="detail-size-banner size-${f.size}">${capacityGraphic(f.size)}</div><div class="inline"><span class="pill ${cls}"><i></i>${s}</span>${soilPill(f)}${workingPill(f)}</div><div data-farm-timer="${E(f.id)}">${duePanel(f)}</div>${gameBars(f)}<div class="details">${props}</div></section>${keysBox(f)}${ongoingBox(f)}${agreements(f)}</div>
   <div class="farm-col">${farmAccounts(f)}${CLOUD?settlementBox(f)+settlementHistory(f):''}${rentSummary(f)}${wagesFor(f)}${journal}</div></div>`;
 }
 const jobs={dig:['Kopanie','work'],till:['Rýľovanie','work'],water:['Polievanie','water'],plant:['Sadenie','sprout'],harvest:['Zber','basket']};
@@ -1189,8 +1213,8 @@ function work(id,assignment=null,ongoing=null,mode='done'){
       '<details class="wide past-time"><summary>Práca bola spravená skôr?</summary><p class="hint">Pre farmy rozrobené pred appkou alebo zabudnutý zápis. Rast a voda sa potom počítajú od tohto času.</p>'+field('Kedy bola práca spravená','at','datetime-local','','max="'+local(now())+'"')+'</details>')+
     '<fieldset id="hire-fields" class="wide formgrid hire-fields" '+(hire?'':'hidden disabled')+'><legend>Dohoda za túto prácu</legend>'+
     field('Meno pracovníka','who','text',hire?worker:'','required maxlength="80" list="workers"')+
-    phoneField(hire?worker:'')+
-    '<datalist id="workers">'+people.map(n=>'<option value="'+E(n)+'"></option>').join('')+'</datalist>'+
+    keyHint(f,hire?worker:'')+phoneField(hire?worker:'')+
+    '<datalist id="workers">'+[...new Set([...farmKeys(f),...people])].map(n=>'<option value="'+E(n)+'"></option>').join('')+'</datalist>'+
     forintField('Dohodnutá odmena','fee',assignment?.fee??ongoing?.fee??'',{required:true})+
     select('Vyplatenie','settlement',[['pending','Vyplatím neskôr'],['paid','Už vyplatené pri práci']],ongoing?.settlement||'pending')+
     '</fieldset>',ongoing?'Potvrdiť dokončenie':'Zapísať'));
@@ -1293,6 +1317,8 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
  else if(a==='pushon'||a==='pushoff'||a==='pushtest'){if(pushState.busy)return;pushState.busy=true;try{if(a==='pushon')await enablePush();else if(a==='pushoff')await disablePush();else{if(!pushState.endpoint){await enablePush();if(!pushState.endpoint)return}const r=await FarmCloud.testPush();toast(r?.sent?'Skúšobná notifikácia odoslaná ('+r.sent+'×). Mala by prísť do pár sekúnd.':'Na tvoje zariadenia sa nepodarilo nič poslať. Vypni a znova zapni notifikácie.')}}catch(err){toast(cloudError(err,'Notifikácie sa nepodarilo nastaviť.'))}finally{pushState.busy=false;render()}}else if(a==='settab'){if(page!=='settings')go('settings');settingsTab=id||null;render();window.scrollTo(0,0)}
  else if(a==='install'&&installPrompt){installPrompt.prompt();installPrompt.userChoice.finally(()=>{installPrompt=null;render()})}
  else if(a==='settle'&&f){const st=settlementFor(f);if(st)confirmBox('Uzavrieť vyúčtovanie?',(st.transfers.length?st.transfers.map(t=>playerName(t.from)+' pošle '+playerName(t.to)+' '+money(t.amount)).join(' · ')+'. ':'Nikto nikomu nič neposiela. ')+'Po uzavretí sa prevody započítajú hráčom v Ekonomike.','settleok:'+id)}
+ else if(a==='keydel'){const [fid,i]=id.split('|'),t=db.farms.find(x=>x.id===fid),n=farmKeys(t)[+i];if(t&&n!=null){t.keys=farmKeys(t).filter((_,k)=>k!==+i);if(!t.keys.length)delete t.keys;save();render();toast(n+' už nie je zapísaný na farme '+t.name+'.')}}
+ else if(a==='keywho')keyWho(b.dataset.a.slice(7));
  else if(a==='settleok'&&f){closeSettlement(f);save();close();render();toast('Vyúčtovanie je uzavreté.')}
  else if(a==='deal'&&f)dealForm(f);
  else if(a==='dealoff'&&f){delete f.shareDeal;save();close();render();toast('Dohoda bola zrušená. Delí sa podľa vkladu.')}
@@ -1502,10 +1528,12 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
    const prices={};
    for(const k of jobShown){const n=Number(ungroupAmount(d['price_'+k]||'0'));if(!isAmount(n)){toast('Skontroluj cenu práce '+jobs[k][0]+'.');return}prices[k]=n}
    db.workPrices=prices;save();render();toast('Ceny vlastnej práce sú uložené.');return}
+ else if(id==='keyform'){const name=String(d.name||'').trim().replace(/\s+/g,' ').slice(0,60);if(!f||!name){toast('Zadaj meno hráča.');return}if(hasKey(f,name)){toast(name+' už je na tejto farme zapísaný.');return}f.keys=[...farmKeys(f),name];e.target.reset();save();render();toast(name+' je zapísaný na farme '+f.name+'.');return}
  else if(id==='timing'){db.growth=+d.growth;db.dry=+d.dry;save();render();toast('Časy pestovania boli uložené.');return}else return;
  save();close();render();if(id==='workform'||id==='agreementform')detail(f);else if(id==='farmform'||id==='payform')detail(db.farms.find(x=>x.id===activeFarm));else if(id==='txform'&&(d.fromFarm||d.category==='rent')&&f)detail(f);toast('Záznam bol uložený.')});
 document.addEventListener('change',async e=>{const cat=e.target.dataset?.pushcat;if(!cat)return;try{await togglePushCategory(cat)}catch(err){e.target.checked=!e.target.checked;toast(cloudError(err))}});
-document.addEventListener('input',e=>{if(e.target.name==='who'&&e.target.form?.elements.workerPhone){const known=workerPhone(e.target.value);if(known)e.target.form.elements.workerPhone.value=known}if(e.target.hasAttribute('data-forint'))updateAmountInput(e.target,e.inputType==='insertFromPaste');if(e.target.id==='search'){query=e.target.value;$('#matches').innerHTML=farmsgrid();$('#matches').querySelectorAll('canvas').forEach(paint)}if(e.target.closest('#calcform'))calculate()});
+document.addEventListener('input',e=>{if(e.target.name==='who'||e.target.name==='farm'){const fm=e.target.form,h=fm?.querySelector('[data-keyhint]');if(h){const ff=db.farms.find(x=>x.id===fm.elements.farm?.value)||db.farms.find(x=>x.id===activeFarm);if(ff)h.outerHTML=keyHint(ff,fm.elements.who?.value.trim()||'')}}
+ if(e.target.name==='who'&&e.target.form?.elements.workerPhone){const known=workerPhone(e.target.value);if(known)e.target.form.elements.workerPhone.value=known}if(e.target.hasAttribute('data-forint'))updateAmountInput(e.target,e.inputType==='insertFromPaste');if(e.target.id==='search'){query=e.target.value;$('#matches').innerHTML=farmsgrid();$('#matches').querySelectorAll('canvas').forEach(paint)}if(e.target.closest('#calcform'))calculate()});
 let pendingRestore=null;
 function isBackup(v){let finite=Number.isFinite,txt=x=>typeof x==='string',id=x=>txt(x)&&/^[a-z0-9-]{1,70}$/i.test(x),time=x=>x===null||(finite(x)&&x>0&&x<8640000000000000);if(!v||![v.growth,v.dry,v.melonHours??44,v.melonDryHours??35.2].every(x=>finite(x)&&x>=.01&&x<=8760)||![v.logs,v.tx,v.farms].every(Array.isArray))return false;
  const allowedTerms=['Zúčtovanie','Koniec nájmu',weeklyTerm];
@@ -1520,7 +1548,7 @@ function isBackup(v){let finite=Number.isFinite,txt=x=>typeof x==='string',id=x=
    linkedIds.add(x.workId);
    return true;
  }
- let valid=v.farms.every(f=>id(f.id)&&txt(f.name)&&(f.assignments===undefined||(Array.isArray(f.assignments)&&f.assignments.every(a=>a&&id(a.id)&&Object.hasOwn(jobs,a.job)&&txt(a.who)&&isAmount(a.fee)&&time(a.plannedAt))))&&Object.hasOwn(types,f.type)&&[40,80,120].includes(f.size)&&[0,1,2].includes(f.art)&&Number.isInteger(f.loc)&&f.loc>=1&&f.loc<=7&&Number.isInteger(f.floor)&&f.floor>=1&&f.floor<=15&&(f.door==null||Number.isInteger(f.door)&&f.door>=1&&f.door<=DOORS)&&[f.planted,f.due,f.watered].every(time)&&(f.createdAt===undefined||time(f.createdAt))&&(f.dueFromEntry===undefined||typeof f.dueFromEntry==='boolean')&&(f.rentBaseFromEntry===undefined||typeof f.rentBaseFromEntry==='boolean')&&allowedTerms.includes(f.term)&&(f.weeklyRent==null||isAmount(f.weeklyRent))&&(f.rentAmount==null||isAmount(f.rentAmount))&&(f.leaseDays===undefined||validLeaseDays(f.leaseDays))&&(f.ownerFirst===undefined||txt(f.ownerFirst))&&(f.ownerLast===undefined||txt(f.ownerLast))&&(f.access==null||['waiting','granted','unknown'].includes(f.access))&&(f.rentBaseDue===undefined||time(f.rentBaseDue))&&(f.rentBaseTerm==null||allowedTerms.includes(f.rentBaseTerm))&&[f.worker,f.owner,f.account,f.phone].every(txt));let ids=new Set(v.farms.map(f=>f.id));return valid&&ids.size===v.farms.length&&v.tx.every(x=>id(x.id)&&(!x.farm||ids.has(x.farm))&&Object.hasOwn(categories,x.category)&&finite(x.amount)&&x.amount>0&&time(x.at)&&x.at!==null&&txt(x.desc)&&validPayment(x))&&v.logs.every(x=>id(x.id)&&ids.has(x.farm)&&Object.hasOwn(paths,x.icon)&&txt(x.action)&&txt(x.who)&&(x.fee==null||isAmount(x.fee))&&(x.cycleAt===undefined||time(x.cycleAt))&&time(x.at)&&x.at!==null)}
+ let valid=v.farms.every(f=>id(f.id)&&txt(f.name)&&(f.assignments===undefined||(Array.isArray(f.assignments)&&f.assignments.every(a=>a&&id(a.id)&&Object.hasOwn(jobs,a.job)&&txt(a.who)&&isAmount(a.fee)&&time(a.plannedAt))))&&Object.hasOwn(types,f.type)&&[40,80,120].includes(f.size)&&[0,1,2].includes(f.art)&&Number.isInteger(f.loc)&&f.loc>=1&&f.loc<=7&&Number.isInteger(f.floor)&&f.floor>=1&&f.floor<=15&&(f.door==null||Number.isInteger(f.door)&&f.door>=1&&f.door<=DOORS)&&[f.planted,f.due,f.watered].every(time)&&(f.createdAt===undefined||time(f.createdAt))&&(f.dueFromEntry===undefined||typeof f.dueFromEntry==='boolean')&&(f.rentBaseFromEntry===undefined||typeof f.rentBaseFromEntry==='boolean')&&allowedTerms.includes(f.term)&&(f.weeklyRent==null||isAmount(f.weeklyRent))&&(f.rentAmount==null||isAmount(f.rentAmount))&&(f.leaseDays===undefined||validLeaseDays(f.leaseDays))&&(f.ownerFirst===undefined||txt(f.ownerFirst))&&(f.ownerLast===undefined||txt(f.ownerLast))&&(f.access==null||['waiting','granted','unknown'].includes(f.access))&&(f.rentBaseDue===undefined||time(f.rentBaseDue))&&(f.rentBaseTerm==null||allowedTerms.includes(f.rentBaseTerm))&&(f.keys===undefined||Array.isArray(f.keys)&&f.keys.every(n=>typeof n==='string'&&n.length<=80))&&[f.worker,f.owner,f.account,f.phone].every(txt));let ids=new Set(v.farms.map(f=>f.id));return valid&&ids.size===v.farms.length&&v.tx.every(x=>id(x.id)&&(!x.farm||ids.has(x.farm))&&Object.hasOwn(categories,x.category)&&finite(x.amount)&&x.amount>0&&time(x.at)&&x.at!==null&&txt(x.desc)&&validPayment(x))&&v.logs.every(x=>id(x.id)&&ids.has(x.farm)&&Object.hasOwn(paths,x.icon)&&txt(x.action)&&txt(x.who)&&(x.fee==null||isAmount(x.fee))&&(x.cycleAt===undefined||time(x.cycleAt))&&time(x.at)&&x.at!==null)}
 document.addEventListener('change',async e=>{let el=e.target;if(el.name==='type'){
    const contacts=$('#contacts');contacts.hidden=contacts.disabled=el.value!=='player';
    if(el.form.elements.term)el.form.elements.term.value=el.value==='player'?weeklyTerm:'Koniec nájmu';

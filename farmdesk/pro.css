@@ -330,3 +330,23 @@ html.no-anim *,html.no-anim *:before,html.no-anim *:after{transition:none!import
 .crop-compare .sim-btn:hover{border-color:var(--gold);color:var(--gold)}
 .sim-table td small{display:block;color:var(--t3);font-size:11px}
 .sim-table .cmp-name{display:inline-flex;align-items:center;gap:8px}
+/* Zapísaní na farme */
+.farm-keys h3 svg{width:15px;height:15px;margin-right:6px;vertical-align:-2px;color:var(--gold)}
+.key-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.key-chip{display:inline-flex;align-items:center;border:1px solid var(--b2);background:var(--s2);border-radius:var(--r3);overflow:hidden}
+.key-chip button{border:0;background:none;color:var(--t1);font:500 13px/1 Ubuntu,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px}
+.key-chip button svg{width:14px;height:14px;color:var(--t3)}
+.key-chip .key-name:hover{color:var(--gold)}
+.key-chip .key-del{padding:0 8px;border-left:1px solid var(--b2)}
+.key-chip .key-del:hover{color:var(--danger)}
+.key-add{display:flex;gap:8px;margin-top:8px}
+.key-add input[name=name]{flex:1;min-width:0;height:36px;padding:0 10px;border-radius:var(--r3);border:1px solid var(--b2);background:var(--s1);color:var(--t1);font:400 14px Ubuntu,sans-serif}
+.key-add input[name=name]:focus{outline:none;border-color:var(--gold)}
+.key-hint{display:flex;gap:8px;align-items:flex-start;margin:0;padding:8px 10px;border-radius:var(--r3);background:var(--s2);color:var(--t2);font-size:13px;line-height:1.4}
+.key-hint svg{width:15px;height:15px;flex:none;margin-top:1px;color:var(--t3)}
+.key-hint.ok{color:var(--growth)}.key-hint.ok svg{color:var(--growth)}
+.key-hint.no{color:var(--warn)}.key-hint.no svg{color:var(--warn)}
+.ff-keys{display:flex;gap:6px;align-items:center;margin-top:8px;color:var(--t2);font-size:12.5px;min-width:0}
+.ff-keys svg{width:13px;height:13px;flex:none;color:var(--gold)}
+.ff-keys span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.key-off{margin-top:12px}.key-off summary{cursor:pointer;color:var(--t3);font-size:13px;margin-bottom:6px}

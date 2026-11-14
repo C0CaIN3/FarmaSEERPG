@@ -259,7 +259,7 @@ function farmFacts(f){
     ${fact('st-'+(tone||'grow'),stIcon,'Stav',E(state),'')}
     ${fact('soil-'+soilK,'barn','Pôda',E(soilL),'')}
     ${fact(late?'due-late':soon?'due-soon':'due-ok','calendar',E(term),!due?'Bez termínu':late?'Po termíne':'o '+shortLeft(due-t),due?(late?'od ':'')+whenText(due,t):'')}
-  </div>${ongoingOn(f).length?'<div class="ff-working">'+ic('work')+'Práve sa tu pracuje</div>':''}`;
+  </div>${farmKeys(f).length?'<div class="ff-keys" title="Zapísaní na farme">'+ic('key')+'<span>'+farmKeys(f).map(E).join(', ')+'</span></div>':''}${ongoingOn(f).length?'<div class="ff-working">'+ic('work')+'Práve sa tu pracuje</div>':''}`;
 }
 card=function(f){
   return `<article class="farmcard" role="button" tabindex="0" data-a="farm:${f.id}" aria-label="Otvoriť farmu ${E(f.name)}, ${f.size} polí">
