@@ -325,7 +325,7 @@ function closeBell(){document.getElementById('bellpop')?.remove();document.query
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a="bell"]');
   if(b){e.stopImmediatePropagation();e.preventDefault();if(document.getElementById('bellpop')){closeBell();return}
-    const pop=document.createElement('div');pop.id='bellpop';pop.setAttribute('role','dialog');pop.setAttribute('aria-label','Upozornenia');pop.innerHTML=bellPanel();document.body.appendChild(pop);markSeen(bellItems());document.querySelectorAll('.bell-n').forEach(n=>n.remove());
+    const pop=document.createElement('div');pop.id='bellpop';pop.setAttribute('role','dialog');pop.setAttribute('aria-label','Upozornenia');pop.innerHTML=bellPanel();pop.__h=pop.innerHTML;document.body.appendChild(pop);markSeen(bellItems());document.querySelectorAll('.bell-n').forEach(n=>n.remove());
     const top=document.querySelector('#top .bell')||b,r=top.getBoundingClientRect();pop.style.top=(r.bottom+8)+'px';pop.style.right=Math.max(10,innerWidth-r.right)+'px';
     top.setAttribute('aria-expanded','true');pop.querySelector('button')?.focus({preventScroll:true});return}
   if(!e.target.closest('#bellpop'))closeBell();else if(e.target.closest('[data-a^="farm:"],[data-a^="work:"],[data-a^="settab:"]'))setTimeout(closeBell);
@@ -366,7 +366,9 @@ function guardMain(el){if(!el||el.__morph)return;el.__morph=true;
     if(key!==mainPage||!this.firstChild){mainPage=key;innerDesc.set.call(this,v);return}
     const t=document.createElement('template');t.innerHTML=v;morph(this,t.content)}})}
 const shellRender=render;
-render=function(){document.documentElement.classList.add('no-anim');requestAnimationFrame(()=>requestAnimationFrame(()=>document.documentElement.classList.remove('no-anim')));if(page!=='overview')homeEdit=false;if(page==='alerts')page='overview';closeBell();const pool=photoPool();const side=$('#sidebar'),top=$('#top');guardHtml(side);guardHtml(top);guardMain($('#main'));side.__lock=top.__lock=true;try{shellRender()}finally{side.__lock=top.__lock=false}shell();
+render=function(){document.documentElement.classList.add('no-anim');requestAnimationFrame(()=>requestAnimationFrame(()=>document.documentElement.classList.remove('no-anim')));if(page!=='overview')homeEdit=false;if(page==='alerts')page='overview';const pool=photoPool();const side=$('#sidebar'),top=$('#top');guardHtml(side);guardHtml(top);guardMain($('#main'));side.__lock=top.__lock=true;try{shellRender()}finally{side.__lock=top.__lock=false}shell();
   if(page==='farm'){const f=db.farms.find(x=>x.id===farmPageId),b=document.querySelector('main .detail-size-banner');if(f&&b&&cropPhoto(f))b.outerHTML=farmBanner(f,'farm-photo detail-photo')}
-  keepPhotos(pool)};
+  keepPhotos(pool);refreshBell()};
+// Obnovenie dát (každých 30 s, zmena z cloudu) zvonček nezatvára, len prepíše jeho obsah, ak sa zmenil.
+function refreshBell(){const pop=document.getElementById('bellpop');if(!pop)return;const h=bellPanel();if(pop.__h!==h){const t=document.createElement('div');t.innerHTML=h;if(pop.innerHTML!==t.innerHTML)pop.innerHTML=h;pop.__h=h}document.querySelectorAll('[data-a="bell"]').forEach(b=>b.setAttribute('aria-expanded','true'));document.querySelectorAll('.bell-n').forEach(n=>n.remove())}
 render();
