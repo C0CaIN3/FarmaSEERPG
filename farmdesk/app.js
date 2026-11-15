@@ -881,7 +881,7 @@ function render(){
  const nav=(p,i)=>`<button class="rail-link ${page===p||page==='farm'&&p==='farms'?'active':''}" title="${names[p]}" aria-label="${names[p]}" aria-current="${page===p?'page':'false'}" data-a="go:${p}">${ic(i)}<span>${names[p]}</span></button>`;
  $('#sidebar').innerHTML=`<button class="rail-brand" data-a="go:overview" aria-label="FarmDesk"><span class="rail-logo"><img src="assets/mark-96.png" alt=""></span><span class="rail-name"><strong>FarmDesk</strong><small>SeeRPG</small></span></button><nav>${nav('overview','grid')}${nav('farms','barn')}${nav('water','water')}${nav('crops','sprout')}${nav('finance','chart')}${nav('history','log')}${nav('alerts','bell')}</nav><div class="rail-bottom">${nav('settings','settings')}<button class="rail-avatar" data-a="go:settings" title="${E(CLOUD?myName():'Farmár')}">${farmer(CLOUD?me?.user_id:'farmdesk',34,CLOUD?myName():'Farmár')}<span><strong>${E(CLOUD?myName():'Farmár')}</strong><small>${CLOUD?(isLeader()?'Leader':'Hráč'):'Na tomto zariadení'}</small></span></button></div>`;
  $('#top').innerHTML=`<div class="top-id"><button class="iconbtn menu" data-a="menu" aria-label="Menu">${ic('menu')}</button><strong>FarmDesk</strong><span class="divider"></span><span class="server-name">SeeRPG</span></div><div class="top-actions"><button class="search-shortcut" data-a="searchfarm">${ic('search')}<span>Vyhľadať farmu</span></button>${db.demo?'<button class="demo" data-a="go:settings">Ukážkové údaje</button>':''}${CLOUD?cloudTopbar():''}<button class="iconbtn" aria-label="Upozornenia" data-a="go:alerts">${ic('bell')}${count?'<i class="dot"></i>':''}</button></div>`;
- $('#main').innerHTML=page==='overview'?home():page==='farms'?heading('Farmy','Evidencia prenájmov od štátu a od hráčov.',btn('Pridať farmu','new','plus','primary'))+'<div class="filters"><input id="search" aria-label="Vyhľadať farmu" placeholder="Vyhľadať farmu podľa mena alebo čísla (napr. D05)…" value="'+E(query)+'"></div>'+tabs()+'<div id="matches">'+farmsgrid()+'</div>':page==='finance'?finance():page==='settings'?settings():page==='history'?journal():page==='farm'?farmPage():page==='water'?waterPage():page==='crops'?cropsPage():noticesPage();document.querySelectorAll('canvas').forEach(paint)}
+ $('#main').innerHTML=page==='overview'?home():page==='farms'?heading('Farmy','Evidencia prenájmov od štátu a od hráčov.',btn('Stav z fotky','photostate','water')+btn('Pridať farmu','new','plus','primary'))+'<div class="filters"><input id="search" aria-label="Vyhľadať farmu" placeholder="Vyhľadať farmu podľa mena alebo čísla (napr. D05)…" value="'+E(query)+'"></div>'+tabs()+'<div id="matches">'+farmsgrid()+'</div>':page==='finance'?finance():page==='settings'?settings():page==='history'?journal():page==='farm'?farmPage():page==='water'?waterPage():page==='crops'?cropsPage():noticesPage();document.querySelectorAll('canvas').forEach(paint)}
 const field=(l,n,t,v='',attr='')=>'<label class="field">'+l+'<input name="'+n+'" type="'+t+'" value="'+E(v)+'" '+attr+'></label>';
 function select(l,n,opts,val,attr=''){return '<label class="field">'+l+'<select name="'+n+'" '+attr+'>'+opts.map(([v,s])=>'<option value="'+E(v)+'" '+(String(val)===String(v)?'selected':'')+'>'+E(s)+'</option>').join('')+'</select></label>'}
 const seq=(n)=>Array.from({length:n},(_,i)=>[i+1,String(i+1)]);
@@ -1129,12 +1129,71 @@ function keyHint(f,name){
   const txt=!name?(list.length?'Zapísaní na tejto farme: '+list.join(', '):'Na tejto farme zatiaľ nemáš zapísaného nikoho.'):ok?name+' je zapísaný na tejto farme.':name+' nie je zapísaný na tejto farme. Skontroluj, či má v hre právo, alebo ho zapíš v detaile farmy.';
   return '<p class="wide key-hint '+(name?(ok?'ok':'no'):'')+'" data-keyhint>'+ic('key')+E(txt)+'</p>';
 }
+// ---- Stav farmy z fotky z hry: prečíta pásiky Nedvesség (voda), Növekedés (rast), Állapot (stav) ----
+// Fotka sa spracuje iba v prehliadači, nikam sa neposiela.
+function readGameBars(img){
+  const maxW=900,sc=Math.min(1,maxW/img.naturalWidth),W=Math.max(1,Math.round(img.naturalWidth*sc)),Hh=Math.max(1,Math.round(img.naturalHeight*sc));
+  const cv=document.createElement('canvas');cv.width=W;cv.height=Hh;const cx=cv.getContext('2d',{willReadFrequently:true});cx.drawImage(img,0,0,W,Hh);
+  const d=cx.getImageData(0,0,W,Hh).data;
+  const kind=(r,g,b)=>{const mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+    if(Math.abs(r-52)<22&&Math.abs(g-58)<22&&Math.abs(b-64)<22&&mx-mn<28)return 't';// prázdna časť pásika
+    if(mx>110&&mx-mn>45){if(b>=g-10&&b>r+40)return 'b';if(g>r+20&&g>b+20)return 'g';}
+    if(g>80&&g>r+14&&g>b+10)return 'g';{if(r>170&&g>130&&b<g-40)return 'y';}
+    return ''};
+  const rows=[];
+  for(let y=0;y<Hh;y++){let x=0;
+    while(x<W){const i=(y*W+x)*4;let k=kind(d[i],d[i+1],d[i+2]);if(!k){x++;continue}
+      const start=x,col=k==='t'?'':k;let fill=0,track=0,ok=true;
+      if(col){while(x<W){const j=(y*W+x)*4;if(kind(d[j],d[j+1],d[j+2])!==col)break;fill++;x++}}
+      // Medzi farbou a prázdnou časťou môžu byť (pri JPG) 1–3 rozmazané pixely.
+      let mid=0;if(col){while(mid<4&&x+mid<W){const j=(y*W+x+mid)*4;if(kind(d[j],d[j+1],d[j+2])==='t')break;mid++}const j=(y*W+x+mid)*4;if(mid<4&&x+mid<W&&kind(d[j],d[j+1],d[j+2])==='t'){x+=mid;fill+=mid/2;track+=mid/2}}
+      let gap=0;while(x<W){const j=(y*W+x)*4,kk=kind(d[j],d[j+1],d[j+2]);if(kk==='t'){track+=1+gap;x++;gap=0}else if(gap<2&&track>0){gap++;x++}else break}
+      const len=fill+track;if(len>=Math.max(50,W*.25))rows.push({y,start,len,fill,col,pct:fill/len*100});
+      if(x===start)x++}
+  }
+  // Riadky toho istého pásika (aspoň 3 pod sebou) spojí a vezme stredný.
+  const bands=[];for(const r of rows){const b=bands.find(b=>r.y-b.last<=1&&Math.abs(b.start-r.start)<=4&&Math.abs(b.len-r.len)<=6);if(b){b.rows.push(r);b.last=r.y}else bands.push({start:r.start,len:r.len,last:r.y,rows:[r]})}
+  const out=bands.filter(b=>b.rows.length>=3).map(b=>{const m=b.rows[Math.floor(b.rows.length/2)];return {y:m.y,col:b.rows.find(r=>r.col)?.col||'',pct:b.rows.map(r=>r.pct).sort((p,q)=>p-q)[Math.floor(b.rows.length/2)]}}).sort((a,b)=>a.y-b.y);
+  const pick=c=>out.find(b=>b.col===c);
+  let water=pick('b'),growth=pick('g'),cond=pick('y');
+  // Pásik bez farby (0 %) priradí podľa poradia: voda, rast, stav.
+  const rest=out.filter(b=>!b.col);
+  if(!water&&out.length>=2)water=out[0].col?null:out[0];
+  if(!growth){const i=water?out.indexOf(water)+1:1;if(out[i]&&!out[i].col)growth=out[i];else growth=rest.find(b=>b!==water)||null}
+  return {water:water?Math.round(water.pct):null,growth:growth?Math.round(growth.pct*10)/10:null,cond:cond?Math.round(cond.pct):null,bars:out.length};
+}
+function photoState(f){
+  const farms=activeFarms().filter(x=>x.planted);
+  if(!farms.length){toast('Žiadna farma nie je zasadená.');return}
+  const sel=f&&f.planted?f:farms[0];
+  modal('Aktualizovať stav z fotky','<form id="photostate" class="formgrid"><p class="wide hint">Odfoť alebo vystrihni v hre okno farmy s pásikmi <b>Nedvesség</b> a <b>Növekedés</b> a vlož ho sem. Prepíše sa iba aktuálny stav vody a rastu, čas sadenia ostane.</p>'+
+    select('Farma','farm',farms.map(x=>[x.id,x.name+' · '+cropName(x.crop)]),sel.id)+
+    '<label class="wide photo-drop" tabindex="0"><input type="file" name="photo" accept="image/*" hidden><span class="pd-empty">'+ic('plus')+'Vybrať fotku alebo ju sem vložiť (Ctrl+V)</span><img alt="" hidden></label>'+
+    '<div class="wide photo-read" hidden><div class="formgrid">'+field('Voda (Nedvesség) %','water','number','','min="0" max="100" step="1" required inputmode="numeric"')+field('Rast (Növekedés) %','growth','number','','min="0" max="100" step="0.1" required inputmode="decimal"')+growthProfile(sel.crop)+'</div><p class="hint" data-photo-note></p></div>'+
+    '<div class="actions wide"><button type="submit" class="btn primary" disabled>'+ic('check')+'Uložiť stav</button></div></form>');
+}
+function loadStatePhoto(file){
+  const fm=$('#photostate');if(!fm||!file||!/^image\//.test(file.type))return;
+  const url=URL.createObjectURL(file),img=fm.querySelector('.photo-drop img');
+  img.onload=()=>{let r;try{r=readGameBars(img)}catch{r={water:null,growth:null,bars:0}}
+    img.hidden=false;fm.querySelector('.pd-empty').hidden=true;fm.querySelector('.photo-read').hidden=false;
+    const note=fm.querySelector('[data-photo-note]'),okRead=r.water!=null&&r.growth!=null;
+    if(r.water!=null)fm.elements.water.value=r.water;if(r.growth!=null)fm.elements.growth.value=r.growth;
+    note.className='hint '+(okRead?'ok':'no');
+    note.textContent=okRead?'Z fotky: voda '+r.water+' %, rast '+fmt(r.growth)+' %'+(r.cond!=null?', stav '+r.cond+' %':'')+'. Ak niečo nesedí, oprav číslo.':'Pásiky sa nepodarilo prečítať. Skús fotku, na ktorej je celé okno farmy, alebo dopíš percentá ručne.';
+    fm.querySelector('button[type=submit]').disabled=false;(okRead?fm.querySelector('button[type=submit]'):fm.elements.water).focus()};
+  img.src=url;
+}
+document.addEventListener('change',e=>{if(e.target.name==='photo'&&e.target.form?.id==='photostate')loadStatePhoto(e.target.files[0])});
+document.addEventListener('paste',e=>{if(!$('#photostate'))return;const it=[...(e.clipboardData?.items||[])].find(i=>i.type.startsWith('image/'));if(it){e.preventDefault();loadStatePhoto(it.getAsFile())}});
+document.addEventListener('dragover',e=>{if(e.target.closest?.('.photo-drop'))e.preventDefault()});
+document.addEventListener('drop',e=>{const z=e.target.closest?.('.photo-drop');if(z){e.preventDefault();loadStatePhoto(e.dataTransfer.files[0])}});
 function farmPage(){
   const f=db.farms.find(x=>x.id===farmPageId);
   if(!f)return heading('Farma sa nenašla','Farma bola odstránená alebo ešte nie je načítaná.',btn('Späť na farmy','go:farms','arrow'));
   activeFarm=f.id;
   const {g,w}=progress(f),[s,cls]=stage(f),prop=(l,v)=>'<div><small>'+l+'</small>'+E(v)+'</div>';
-  const actions='<div class="actiongrid">'+(f.archived?'':btn('Zapísať prácu','work:'+f.id,'work','primary'))+btn('Pridať pohyb','tx:'+f.id,'wallet')+btn('Upraviť','edit:'+f.id,'settings')+btn(f.archived?'Obnoviť farmu':'Archivovať','archive:'+f.id,'log')+(CLOUD?btn('História zmien','farmhist:'+f.id,'history'):'')+(!CLOUD||isLeader()?btn('Odstrániť','delfarm:'+f.id,'x','danger'):'')+'</div>';
+  const actions='<div class="actiongrid">'+(f.archived?'':btn('Zapísať prácu','work:'+f.id,'work','primary'))+(f.planted&&!f.archived?btn('Stav z fotky','photostate:'+f.id,'water'):'')+btn('Pridať pohyb','tx:'+f.id,'wallet')+btn('Upraviť','edit:'+f.id,'settings')+btn(f.archived?'Obnoviť farmu':'Archivovať','archive:'+f.id,'log')+(CLOUD?btn('História zmien','farmhist:'+f.id,'history'):'')+(!CLOUD||isLeader()?btn('Odstrániť','delfarm:'+f.id,'x','danger'):'')+'</div>';
   const props=prop('Umiestnenie',placeText(f))+prop('Výsadbu má na starosti',f.planted?withPhone(f.worker||'Ja'):'Podľa novej dohody')+prop('Dohodnutá doba prenájmu',dayLabel(leaseDays(f)))+prop('Pridaná do evidencie',(f.createdAt?date(f.createdAt):'Dátum neuvedený')+(CLOUD?byLine('farm',f.id,'pridal'):''))+(f.planted?prop('Plodina',cropName(f.crop)+' · odhad '+fmt(growthHours(f))+' h'):'')+prop('Zasadené',f.planted?date(f.planted):'—')+prop('Predpokladaný zber',f.planted?date(f.planted+growthHours(f)*H):'—')+prop('Posledné polievanie',f.watered?date(f.watered):'—')+(f.archived?prop(f.term,f.due?date(f.due):'Bez termínu'):'')+(f.type==='player'?prop('Prenajímateľ',f.owner||'—')+prop('Telefón',f.phone||'—')+prop('Účet na nájomné',f.account||'—'):'');
   const history=[...db.logs].filter(l=>l.farm===f.id).sort((a,b)=>b.at-a.at);
   const journal='<section class="contract-box farm-journal"><h3>Práce na farme <span class="total">'+history.length+'</span></h3>'+(history.slice(0,12).map(l=>row(l.icon,l.action,withPhone(l.who)+(l.fee>0?' · '+money(l.fee):'')+byLine('log',l.id,'zapísal'),date(l.at),l.icon==='water'?'blue':'')).join('')||empty('Na tejto farme zatiaľ nie je zapísaná práca.'))+(history.length>12?'<p class="hint">Staršie práce nájdeš v Denníku prác.</p>':'')+'</section>';
@@ -1318,6 +1377,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
  else if(a==='install'&&installPrompt){installPrompt.prompt();installPrompt.userChoice.finally(()=>{installPrompt=null;render()})}
  else if(a==='settle'&&f){const st=settlementFor(f);if(st)confirmBox('Uzavrieť vyúčtovanie?',(st.transfers.length?st.transfers.map(t=>playerName(t.from)+' pošle '+playerName(t.to)+' '+money(t.amount)).join(' · ')+'. ':'Nikto nikomu nič neposiela. ')+'Po uzavretí sa prevody započítajú hráčom v Ekonomike.','settleok:'+id)}
  else if(a==='keydel'){const [fid,i]=id.split('|'),t=db.farms.find(x=>x.id===fid),n=farmKeys(t)[+i];if(t&&n!=null){t.keys=farmKeys(t).filter((_,k)=>k!==+i);if(!t.keys.length)delete t.keys;save();render();toast(n+' už nie je zapísaný na farme '+t.name+'.')}}
+ else if(a==='photostate')photoState(f);
  else if(a==='keywho')keyWho(b.dataset.a.slice(7));
  else if(a==='settleok'&&f){closeSettlement(f);save();close();render();toast('Vyúčtovanie je uzavreté.')}
  else if(a==='deal'&&f)dealForm(f);
@@ -1528,6 +1588,14 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
    const prices={};
    for(const k of jobShown){const n=Number(ungroupAmount(d['price_'+k]||'0'));if(!isAmount(n)){toast('Skontroluj cenu práce '+jobs[k][0]+'.');return}prices[k]=n}
    db.workPrices=prices;save();render();toast('Ceny vlastnej práce sú uložené.');return}
+ else if(id==='photostate'){
+   const w=Number(d.water),g=Number(d.growth);
+   if(!f||!f.planted){toast('Vyber zasadenú farmu.');return}
+   if(!(w>=0&&w<=100)||!(g>=0&&g<=100)){toast('Skontroluj percentá vody a rastu.');return}
+   if(d.crop&&cropOf(d.crop)!==f.crop)f.crop=cropOf(d.crop);
+   const t=now();f.watered=Math.round(t-(1-w/100)*dryingHours(f)*H);
+   f.growthFrom=Math.round(t-g/100*growthHours(f)*H);
+   save();close();render();toast(f.name+': voda '+fmt(w)+' %, rast '+fmt(g)+' % podľa fotky.');return}
  else if(id==='keyform'){const name=String(d.name||'').trim().replace(/\s+/g,' ').slice(0,60);if(!f||!name){toast('Zadaj meno hráča.');return}if(hasKey(f,name)){toast(name+' už je na tejto farme zapísaný.');return}f.keys=[...farmKeys(f),name];e.target.reset();save();render();toast(name+' je zapísaný na farme '+f.name+'.');return}
  else if(id==='timing'){db.growth=+d.growth;db.dry=+d.dry;save();render();toast('Časy pestovania boli uložené.');return}else return;
  save();close();render();if(id==='workform'||id==='agreementform')detail(f);else if(id==='farmform'||id==='payform')detail(db.farms.find(x=>x.id===activeFarm));else if(id==='txform'&&(d.fromFarm||d.category==='rent')&&f)detail(f);toast('Záznam bol uložený.')});

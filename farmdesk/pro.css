@@ -350,3 +350,10 @@ html.no-anim *,html.no-anim *:before,html.no-anim *:after{transition:none!import
 .ff-keys svg{width:13px;height:13px;flex:none;color:var(--gold)}
 .ff-keys span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .key-off{margin-top:12px}.key-off summary{cursor:pointer;color:var(--t3);font-size:13px;margin-bottom:6px}
+/* Stav z fotky */
+.photo-drop{display:flex;align-items:center;justify-content:center;min-height:120px;border:1.5px dashed var(--b3);border-radius:var(--r2);background:var(--s1);cursor:pointer;overflow:hidden}
+.photo-drop:hover,.photo-drop:focus-visible{border-color:var(--gold);outline:none}
+.photo-drop .pd-empty{display:flex;align-items:center;gap:8px;color:var(--t2);font-size:14px;padding:20px;text-align:center}
+.photo-drop .pd-empty svg{width:18px;height:18px;color:var(--gold)}
+.photo-drop img{max-width:100%;max-height:240px;display:block}
+.photo-read .hint.ok{color:var(--growth)}.photo-read .hint.no{color:var(--warn)}
