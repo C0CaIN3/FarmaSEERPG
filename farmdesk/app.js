@@ -1177,7 +1177,10 @@ const hm=t=>new Date(t).toLocaleString('sk-SK',{day:'numeric',month:'numeric',ho
 const hhmm=t=>new Date(t).toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
 function logPage(){
   const head=heading('Log zo hry','Nahraj log zo SeeRPG. Uvidíš, čo si predal a zobral, a jedným klikom to zapíšeš k farme alebo k plodine.',logData?btn('Nahrať iný log','logclear'):'');
-  if(!logData)return head+'<section class="panel log-upload"><label class="photo-drop log-drop" tabindex="0"><input type="file" name="gamelog" accept=".log,.txt,text/plain" hidden><span class="pd-empty">'+ic('plus')+'Vybrať log alebo ho sem pretiahnuť</span></label><p class="hint">Log sa spracuje iba v tomto prehliadači a nikam sa neposiela. Číta sa len predaj (<i>eladtál</i>) a zber (<i>betakarítottál</i>), nič iné z chatu sa neukladá.</p></section>';
+  if(!logData)return head+'<section class="panel log-upload">'+(PICKER?'<div class="log-pick">'+btn('Načítať najnovší log','lognewest','basket','primary')+btn('Vybrať súbor','logpick','plus')+'</div>':'')+
+    '<p class="log-path">Logy SeeRPG sú v priečinku <code>'+LOG_DIR+'</code> <button type="button" class="link" data-a="logcopy">Kopírovať cestu</button></p>'+
+    (PICKER?'<p class="hint">Prvýkrát vlož cestu hore do okna výberu (Ctrl+V) a potvrď priečinok. Potom si ho FarmDesk zapamätá a <b>Načítať najnovší log</b> zoberie hneď posledný log.</p>':'')+
+    '<label class="photo-drop log-drop" tabindex="0"><input type="file" name="gamelog" accept=".log,.txt,text/plain" hidden><span class="pd-empty">'+ic('plus')+'Vybrať log alebo ho sem pretiahnuť</span></label><p class="hint">Log sa spracuje iba v tomto prehliadači a nikam sa neposiela. Číta sa len predaj (<i>eladtál</i>) a zber (<i>betakarítottál</i>), nič iné z chatu sa neukladá.</p></section>';
   const {sales,harvests}=logData,total=sales.reduce((t,g)=>t+g.amount,0);
   const pic=g=>g.crop?cropPicture(cropInfo(g.crop),30):'';
   const saleCard=(g,i)=>{const done=saleLogged(g);
@@ -1190,15 +1193,34 @@ function logPage(){
       (ks.length>1?'<div class="lc-dist" role="img" aria-label="Koľkokrát padol aký počet kusov">'+ks.map(k=>'<div><span style="height:'+Math.max(6,Math.round(g.dist[k]/mx*100))+'%"></span><b>'+g.dist[k]+'×</b><small>'+k+' ks</small></div>').join('')+'</div>':'')+
       '<div class="lc-act">'+(!g.crop?'<small class="hint">Plodinu z logu sa nepodarilo rozpoznať.</small>':done?'<span class="pill ready">'+ic('check')+'Zapísané v plodine</span>'+btn('Odobrať','logharvdel:'+i):btn('Zapísať do plodiny','logharv:'+i,'plus','primary'))+'</div></article>'};
   return head+
-    '<section class="panel log-sum"><div><small>Predaje spolu</small><strong>'+money(total)+'</strong></div><div><small>Predaných kusov</small><strong>'+fmt(sales.reduce((t,g)=>t+g.pieces,0))+'</strong></div><div><small>Zobratých polí</small><strong>'+fmt(harvests.reduce((t,g)=>t+g.fields,0))+'</strong></div><div><small>Obdobie</small><strong>'+(logData.from?hm(logData.from)+' – '+hhmm(logData.to):'—')+'</strong></div></section>'+
+    (logData.file?'<p class="log-file">'+ic('basket')+E(logData.file)+'</p>':'')+'<section class="panel log-sum"><div><small>Predaje spolu</small><strong>'+money(total)+'</strong></div><div><small>Predaných kusov</small><strong>'+fmt(sales.reduce((t,g)=>t+g.pieces,0))+'</strong></div><div><small>Zobratých polí</small><strong>'+fmt(harvests.reduce((t,g)=>t+g.fields,0))+'</strong></div><div><small>Obdobie</small><strong>'+(logData.from?hm(logData.from)+' – '+hhmm(logData.to):'—')+'</strong></div></section>'+
     '<section class="panel">'+section('Predaje','<span class="total">'+sales.length+'</span>')+(sales.length?'<div class="log-grid">'+sales.map(saleCard).join('')+'</div>':empty('V logu nie je žiadny predaj úrody.'))+'</section>'+
     '<section class="panel">'+section('Zbery','<span class="total">'+harvests.length+'</span>')+(harvests.length?'<div class="log-grid">'+harvests.map(harvCard).join('')+'</div><p class="hint">Zápis do plodiny spresní <b>Porovnanie plodín</b> a <b>Simuláciu úrody</b>: počíta sa s tým, koľko kusov polia v hre naozaj dávajú. Pri predaji zapísanom na farmu sa zase uloží skutočná cena za kus.</p>':empty('V logu nie je žiadny zber.'))+'</section>';
 }
-function loadGameLog(file){
+// Výber priečinka s logmi (Chrome/Edge na PC): priečinok sa zapamätá v prehliadači, ďalej stačí jeden klik.
+const LOG_DIR='%ProgramData%\\SeeRPG\\logs',PICKER=typeof window.showDirectoryPicker==='function'&&typeof window.showOpenFilePicker==='function';
+const handleStore=(mode,fn)=>new Promise((res,rej)=>{const r=indexedDB.open('farmdesk-files',1);r.onupgradeneeded=()=>r.result.createObjectStore('h');r.onerror=()=>rej(r.error);
+  r.onsuccess=()=>{const t=r.result.transaction('h',mode),q=fn(t.objectStore('h'));t.oncomplete=()=>res(q?.result);t.onerror=()=>rej(t.error)}});
+const getLogDir=()=>handleStore('readonly',st=>st.get('logs')).catch(()=>null),setLogDir=h=>handleStore('readwrite',st=>st.put(h,'logs')).catch(()=>{});
+async function newestLog(){
+  try{
+    let dir=await getLogDir();
+    if(dir&&await dir.queryPermission({mode:'read'})!=='granted'&&await dir.requestPermission({mode:'read'})!=='granted')dir=null;
+    if(!dir){dir=await window.showDirectoryPicker({id:'seerpg-logs',mode:'read'});await setLogDir(dir)}
+    let best=null;for await(const h of dir.values()){if(h.kind!=='file'||!/\.(log|txt)$/i.test(h.name))continue;const f=await h.getFile();if(!best||f.lastModified>best.lastModified)best=f}
+    if(!best){toast('V priečinku nie je žiadny log. Vyber priečinok '+LOG_DIR+'.');await setLogDir(null);return}
+    loadGameLog(best,true);
+  }catch(err){if(err?.name!=='AbortError')toast('Priečinok sa nepodarilo otvoriť. Skús Vybrať súbor.')}
+}
+async function pickLog(){
+  try{const dir=await getLogDir();const [h]=await window.showOpenFilePicker({id:'seerpg-log-file',...(dir?{startIn:dir}:{}),types:[{description:'Log SeeRPG',accept:{'text/plain':['.log','.txt']}}]});loadGameLog(await h.getFile(),true)}
+  catch(err){if(err?.name!=='AbortError')toast('Súbor sa nepodarilo otvoriť.')}
+}
+function loadGameLog(file,named=false){
   if(!file)return;if(file.size>8e6){toast('Log je príliš veľký.');return}
   file.text().then(t=>{const r=parseGameLog(t),all=[...r.sales,...r.harvests];
     if(!all.length){toast('V súbore som nenašiel predaj ani zber z SeeRPG.');return}
-    r.from=Math.min(...all.map(g=>g.from));r.to=Math.max(...all.map(g=>g.to));logData=r;render()},()=>toast('Súbor sa nepodarilo prečítať.'));
+    r.from=Math.min(...all.map(g=>g.from));r.to=Math.max(...all.map(g=>g.to));r.file=file.name;logData=r;render();if(named)toast('Načítaný '+file.name+'.')},()=>toast('Súbor sa nepodarilo prečítať.'));
 }
 document.addEventListener('change',e=>{if(e.target.name==='gamelog')loadGameLog(e.target.files[0])});
 document.addEventListener('drop',e=>{if(e.target.closest?.('.log-drop')){e.preventDefault();loadGameLog(e.dataTransfer.files[0])}});
@@ -1476,6 +1498,9 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
  else if(a==='logharv')logHarvest(+id,true);
  else if(a==='logharvdel')logHarvest(+id,false);
  else if(a==='logclear'){logData=null;render()}
+ else if(a==='lognewest')newestLog();
+ else if(a==='logpick')pickLog();
+ else if(a==='logcopy'){navigator.clipboard?.writeText(LOG_DIR).then(()=>toast('Cesta skopírovaná. Vlož ju do okna výberu.'),()=>toast(LOG_DIR))}
  else if(a==='photostate')photoState(f);
  else if(a==='keywho')keyWho(b.dataset.a.slice(7));
  else if(a==='settleok'&&f){closeSettlement(f);save();close();render();toast('Vyúčtovanie je uzavreté.')}
