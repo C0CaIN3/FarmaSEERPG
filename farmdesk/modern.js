@@ -271,7 +271,7 @@ card=function(f){
 };
 
 // ---- Shell: menu v kategóriách, horná lišta, spodná lišta na mobile ----
-const GROUPS=[['Hospodárstvo',[['overview','grid'],['farms','barn'],['crops','sprout']]],['Práca',[['water','water'],['history','log']]],['Peniaze',[['finance','chart']]],['Systém',[['settings','settings']]]];
+const GROUPS=[['Hospodárstvo',[['overview','grid'],['farms','barn'],['crops','sprout']]],['Práca',[['water','water'],['history','log']]],['Peniaze',[['finance','chart'],['log','basket']]],['Systém',[['settings','settings']]]];
 const groupOf=p=>(GROUPS.find(([,items])=>items.some(([k])=>k===p))||GROUPS[0])[0];
 function shell(){
   const cur=page==='farm'?'farms':page,count=alerts().length,fresh=unseenCount(),who=CLOUD?myName():'Farmár';

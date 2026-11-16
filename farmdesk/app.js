@@ -29,7 +29,7 @@ function farmer(seed,size=32,label=''){
     ${hat}</svg>`;
 }
 const $=s=>document.querySelector(s), E=s=>String(s??'').replace(/[&<>"']/g,v=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[v]));
-const H=3600000,D=24*H, now=()=>Date.now(), uid=()=>crypto.randomUUID(), key='farmdesk-sk-v1', names={crops:'Plodiny',water:'Polievanie',overview:'Prehľad',farms:'Farmy',finance:'Ekonomika',alerts:'Upozornenia',history:'Denník prác',settings:'Nastavenia'};
+const H=3600000,D=24*H, now=()=>Date.now(), uid=()=>crypto.randomUUID(), key='farmdesk-sk-v1', names={crops:'Plodiny',water:'Polievanie',overview:'Prehľad',farms:'Farmy',finance:'Ekonomika',alerts:'Upozornenia',history:'Denník prác',log:'Log zo hry',settings:'Nastavenia'};
 const types={own:'Vlastná (od štátu)',player:'Prenajatá od hráča'}, categories={sale:'Tržba',rent:'Nájom',wage:'Mzda',seed:'Osivo',invest:'Investícia',other:'Iný výdavok'};
 const fmt=n=>new Intl.NumberFormat('sk-SK',{maximumFractionDigits:2}).format(n), date=t=>new Date(t).toLocaleString('sk-SK',{dateStyle:'short',timeStyle:'short'}), local=t=>t?new Date(t-new Date(t).getTimezoneOffset()*60000).toISOString().slice(0,16):'';
 const forintFormat=new Intl.NumberFormat('en-US',{useGrouping:true,maximumFractionDigits:2});
@@ -676,17 +676,32 @@ function cropsPage(){
 }
 // Expected result of one crop for a number of fields, from the prices and yields in the catalogue,
 // plus the real average from harvests and sales recorded on the farms (scaled to the same number of fields).
+// Skutočné zbery a predaje zapísané z logu hry (db.catalog[plodina].obs): h = zbery, s = predaje.
+function cropObs(name){
+  const o=cropInfo(name).obs||{},h=Array.isArray(o.h)?o.h:[],s=Array.isArray(o.s)?o.s:[],r={nH:h.length,nS:s.length};
+  const F=h.reduce((t,x)=>t+(+x.fields||0),0),P=h.reduce((t,x)=>t+(+x.pieces||0),0);
+  if(F>0){const dist={};h.forEach(x=>Object.entries(x.dist||{}).forEach(([k,v])=>dist[k]=(dist[k]||0)+(+v||0)));
+    const ks=Object.keys(dist).map(Number).filter(Number.isFinite),mean=P/F,N=Object.values(dist).reduce((a,b)=>a+b,0);
+    Object.assign(r,{yAvg:mean,fields:F,pieces:P});
+    if(ks.length&&N){r.ymin=Math.min(...ks);r.ymax=Math.max(...ks);r.dist=dist;r.ySd=Math.sqrt(ks.reduce((t,k)=>t+dist[k]*(k-mean)**2,0)/N)}}
+  const SP=s.reduce((t,x)=>t+(+x.pieces||0),0),SA=s.reduce((t,x)=>t+(+x.amount||0),0);
+  if(SP>0)Object.assign(r,{pAvg:SA/SP,pmin:Math.min(...s.map(x=>+x.min||SA/SP)),pmax:Math.max(...s.map(x=>+x.max||SA/SP)),soldPieces:SP});
+  return r;
+}
+const obsNote=o=>o&&(o.nH||o.nS)?'podľa '+[o.nH?o.nH+(o.nH===1?' zberu':' zberov'):'',o.nS?o.nS+(o.nS===1?' predaja':' predajov'):''].filter(Boolean).join(' a ')+' z logu':'';
 function cropEstimate(name,fields=cropParcels){
   const c=cropInfo(name),n=v=>v!=null&&v!==''&&!isNaN(+v)?+v:null;
-  const seed=n(c.seedPrice),pmin=n(c.priceMin),pmax=n(c.priceMax),ymin=n(c.yieldMin),ymax=n(c.yieldMax);
+  const o=cropObs(name);
+  let seed=n(c.seedPrice),pmin=n(c.priceMin),pmax=n(c.priceMax),ymin=n(c.yieldMin),ymax=n(c.yieldMax);
+  if(o.ymin!=null){ymin=o.ymin;ymax=o.ymax}if(o.pmin!=null){pmin=o.pmin;pmax=o.pmax}
   const ok=seed!=null&&pmin!=null&&pmax!=null&&ymin!=null&&ymax!=null;
   const cycles=cropCycles().filter(x=>x.crop===name&&x.revenue>0&&x.size>0);
   const real=cycles.length?{n:cycles.length,profit:Math.round(cycles.reduce((t,x)=>t+(x.revenue-x.cost)/x.size,0)/cycles.length*fields),
     perPiece:(()=>{const w=cycles.filter(x=>x.pieces>0);return w.length?Math.round(w.reduce((t,x)=>t+x.revenue,0)/w.reduce((t,x)=>t+x.pieces,0)):null})(),
     piecesPerField:(()=>{const w=cycles.filter(x=>x.pieces>0);return w.length?w.reduce((t,x)=>t+x.pieces,0)/w.reduce((t,x)=>t+x.size,0):null})()}:null;
-  if(!ok)return {name,ok,real};
-  const cost=seed*fields,yAvg=(ymin+ymax)/2,pAvg=(pmin+pmax)/2,ySd=Math.sqrt(((ymax-ymin+1)**2-1)/12),pieces=yAvg*fields,spread=2*ySd*Math.sqrt(fields);
-  return {name,ok,real,cost,yAvg,pAvg,pieces,spread,
+  if(!ok)return {name,ok,real,obs:o};
+  const cost=seed*fields,yAvg=o.yAvg??(ymin+ymax)/2,pAvg=o.pAvg??(pmin+pmax)/2,ySd=o.ySd??Math.sqrt(((ymax-ymin+1)**2-1)/12),pieces=yAvg*fields,spread=2*ySd*Math.sqrt(fields);
+  return {name,ok,real,obs:o,cost,yAvg,pAvg,pieces,spread,
     expect:Math.round(pieces*pAvg-cost),
     usualLo:Math.round(Math.max(ymin*fields,pieces-spread)*pmin-cost),usualHi:Math.round(Math.min(ymax*fields,pieces+spread)*pmax-cost),
     lo:Math.round(pmin*ymin*fields-cost),hi:Math.round(pmax*ymax*fields-cost)};
@@ -695,9 +710,12 @@ function cropEstimate(name,fields=cropParcels){
 function cropSimulate(fields=cropParcels){
   const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
   const rows=catalogNames.map(n=>{const c=cropInfo(n),v=k=>c[k]!=null&&c[k]!==''&&!isNaN(+c[k])?+c[k]:null;
-    const seed=v('seedPrice'),pmin=v('priceMin'),pmax=v('priceMax'),ymin=v('yieldMin'),ymax=v('yieldMax');
+    const o=cropObs(n);let seed=v('seedPrice'),pmin=v('priceMin'),pmax=v('priceMax'),ymin=v('yieldMin'),ymax=v('yieldMax');
+    if(o.ymin!=null){ymin=o.ymin;ymax=o.ymax}if(o.pmin!=null){pmin=o.pmin;pmax=o.pmax}
     if([seed,pmin,pmax,ymin,ymax].some(x=>x==null))return null;
-    let pieces=0,lo=Infinity,hi=0;for(let i=0;i<fields;i++){const k=rnd(ymin,ymax);pieces+=k;lo=Math.min(lo,k);hi=Math.max(hi,k)}
+    // So zbermi z logu sa kusy losujú podľa toho, ako často v hre naozaj padali.
+    const bag=o.dist?Object.entries(o.dist).flatMap(([k,c])=>Array(Math.min(+c,500)).fill(+k)):null;
+    let pieces=0,lo=Infinity,hi=0;for(let i=0;i<fields;i++){const k=bag?bag[Math.floor(Math.random()*bag.length)]:rnd(ymin,ymax);pieces+=k;lo=Math.min(lo,k);hi=Math.max(hi,k)}
     const price=rnd(Math.round(pmin),Math.round(pmax)),rev=pieces*price,cost=seed*fields;
     return {n,pieces,lo,hi,price,rev,cost,profit:rev-cost}}).filter(Boolean).sort((a,b)=>b.profit-a.profit);
   if(!rows.length){modal('Simulácia úrody',empty('Žiadna plodina nemá v katalógu vyplnené ceny a kusy z poľa.'));return}
@@ -715,8 +733,8 @@ function cropCompare(){
   const body=rows.map((r,i)=>'<tr class="'+(i===0?'best-row':'')+'" data-a="cropsel:'+E(r.name)+'" role="button" tabindex="0"><th scope="row"><span class="cmp-name">'+cropPicture(cropInfo(r.name),26)+E(r.name)+(i===0?' <span class="pill ready">najlepšie</span>':'')+'</span></th>'+
     '<td><b class="'+(r.ok?tone(r.expect):'')+'">'+(r.ok?money(r.expect):'—')+'</b></td>'+
     '<td>'+(r.ok?money(r.usualLo)+' – '+money(r.usualHi):'—')+'</td>'+
-    '<td>'+(r.ok?fmt(Math.round(r.yAvg*10)/10)+' ks':'—')+'</td>'+
-    '<td>'+(r.ok?money(Math.round(r.pAvg)):'—')+'</td>'+
+    '<td>'+(r.ok?fmt(Math.round(r.yAvg*10)/10)+' ks'+(r.obs?.nH?'<small>z logu</small>':''):'—')+'</td>'+
+    '<td>'+(r.ok?money(Math.round(r.pAvg))+(r.obs?.nS?'<small>z logu</small>':''):'—')+'</td>'+
     '<td>'+(r.real?'<b class="'+tone(r.real.profit)+'">'+money(r.real.profit)+'</b><small>'+r.real.n+(r.real.n===1?' cyklus':r.real.n<5?' cykly':' cyklov')+'</small>':'<small>zatiaľ nie</small>')+'</td></tr>').join('');
   return '<section class="panel crop-compare">'+section('Porovnanie plodín · '+cropParcels+' polí','<button class="sim-btn" data-a="cropsim:'+cropParcels+'">Simulovať úrodu</button><span class="parcel-pick">'+[40,80,120].map(p=>'<button class="'+(p===cropParcels?'on':'')+'" data-a="cropparcels:'+p+'">'+p+'</button>').join('')+'</span>')+
     '<div class="tablewrap"><table><thead><tr><th>Plodina</th><th>Očakávaný zisk</th><th>Bežne</th><th>Kusy z poľa (priem.)</th><th>Cena (priem.)</th><th>Skutočne podľa predajov</th></tr></thead><tbody>'+body+'</tbody></table></div>'+
@@ -881,7 +899,7 @@ function render(){
  const nav=(p,i)=>`<button class="rail-link ${page===p||page==='farm'&&p==='farms'?'active':''}" title="${names[p]}" aria-label="${names[p]}" aria-current="${page===p?'page':'false'}" data-a="go:${p}">${ic(i)}<span>${names[p]}</span></button>`;
  $('#sidebar').innerHTML=`<button class="rail-brand" data-a="go:overview" aria-label="FarmDesk"><span class="rail-logo"><img src="assets/mark-96.png" alt=""></span><span class="rail-name"><strong>FarmDesk</strong><small>SeeRPG</small></span></button><nav>${nav('overview','grid')}${nav('farms','barn')}${nav('water','water')}${nav('crops','sprout')}${nav('finance','chart')}${nav('history','log')}${nav('alerts','bell')}</nav><div class="rail-bottom">${nav('settings','settings')}<button class="rail-avatar" data-a="go:settings" title="${E(CLOUD?myName():'Farmár')}">${farmer(CLOUD?me?.user_id:'farmdesk',34,CLOUD?myName():'Farmár')}<span><strong>${E(CLOUD?myName():'Farmár')}</strong><small>${CLOUD?(isLeader()?'Leader':'Hráč'):'Na tomto zariadení'}</small></span></button></div>`;
  $('#top').innerHTML=`<div class="top-id"><button class="iconbtn menu" data-a="menu" aria-label="Menu">${ic('menu')}</button><strong>FarmDesk</strong><span class="divider"></span><span class="server-name">SeeRPG</span></div><div class="top-actions"><button class="search-shortcut" data-a="searchfarm">${ic('search')}<span>Vyhľadať farmu</span></button>${db.demo?'<button class="demo" data-a="go:settings">Ukážkové údaje</button>':''}${CLOUD?cloudTopbar():''}<button class="iconbtn" aria-label="Upozornenia" data-a="go:alerts">${ic('bell')}${count?'<i class="dot"></i>':''}</button></div>`;
- $('#main').innerHTML=page==='overview'?home():page==='farms'?heading('Farmy','Evidencia prenájmov od štátu a od hráčov.',btn('Stav z fotky','photostate','water')+btn('Pridať farmu','new','plus','primary'))+'<div class="filters"><input id="search" aria-label="Vyhľadať farmu" placeholder="Vyhľadať farmu podľa mena alebo čísla (napr. D05)…" value="'+E(query)+'"></div>'+tabs()+'<div id="matches">'+farmsgrid()+'</div>':page==='finance'?finance():page==='settings'?settings():page==='history'?journal():page==='farm'?farmPage():page==='water'?waterPage():page==='crops'?cropsPage():noticesPage();document.querySelectorAll('canvas').forEach(paint)}
+ $('#main').innerHTML=page==='overview'?home():page==='farms'?heading('Farmy','Evidencia prenájmov od štátu a od hráčov.',btn('Stav z fotky','photostate','water')+btn('Pridať farmu','new','plus','primary'))+'<div class="filters"><input id="search" aria-label="Vyhľadať farmu" placeholder="Vyhľadať farmu podľa mena alebo čísla (napr. D05)…" value="'+E(query)+'"></div>'+tabs()+'<div id="matches">'+farmsgrid()+'</div>':page==='finance'?finance():page==='settings'?settings():page==='history'?journal():page==='log'?logPage():page==='farm'?farmPage():page==='water'?waterPage():page==='crops'?cropsPage():noticesPage();document.querySelectorAll('canvas').forEach(paint)}
 const field=(l,n,t,v='',attr='')=>'<label class="field">'+l+'<input name="'+n+'" type="'+t+'" value="'+E(v)+'" '+attr+'></label>';
 function select(l,n,opts,val,attr=''){return '<label class="field">'+l+'<select name="'+n+'" '+attr+'>'+opts.map(([v,s])=>'<option value="'+E(v)+'" '+(String(val)===String(v)?'selected':'')+'>'+E(s)+'</option>').join('')+'</select></label>'}
 const seq=(n)=>Array.from({length:n},(_,i)=>[i+1,String(i+1)]);
@@ -1128,6 +1146,83 @@ function keyHint(f,name){
   if(!f)return '';const ok=hasKey(f,name),list=farmKeys(f);
   const txt=!name?(list.length?'Zapísaní na tejto farme: '+list.join(', '):'Na tejto farme zatiaľ nemáš zapísaného nikoho.'):ok?name+' je zapísaný na tejto farme.':name+' nie je zapísaný na tejto farme. Skontroluj, či má v hre právo, alebo ho zapíš v detaile farmy.';
   return '<p class="wide key-hint '+(name?(ok?'ok':'no'):'')+'" data-keyhint>'+ic('key')+E(txt)+'</p>';
+}
+// ---- Log zo hry: prečíta predaje a zbery z logu SeeRPG. Spracuje sa iba v prehliadači, ukladá sa len to, čo potvrdíš. ----
+let logData=null;
+const huNorm=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
+function cropFromHu(word){const w=huNorm(word);let best=null,len=0;
+  for(const c of CATALOG){const h=huNorm(c.hu);if(!h)continue;if((w===h||w.startsWith(h.slice(0,-1))||h.startsWith(w))&&h.length>len){best=c.name;len=h.length}}
+  return best}
+function parseGameLog(text){
+  const sales=[],harv=[],num=t=>Number(String(t).replace(/[^\d]/g,''));
+  for(const line of String(text).split(/\r?\n/)){
+    const m=line.match(/^\[(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d)\]/);if(!m)continue;
+    const at=new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6]).getTime();
+    let x=line.match(/Sikeresen eladtál (\d+) db (.+?), amiért ([\d\s  ]+) forint/);
+    if(x){sales.push({at,n:+x[1],hu:x[2],crop:cropFromHu(x[2]),amount:num(x[3])});continue}
+    x=line.match(/Sikeresen betakarítottál (\d+) db (.+?) termést/);
+    if(x)harv.push({at,n:+x[1],hu:x[2],crop:cropFromHu(x[2])});
+  }
+  // Dávky toho istého tovaru tesne po sebe = jeden predaj; zbery tesne po sebe = jedna úroda.
+  const group=(list,gap)=>{const out=[];for(const r of list){const g=out.findLast(g=>g.hu===huNorm(r.crop||r.hu)&&r.at-g.to<=gap);if(g){g.rows.push(r);g.to=r.at}else out.push({hu:huNorm(r.crop||r.hu),crop:r.crop,name:r.crop||r.hu,from:r.at,to:r.at,rows:[r]})}return out};
+  const S=group(sales,45*60000).map(g=>{const pieces=g.rows.reduce((t,r)=>t+r.n,0),amount=g.rows.reduce((t,r)=>t+r.amount,0),pp=g.rows.filter(r=>r.n>=10).map(r=>r.amount/r.n);
+    return {...g,pieces,amount,avg:amount/pieces,min:Math.round(pp.length?Math.min(...pp):amount/pieces),max:Math.round(pp.length?Math.max(...pp):amount/pieces),key:'S|'+g.name+'|'+g.from+'|'+pieces+'|'+amount}});
+  const Hs=group(harv,60*60000).map(g=>{const dist={};g.rows.forEach(r=>dist[r.n]=(dist[r.n]||0)+1);const pieces=g.rows.reduce((t,r)=>t+r.n,0);
+    return {...g,fields:g.rows.length,pieces,dist,key:'H|'+g.name+'|'+g.from+'|'+g.rows.length+'|'+pieces}});
+  return {sales:S,harvests:Hs,lines:String(text).split(/\n/).length};
+}
+const saleLogged=g=>db.tx.some(t=>t.logKey===g.key);
+const harvLogged=g=>!!g.crop&&(cropInfo(g.crop).obs?.h||[]).some(x=>x.key===g.key);
+const hm=t=>new Date(t).toLocaleString('sk-SK',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});
+const hhmm=t=>new Date(t).toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
+function logPage(){
+  const head=heading('Log zo hry','Nahraj log zo SeeRPG. Uvidíš, čo si predal a zobral, a jedným klikom to zapíšeš k farme alebo k plodine.',logData?btn('Nahrať iný log','logclear'):'');
+  if(!logData)return head+'<section class="panel log-upload"><label class="photo-drop log-drop" tabindex="0"><input type="file" name="gamelog" accept=".log,.txt,text/plain" hidden><span class="pd-empty">'+ic('plus')+'Vybrať log alebo ho sem pretiahnuť</span></label><p class="hint">Log sa spracuje iba v tomto prehliadači a nikam sa neposiela. Číta sa len predaj (<i>eladtál</i>) a zber (<i>betakarítottál</i>), nič iné z chatu sa neukladá.</p></section>';
+  const {sales,harvests}=logData,total=sales.reduce((t,g)=>t+g.amount,0);
+  const pic=g=>g.crop?cropPicture(cropInfo(g.crop),30):'';
+  const saleCard=(g,i)=>{const done=saleLogged(g);
+    return '<article class="log-card"><header>'+pic(g)+'<div><h3>'+E(g.name)+(g.crop?'':' <small>(neznáma plodina)</small>')+'</h3><small>'+hm(g.from)+(g.to-g.from>60000?' – '+hhmm(g.to):'')+' · '+g.rows.length+(g.rows.length===1?' dávka':g.rows.length<5?' dávky':' dávok')+'</small></div><strong class="lc-big">'+money(g.amount)+'</strong></header>'+
+      '<dl class="lc-facts"><div><dt>Predané</dt><dd>'+fmt(g.pieces)+' ks</dd></div><div><dt>Cena za kus</dt><dd>'+(g.min===g.max?money(g.min):money(g.min)+' – '+money(g.max))+'</dd></div><div><dt>Priemer</dt><dd>'+money(Math.round(g.avg))+'</dd></div></dl>'+
+      '<div class="lc-act">'+(done?'<span class="pill ready">'+ic('check')+'Zapísané na farmu</span>':btn('Zapísať tržbu na farmu','logsale:'+i,'plus','primary'))+'</div></article>'};
+  const harvCard=(g,i)=>{const done=harvLogged(g),ks=Object.keys(g.dist).map(Number).sort((a,b)=>a-b),mx=Math.max(...Object.values(g.dist));
+    return '<article class="log-card"><header>'+pic(g)+'<div><h3>'+E(g.name)+'</h3><small>'+hm(g.from)+(g.to-g.from>60000?' – '+hhmm(g.to):'')+'</small></div><strong class="lc-big">'+fmt(g.pieces)+' ks</strong></header>'+
+      '<dl class="lc-facts"><div><dt>Polí</dt><dd>'+g.fields+'</dd></div><div><dt>Kusy z poľa</dt><dd>'+(ks[0]===ks.at(-1)?ks[0]:ks[0]+' – '+ks.at(-1))+'</dd></div><div><dt>Priemer</dt><dd>'+fmt(Math.round(g.pieces/g.fields*10)/10)+' ks</dd></div></dl>'+
+      (ks.length>1?'<div class="lc-dist" role="img" aria-label="Koľkokrát padol aký počet kusov">'+ks.map(k=>'<div><span style="height:'+Math.max(6,Math.round(g.dist[k]/mx*100))+'%"></span><b>'+g.dist[k]+'×</b><small>'+k+' ks</small></div>').join('')+'</div>':'')+
+      '<div class="lc-act">'+(!g.crop?'<small class="hint">Plodinu z logu sa nepodarilo rozpoznať.</small>':done?'<span class="pill ready">'+ic('check')+'Zapísané v plodine</span>'+btn('Odobrať','logharvdel:'+i):btn('Zapísať do plodiny','logharv:'+i,'plus','primary'))+'</div></article>'};
+  return head+
+    '<section class="panel log-sum"><div><small>Predaje spolu</small><strong>'+money(total)+'</strong></div><div><small>Predaných kusov</small><strong>'+fmt(sales.reduce((t,g)=>t+g.pieces,0))+'</strong></div><div><small>Zobratých polí</small><strong>'+fmt(harvests.reduce((t,g)=>t+g.fields,0))+'</strong></div><div><small>Obdobie</small><strong>'+(logData.from?hm(logData.from)+' – '+hhmm(logData.to):'—')+'</strong></div></section>'+
+    '<section class="panel">'+section('Predaje','<span class="total">'+sales.length+'</span>')+(sales.length?'<div class="log-grid">'+sales.map(saleCard).join('')+'</div>':empty('V logu nie je žiadny predaj úrody.'))+'</section>'+
+    '<section class="panel">'+section('Zbery','<span class="total">'+harvests.length+'</span>')+(harvests.length?'<div class="log-grid">'+harvests.map(harvCard).join('')+'</div><p class="hint">Zápis do plodiny spresní <b>Porovnanie plodín</b> a <b>Simuláciu úrody</b>: počíta sa s tým, koľko kusov polia v hre naozaj dávajú. Pri predaji zapísanom na farmu sa zase uloží skutočná cena za kus.</p>':empty('V logu nie je žiadny zber.'))+'</section>';
+}
+function loadGameLog(file){
+  if(!file)return;if(file.size>8e6){toast('Log je príliš veľký.');return}
+  file.text().then(t=>{const r=parseGameLog(t),all=[...r.sales,...r.harvests];
+    if(!all.length){toast('V súbore som nenašiel predaj ani zber z SeeRPG.');return}
+    r.from=Math.min(...all.map(g=>g.from));r.to=Math.max(...all.map(g=>g.to));logData=r;render()},()=>toast('Súbor sa nepodarilo prečítať.'));
+}
+document.addEventListener('change',e=>{if(e.target.name==='gamelog')loadGameLog(e.target.files[0])});
+document.addEventListener('drop',e=>{if(e.target.closest?.('.log-drop')){e.preventDefault();loadGameLog(e.dataTransfer.files[0])}});
+document.addEventListener('dragover',e=>{if(e.target.closest?.('.log-drop'))e.preventDefault()});
+function addObs(crop,kind,item){
+  const c=db.catalog?.[crop]||{},o={h:[],s:[],...(c.obs||{})};
+  if((o[kind]||[]).some(x=>x.key===item.key))return false;
+  o[kind]=[...(o[kind]||[]),item].slice(-200);db.catalog={...(db.catalog||{}),[crop]:{...c,obs:o}};return true;
+}
+function logSale(i){
+  const g=logData?.sales[i];if(!g)return;if(saleLogged(g)){toast('Tento predaj už je zapísaný.');return}
+  tx('', 'sale');const fm=$('#txform');if(!fm)return;
+  const guess=g.crop&&activeFarms().find(f=>f.crop===g.crop&&f.planted);
+  if(guess){fm.elements.farm.value=guess.id;fm.elements.farm.dispatchEvent(new Event('change',{bubbles:true}))}
+  fm.elements.amount.value=String(g.amount);updateAmountInput(fm.elements.amount);fm.elements.at.value=local(Math.min(g.to,now()));
+  fm.elements.desc.value=('Z logu: '+fmt(g.pieces)+' ks '+g.name+', priemer '+fmt(Math.round(g.avg))+' Ft/ks').slice(0,150);
+  fm.insertAdjacentHTML('beforeend','<input type="hidden" name="logKey" value="'+E(g.key)+'">');
+  $('#modal h2')&&($('#modal h2').textContent='Zapísať tržbu z logu');
+}
+function logSaleObs(key){const g=logData?.sales.find(x=>x.key===key);if(g?.crop)addObs(g.crop,'s',{key,at:g.to,pieces:g.pieces,amount:g.amount,min:g.min,max:g.max})}
+function logHarvest(i,add){
+  const g=logData?.harvests[i];if(!g?.crop)return;
+  if(add){if(addObs(g.crop,'h',{key:g.key,at:g.to,fields:g.fields,pieces:g.pieces,dist:g.dist})){save();render();toast(g.crop+': zber '+g.fields+' polí ('+fmt(g.pieces)+' ks) zapísaný do plodiny.')}else toast('Tento zber už je zapísaný.')}
+  else{const c=db.catalog?.[g.crop];if(!c?.obs?.h)return;db.catalog={...db.catalog,[g.crop]:{...c,obs:{...c.obs,h:c.obs.h.filter(x=>x.key!==g.key)}}};save();render();toast('Zber odobratý z plodiny.')}
 }
 // ---- Stav farmy z fotky z hry: prečíta pásiky Nedvesség (voda), Növekedés (rast), Állapot (stav) ----
 // Fotka sa spracuje iba v prehliadači, nikam sa neposiela.
@@ -1377,6 +1472,10 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
  else if(a==='install'&&installPrompt){installPrompt.prompt();installPrompt.userChoice.finally(()=>{installPrompt=null;render()})}
  else if(a==='settle'&&f){const st=settlementFor(f);if(st)confirmBox('Uzavrieť vyúčtovanie?',(st.transfers.length?st.transfers.map(t=>playerName(t.from)+' pošle '+playerName(t.to)+' '+money(t.amount)).join(' · ')+'. ':'Nikto nikomu nič neposiela. ')+'Po uzavretí sa prevody započítajú hráčom v Ekonomike.','settleok:'+id)}
  else if(a==='keydel'){const [fid,i]=id.split('|'),t=db.farms.find(x=>x.id===fid),n=farmKeys(t)[+i];if(t&&n!=null){t.keys=farmKeys(t).filter((_,k)=>k!==+i);if(!t.keys.length)delete t.keys;save();render();toast(n+' už nie je zapísaný na farme '+t.name+'.')}}
+ else if(a==='logsale')logSale(+id);
+ else if(a==='logharv')logHarvest(+id,true);
+ else if(a==='logharvdel')logHarvest(+id,false);
+ else if(a==='logclear'){logData=null;render()}
  else if(a==='photostate')photoState(f);
  else if(a==='keywho')keyWho(b.dataset.a.slice(7));
  else if(a==='settleok'&&f){closeSettlement(f);save();close();render();toast('Vyúčtovanie je uzavreté.')}
@@ -1551,7 +1650,9 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
        if(old.workId){const l=db.logs.find(x=>x.id===old.workId);if(l)l.fee=amount}
        if(d.undoHarvest)undoSaleHarvest(old);
      }else{
-       const id=uid();db.tx.push({id,category:d.category,farm:d.farm,desc:d.desc||'',amount,at});
+       if(d.logKey&&db.tx.some(x=>x.logKey===d.logKey)){toast('Tento predaj z logu už je zapísaný.');return}
+       const id=uid();db.tx.push({id,category:d.category,farm:d.farm,desc:d.desc||'',amount,at,...(d.logKey?{logKey:d.logKey}:{})});
+       if(d.logKey)logSaleObs(d.logKey);
        const sold=db.farms.find(x=>x.id===d.farm);
        if(d.category==='sale'&&d.harvested&&sold?.planted&&!sold.archived)harvestFromSale(sold,at,id);
      }
@@ -1566,9 +1667,10 @@ document.addEventListener('submit',e=>{e.preventDefault();let id=e.target.id,d=O
    if(d.recovery)entry.recovery=d.recovery==='yes';
    const old=db.catalog?.[name]||{};
    const file=e.target.elements.picture?.files?.[0];
-   const finish=()=>{db.catalog={...(db.catalog||{}),[name]:entry};save();close();render();toast(name+' uložené.')};
+   if(old.obs)entry.obs=old.obs;const finish=()=>{db.catalog={...(db.catalog||{}),[name]:entry};save();close();render();toast(name+' uložené.')};
    if(file){shrinkImage(file).then(img=>{entry.image=img;finish()},()=>toast('Obrázok sa nepodarilo načítať.'));return}
    if(old.image&&!d.dropImage)entry.image=old.image;
+   if(old.obs)entry.obs=old.obs;
    finish();return}
  else if(id==='dealform'){
    const f=db.farms.find(x=>x.id===d.farm);if(!f)return;
