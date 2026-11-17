@@ -1191,11 +1191,11 @@ const harvLogged=g=>!!g.crop&&(cropInfo(g.crop).obs?.h||[]).some(x=>x.key===g.ke
 const hm=t=>new Date(t).toLocaleString('sk-SK',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});
 const hhmm=t=>new Date(t).toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
 function logPage(){
-  const head=heading('Log zo hry','Nahraj log zo SeeRPG. Uvidíš, čo si predal a zobral, a jedným klikom to zapíšeš k farme alebo k plodine.',logData?btn('Nahrať iný log','logclear'):'');
+  const head=heading('Log zo hry','Nahraj log zo SeeRPG. Uvidíš, čo si predal a za koľko, a jedným klikom to zapíšeš na farmu.',logData?btn('Nahrať iný log','logclear'):'');
   if(!logData)return head+'<section class="panel log-upload">'+(PICKER?'<div class="log-pick">'+btn('Načítať najnovší log','lognewest','basket','primary')+btn('Vybrať súbor','logpick','plus')+'</div>':'')+
     '<p class="log-path">Logy SeeRPG sú v priečinku <code>'+LOG_DIR+'</code> <button type="button" class="link" data-a="logcopy">Kopírovať cestu</button></p>'+
     (PICKER?'<p class="hint">Prvýkrát vlož cestu hore do okna výberu (Ctrl+V) a potvrď priečinok. Potom si ho FarmDesk zapamätá a <b>Načítať najnovší log</b> zoberie hneď posledný log.</p>':'')+
-    '<label class="photo-drop log-drop" tabindex="0"><input type="file" name="gamelog" accept=".log,.txt,text/plain" hidden><span class="pd-empty">'+ic('plus')+'Vybrať log alebo ho sem pretiahnuť</span></label><p class="hint">Log sa spracuje iba v tomto prehliadači a nikam sa neposiela. Číta sa len predaj (<i>eladtál</i>) a zber (<i>betakarítottál</i>), nič iné z chatu sa neukladá.</p></section>';
+    '<label class="photo-drop log-drop" tabindex="0"><input type="file" name="gamelog" accept=".log,.txt,text/plain" hidden><span class="pd-empty">'+ic('plus')+'Vybrať log alebo ho sem pretiahnuť</span></label><p class="hint">Log sa spracuje iba v tomto prehliadači a nikam sa neposiela. Číta sa len predaj úrody (<i>eladtál</i>), nič iné z chatu sa neukladá.</p></section>';
   const {sales,harvests}=logData,total=sales.reduce((t,g)=>t+g.amount,0);
   const pic=g=>g.crop?cropPicture(cropInfo(g.crop),30):'';
   const saleCard=(g,i)=>{const done=saleLogged(g);
@@ -1211,9 +1211,8 @@ function logPage(){
       (ks.length>1?'<div class="lc-dist" role="img" aria-label="Koľkokrát padol aký počet kusov">'+ks.map(k=>'<div><span style="height:'+Math.max(6,Math.round(g.dist[k]/mx*100))+'%"></span><b>'+g.dist[k]+'×</b><small>'+k+' ks</small></div>').join('')+'</div>':'')+
       '<div class="lc-act">'+(!g.crop?'<small class="hint">Plodinu z logu sa nepodarilo rozpoznať.</small>':done?'<span class="pill ready">'+ic('check')+'Zapísané v plodine</span>'+btn('Odobrať','logharvdel:'+i):btn('Zapísať do plodiny','logharv:'+i,'plus','primary'))+'</div></article>'};
   return head+
-    (logData.file?'<p class="log-file">'+ic('basket')+E(logData.file)+'</p>':'')+'<section class="panel log-sum"><div><small>Predaje spolu</small><strong>'+money(total)+'</strong></div><div><small>Predaných kusov</small><strong>'+fmt(sales.reduce((t,g)=>t+g.pieces,0))+'</strong></div><div><small>Zobratých polí</small><strong>'+fmt(harvests.reduce((t,g)=>t+g.fields,0))+'</strong></div><div><small>Obdobie</small><strong>'+(logData.from?hm(logData.from)+' – '+hhmm(logData.to):'—')+'</strong></div></section>'+
-    '<section class="panel">'+section('Predaje','<span class="total">'+sales.length+'</span>')+(sales.length?'<div class="log-grid">'+sales.map(saleCard).join('')+'</div>':empty('V logu nie je žiadny predaj úrody.'))+'</section>'+
-    '<section class="panel">'+section('Zbery','<span class="total">'+harvests.length+'</span>')+(harvests.length?'<div class="log-grid">'+harvests.map(harvCard).join('')+'</div><p class="hint">Zápis do plodiny spresní <b>Porovnanie plodín</b> a <b>Simuláciu úrody</b>: počíta sa s tým, koľko kusov polia v hre naozaj dávajú. Pri predaji zapísanom na farmu sa zase uloží skutočná cena za kus.</p>':empty('V logu nie je žiadny zber.'))+'</section>';
+    (logData.file?'<p class="log-file">'+ic('basket')+E(logData.file)+'</p>':'')+'<section class="panel log-sum"><div><small>Predaje spolu</small><strong>'+money(total)+'</strong></div><div><small>Predaných kusov</small><strong>'+fmt(sales.reduce((t,g)=>t+g.pieces,0))+'</strong></div><div><small>Obdobie</small><strong>'+(logData.from?hm(logData.from)+' – '+hhmm(logData.to):'—')+'</strong></div></section>'+
+    '<section class="panel">'+section('Predaje','<span class="total">'+sales.length+'</span>')+(sales.length?'<div class="log-grid">'+sales.map(saleCard).join('')+'</div>':empty('V logu nie je žiadny predaj úrody.'))+'</section>';
 }
 // Výber priečinka s logmi (Chrome/Edge na PC): priečinok sa zapamätá v prehliadači, ďalej stačí jeden klik.
 const LOG_DIR='%ProgramData%\\SeeRPG\\logs',PICKER=typeof window.showDirectoryPicker==='function'&&typeof window.showOpenFilePicker==='function';
@@ -1236,8 +1235,8 @@ async function pickLog(){
 }
 function loadGameLog(file,named=false){
   if(!file)return;if(file.size>8e6){toast('Log je príliš veľký.');return}
-  file.text().then(t=>{const r=parseGameLog(t),all=[...r.sales,...r.harvests];
-    if(!all.length){toast('V súbore som nenašiel predaj ani zber z SeeRPG.');return}
+  file.text().then(t=>{const r=parseGameLog(t),all=r.sales;
+    if(!all.length){toast('V súbore som nenašiel žiadny predaj úrody zo SeeRPG.');return}
     r.from=Math.min(...all.map(g=>g.from));r.to=Math.max(...all.map(g=>g.to));r.file=file.name;logData=r;render();if(named)toast('Načítaný '+file.name+'.')},()=>toast('Súbor sa nepodarilo prečítať.'));
 }
 document.addEventListener('change',e=>{const gh=e.target.dataset?.gh;if(gh!=null&&e.target.tagName==='SELECT'){for(const f of db.farms)if(+f.greenhouse===+gh)delete f.greenhouse;const f=db.farms.find(x=>x.id===e.target.value);if(f)f.greenhouse=+gh;save();render();if(f)toast('Skleník '+gh+' = '+f.name+'. FarmDesk si to zapamätá.');return}
@@ -1252,8 +1251,7 @@ function addObs(crop,kind,item){
 function logSale(i){
   const g=logData?.sales[i];if(!g)return;if(saleLogged(g)){toast('Tento predaj už je zapísaný.');return}
   tx('', 'sale');const fm=$('#txform');if(!fm)return;
-  const hv=g.crop&&logData.harvests.findLast(h=>h.crop===g.crop&&h.from<=g.to&&h.gh!=null),byGh=hv&&activeFarms().find(f=>+f.greenhouse===hv.gh);
-  const guess=byGh||(g.crop&&activeFarms().find(f=>f.crop===g.crop&&f.planted));
+  const guess=g.crop&&activeFarms().find(f=>f.crop===g.crop&&f.planted);
   if(guess){fm.elements.farm.value=guess.id;fm.elements.farm.dispatchEvent(new Event('change',{bubbles:true}))}
   fm.elements.amount.value=String(g.amount);updateAmountInput(fm.elements.amount);fm.elements.at.value=local(Math.min(g.to,now()));
   fm.elements.desc.value=('Z logu: '+fmt(g.pieces)+' ks '+g.name+', priemer '+fmt(Math.round(g.avg))+' Ft/ks').slice(0,150);

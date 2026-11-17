@@ -359,7 +359,7 @@ html.no-anim *,html.no-anim *:before,html.no-anim *:after{transition:none!import
 .photo-read .hint.ok{color:var(--growth)}.photo-read .hint.no{color:var(--warn)}
 /* Log zo hry */
 .log-drop{min-height:160px}
-.log-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;padding:0;overflow:hidden;background:var(--b1)}
+.log-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;padding:0;overflow:hidden;background:var(--b1)}
 .log-sum>div{background:var(--s1);padding:16px 18px;display:flex;flex-direction:column;gap:4px;min-width:0}
 .log-sum small{color:var(--t3);font-size:12px}
 .log-sum strong{font:500 20px/1.2 Ubuntu,sans-serif;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
