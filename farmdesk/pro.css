@@ -392,3 +392,6 @@ html.no-anim *,html.no-anim *:before,html.no-anim *:after{transition:none!import
 .log-path .link{border:0;background:none;color:var(--gold);cursor:pointer;font:500 13px Ubuntu,sans-serif;padding:0 4px}
 .log-upload .log-drop{margin-top:12px}
 .log-file{display:flex;align-items:center;gap:6px;margin:0 0 10px;color:var(--t3);font-size:12.5px}.log-file svg{width:14px;height:14px}
+.lc-gh{display:flex;align-items:center;gap:6px;color:var(--t2);font-size:12.5px;flex-wrap:wrap}
+.lc-gh svg{width:14px;height:14px;color:var(--t3)}
+.lc-gh select{width:auto!important;flex:1;min-width:0;margin-left:4px;height:28px;border-radius:var(--r3);border:1px solid var(--b2);background:var(--s1);color:var(--t1);font:400 12.5px Ubuntu,sans-serif;padding:0 6px;max-width:200px}

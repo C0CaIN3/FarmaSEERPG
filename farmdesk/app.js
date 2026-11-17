@@ -1154,22 +1154,37 @@ function cropFromHu(word){const w=huNorm(word);let best=null,len=0;
   for(const c of CATALOG){const h=huNorm(c.hu);if(!h)continue;if((w===h||w.startsWith(h.slice(0,-1))||h.startsWith(w))&&h.length>len){best=c.name;len=h.length}}
   return best}
 function parseGameLog(text){
-  const sales=[],harv=[],num=t=>Number(String(t).replace(/[^\d]/g,''));
+  const sales=[],harv=[],enter=[],emotes=[],num=t=>Number(String(t).replace(/[^\d]/g,''));
   for(const line of String(text).split(/\r?\n/)){
     const m=line.match(/^\[(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d):(\d\d)\]/);if(!m)continue;
     const at=new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6]).getTime();
     let x=line.match(/Sikeresen eladtál (\d+) db (.+?), amiért ([\d\s  ]+) forint/);
     if(x){sales.push({at,n:+x[1],hu:x[2],crop:cropFromHu(x[2]),amount:num(x[3])});continue}
     x=line.match(/Sikeresen betakarítottál (\d+) db (.+?) termést/);
-    if(x)harv.push({at,n:+x[1],hu:x[2],crop:cropFromHu(x[2])});
+    if(x){harv.push({at,n:+x[1],hu:x[2],crop:cropFromHu(x[2])});continue}
+    // Kam hráč vošiel: číslo skleníka (szint) označuje farmu.
+    x=line.match(/\*\* (.+?) belépett egy üvegházba \((\d+)\. szint\)/);
+    if(x){enter.push({at,who:x[1],gh:+x[2]});continue}
+    x=line.match(/\*\* (.+?) betakarított egy /);
+    if(x)emotes.push({at,who:x[1]});
   }
+  // Tvoje meno: hráč, ktorého „betakarított“ prišlo v tú istú chvíľu ako tvoje „Sikeresen betakarítottál“.
+  const votes={};for(const h of harv)for(const e of emotes)if(Math.abs(e.at-h.at)<=3000)votes[e.who]=(votes[e.who]||0)+1;
+  const me=Object.entries(votes).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
+  const mine=enter.filter(e=>e.who===me);
+  for(const h of harv){const e=mine.findLast(e=>e.at<=h.at);h.gh=e?e.gh:null}
   // Dávky toho istého tovaru tesne po sebe = jeden predaj; zbery tesne po sebe = jedna úroda.
   const group=(list,gap)=>{const out=[];for(const r of list){const g=out.findLast(g=>g.hu===huNorm(r.crop||r.hu)&&r.at-g.to<=gap);if(g){g.rows.push(r);g.to=r.at}else out.push({hu:huNorm(r.crop||r.hu),crop:r.crop,name:r.crop||r.hu,from:r.at,to:r.at,rows:[r]})}return out};
   const S=group(sales,45*60000).map(g=>{const pieces=g.rows.reduce((t,r)=>t+r.n,0),amount=g.rows.reduce((t,r)=>t+r.amount,0),pp=g.rows.filter(r=>r.n>=10).map(r=>r.amount/r.n);
     return {...g,pieces,amount,avg:amount/pieces,min:Math.round(pp.length?Math.min(...pp):amount/pieces),max:Math.round(pp.length?Math.max(...pp):amount/pieces),key:'S|'+g.name+'|'+g.from+'|'+pieces+'|'+amount}});
-  const Hs=group(harv,60*60000).map(g=>{const dist={};g.rows.forEach(r=>dist[r.n]=(dist[r.n]||0)+1);const pieces=g.rows.reduce((t,r)=>t+r.n,0);
-    return {...g,fields:g.rows.length,pieces,dist,key:'H|'+g.name+'|'+g.from+'|'+g.rows.length+'|'+pieces}});
-  return {sales:S,harvests:Hs,lines:String(text).split(/\n/).length};
+  // Zbery: jedna úroda = tá istá plodina v tom istom skleníku. Odbehnutie na inú farmu alebo návrat neskôr ju nerozdelí,
+  // novú úrodu začne až pauza dlhšia ako 20 h (ďalšia úroda trvá 44 h).
+  const hg=[];for(const r of harv){const k=huNorm(r.crop||r.hu)+'|'+(r.gh??'?');const g=hg.findLast(g=>g.k===k&&r.at-g.to<=20*3600000&&(r.gh!=null||r.at-g.to<=60*60000));
+    if(g){g.rows.push(r);g.to=r.at}else hg.push({k,hu:huNorm(r.crop||r.hu),crop:r.crop,name:r.crop||r.hu,gh:r.gh,from:r.at,to:r.at,rows:[r]})}
+  const Hs=hg.map(g=>{const dist={};g.rows.forEach(r=>dist[r.n]=(dist[r.n]||0)+1);const pieces=g.rows.reduce((t,r)=>t+r.n,0);
+    let parts=1;for(let i=1;i<g.rows.length;i++)if(g.rows[i].at-g.rows[i-1].at>30*60000)parts++;
+    return {...g,fields:g.rows.length,pieces,dist,parts,key:'H|'+g.name+'|'+(g.gh??'')+'|'+g.from+'|'+g.rows.length+'|'+pieces}}).sort((a,b)=>a.from-b.from);
+  return {me,sales:S,harvests:Hs,lines:String(text).split(/\n/).length};
 }
 const saleLogged=g=>db.tx.some(t=>t.logKey===g.key);
 const harvLogged=g=>!!g.crop&&(cropInfo(g.crop).obs?.h||[]).some(x=>x.key===g.key);
@@ -1188,7 +1203,10 @@ function logPage(){
       '<dl class="lc-facts"><div><dt>Predané</dt><dd>'+fmt(g.pieces)+' ks</dd></div><div><dt>Cena za kus</dt><dd>'+(g.min===g.max?money(g.min):money(g.min)+' – '+money(g.max))+'</dd></div><div><dt>Priemer</dt><dd>'+money(Math.round(g.avg))+'</dd></div></dl>'+
       '<div class="lc-act">'+(done?'<span class="pill ready">'+ic('check')+'Zapísané na farmu</span>':btn('Zapísať tržbu na farmu','logsale:'+i,'plus','primary'))+'</div></article>'};
   const harvCard=(g,i)=>{const done=harvLogged(g),ks=Object.keys(g.dist).map(Number).sort((a,b)=>a-b),mx=Math.max(...Object.values(g.dist));
-    return '<article class="log-card"><header>'+pic(g)+'<div><h3>'+E(g.name)+'</h3><small>'+hm(g.from)+(g.to-g.from>60000?' – '+hhmm(g.to):'')+'</small></div><strong class="lc-big">'+fmt(g.pieces)+' ks</strong></header>'+
+    const until=g.to-g.from>60000?' – '+(new Date(g.to).toDateString()===new Date(g.from).toDateString()?hhmm(g.to):hm(g.to)):'';
+    const farm=g.gh!=null&&db.farms.find(f=>+f.greenhouse===g.gh);
+    const where=g.gh==null?'':'<label class="lc-gh">'+ic('barn')+'Skleník '+g.gh+'<select data-gh="'+g.gh+'" aria-label="Ktorá farma je skleník '+g.gh+'"><option value="">vyber farmu…</option>'+activeFarms().map(f=>'<option value="'+E(f.id)+'"'+(farm&&farm.id===f.id?' selected':'')+'>'+E(f.name)+'</option>').join('')+'</select></label>';
+    return '<article class="log-card"><header>'+pic(g)+'<div><h3>'+E(g.name)+'</h3><small>'+hm(g.from)+until+(g.parts>1?' · v '+g.parts+' častiach':'')+'</small></div><strong class="lc-big">'+fmt(g.pieces)+' ks</strong></header>'+where+
       '<dl class="lc-facts"><div><dt>Polí</dt><dd>'+g.fields+'</dd></div><div><dt>Kusy z poľa</dt><dd>'+(ks[0]===ks.at(-1)?ks[0]:ks[0]+' – '+ks.at(-1))+'</dd></div><div><dt>Priemer</dt><dd>'+fmt(Math.round(g.pieces/g.fields*10)/10)+' ks</dd></div></dl>'+
       (ks.length>1?'<div class="lc-dist" role="img" aria-label="Koľkokrát padol aký počet kusov">'+ks.map(k=>'<div><span style="height:'+Math.max(6,Math.round(g.dist[k]/mx*100))+'%"></span><b>'+g.dist[k]+'×</b><small>'+k+' ks</small></div>').join('')+'</div>':'')+
       '<div class="lc-act">'+(!g.crop?'<small class="hint">Plodinu z logu sa nepodarilo rozpoznať.</small>':done?'<span class="pill ready">'+ic('check')+'Zapísané v plodine</span>'+btn('Odobrať','logharvdel:'+i):btn('Zapísať do plodiny','logharv:'+i,'plus','primary'))+'</div></article>'};
@@ -1222,7 +1240,8 @@ function loadGameLog(file,named=false){
     if(!all.length){toast('V súbore som nenašiel predaj ani zber z SeeRPG.');return}
     r.from=Math.min(...all.map(g=>g.from));r.to=Math.max(...all.map(g=>g.to));r.file=file.name;logData=r;render();if(named)toast('Načítaný '+file.name+'.')},()=>toast('Súbor sa nepodarilo prečítať.'));
 }
-document.addEventListener('change',e=>{if(e.target.name==='gamelog')loadGameLog(e.target.files[0])});
+document.addEventListener('change',e=>{const gh=e.target.dataset?.gh;if(gh!=null&&e.target.tagName==='SELECT'){for(const f of db.farms)if(+f.greenhouse===+gh)delete f.greenhouse;const f=db.farms.find(x=>x.id===e.target.value);if(f)f.greenhouse=+gh;save();render();if(f)toast('Skleník '+gh+' = '+f.name+'. FarmDesk si to zapamätá.');return}
+ if(e.target.name==='gamelog')loadGameLog(e.target.files[0])});
 document.addEventListener('drop',e=>{if(e.target.closest?.('.log-drop')){e.preventDefault();loadGameLog(e.dataTransfer.files[0])}});
 document.addEventListener('dragover',e=>{if(e.target.closest?.('.log-drop'))e.preventDefault()});
 function addObs(crop,kind,item){
@@ -1233,7 +1252,8 @@ function addObs(crop,kind,item){
 function logSale(i){
   const g=logData?.sales[i];if(!g)return;if(saleLogged(g)){toast('Tento predaj už je zapísaný.');return}
   tx('', 'sale');const fm=$('#txform');if(!fm)return;
-  const guess=g.crop&&activeFarms().find(f=>f.crop===g.crop&&f.planted);
+  const hv=g.crop&&logData.harvests.findLast(h=>h.crop===g.crop&&h.from<=g.to&&h.gh!=null),byGh=hv&&activeFarms().find(f=>+f.greenhouse===hv.gh);
+  const guess=byGh||(g.crop&&activeFarms().find(f=>f.crop===g.crop&&f.planted));
   if(guess){fm.elements.farm.value=guess.id;fm.elements.farm.dispatchEvent(new Event('change',{bubbles:true}))}
   fm.elements.amount.value=String(g.amount);updateAmountInput(fm.elements.amount);fm.elements.at.value=local(Math.min(g.to,now()));
   fm.elements.desc.value=('Z logu: '+fmt(g.pieces)+' ks '+g.name+', priemer '+fmt(Math.round(g.avg))+' Ft/ks').slice(0,150);
