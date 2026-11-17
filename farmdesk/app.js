@@ -1235,6 +1235,21 @@ function analyzeGameLog(text){
   const all=[...ev.map(e=>e.at)];
   return {me,sales:S,harvests:Hs,ledger,seeds,plants:P,fulls:fulls.length,stat,from:all.length?Math.min(...all):null,to:all.length?Math.max(...all):null};
 }
+// Farma má vždy 40, 80 alebo 120 polí; na jednom poschodí ich môže byť viac. Ktoré kombinácie dajú daný počet polí (najviac 4 farmy)?
+function farmCombos(n){const out=[],go=(rest,from,acc)=>{if(rest===0){out.push(acc);return}if(acc.length>=4)return;for(const s of [120,80,40])if(s<=from&&s<=rest)go(rest-s,s,[...acc,s])};go(n,120,[]);return out}
+// Ktoré tvoje farmy s touto plodinou by počtom polí sedeli na tento zber.
+function farmsForHarvest(g){
+  const cand=activeFarms().filter(f=>g.crop&&f.crop===g.crop&&[40,80,120].includes(+f.size));
+  let best=null;const k=cand.length,lim=Math.min(k,12);
+  for(let m=1;m<(1<<lim);m++){const pick=cand.filter((_,i)=>m&(1<<i)),sum=pick.reduce((t,f)=>t+ +f.size,0);if(sum===g.fields&&(!best||pick.length<best.length))best=pick}
+  return best;
+}
+function fieldsNote(g){
+  if(g.fields<20)return '';
+  const c=farmCombos(g.fields);
+  if(!c.length){const next=[40,80,120,160,200,240,280,320,360].find(x=>x>g.fields);return 'nesedí na celé farmy (40/80/120); '+(next?(next-g.fields)+' polí do '+next+', niečo možno ostalo nezobraté':'')}
+  return c.length===1&&c[0].length===1?'celá farma so '+c[0][0]+' poľami':'môže byť '+c.slice(0,3).map(x=>x.join(' + ')).join(' alebo ');
+}
 // Zistenia: krátke vety, najdôležitejšie hore.
 function logFindings(d){
   const out=[];void 0;const list=o=>Object.entries(o).map(([k,v])=>fmt(v)+' ks '+placeName(k)).join(', ');
@@ -1255,7 +1270,10 @@ function logFindings(d){
   for(const g of d.sales)if(g.crop&&g.max>g.avg*1.01&&g.pieces>=50){const miss=Math.round((g.max-g.avg)*g.pieces);
     out.push({tone:'info',crop:g.crop,text:'Predaj za priemerne '+money(Math.round(g.avg))+'/ks, najlepšia dávka '+money(g.max)+'/ks. Pri každej dávke za najlepšiu cenu by to bolo o '+money(miss)+' viac.'})}
   for(const g of d.harvests){
-    if(g.fields>120)out.push({tone:'warn',crop:g.crop,text:'Zber na '+g.floor+'. poschodí má '+g.fields+' polí, viac ako najväčšia farma. Asi sú to dve farmy s rovnakou plodinou na tom istom poschodí.'});
+    if(g.fields>=20){const mine=farmsForHarvest(g),c=farmCombos(g.fields),fl=g.floor!=null?' na '+g.floor+'. poschodí':'';
+      if(mine&&mine.length>1)out.push({tone:'info',crop:g.crop,text:g.fields+' polí'+fl+' sedí na tvoje farmy '+mine.map(f=>f.name+' ('+f.size+')').join(' + ')+'.'});
+      else if(g.fields>120)out.push({tone:'info',crop:g.crop,text:g.fields+' polí'+fl+' je viac ako jedna farma: '+c.slice(0,3).map(x=>x.join(' + ')).join(' alebo ')+'. Kusy z poľa sa do plodiny rátajú správne aj tak.'});
+      else if(!c.length)out.push({tone:'warn',crop:g.crop,text:'Zber'+fl+' má '+g.fields+' polí, to nie je celá farma (40/80/120). '+fieldsNote(g).replace(/^nesedí na celé farmy \(40\/80\/120\); /,'')+'.'})}
     if(g.pauses.length)out.push({tone:'info',crop:g.crop,text:'Zber bol prerušený '+g.pauses.length+'× ('+g.pauses.map(p=>hhmm(p.from)+' → '+hhmm(p.to)).join(', ')+'); všetko sa ráta ako jedna úroda.'});
     if(g.full)out.push({tone:'info',crop:g.crop,text:g.full+'× plný inventár počas zberu.'});
   }
@@ -1286,13 +1304,13 @@ function logPage(){
       '<dl class="lc-facts"><div><dt>Predané</dt><dd>'+fmt(g.pieces)+' ks</dd></div><div><dt>Cena za kus</dt><dd>'+(g.min===g.max?money(g.min):money(g.min)+' – '+money(g.max))+'</dd></div><div><dt>Priemer</dt><dd>'+money(Math.round(g.avg))+'</dd></div></dl>'+
       '<div class="lc-act">'+(done?'<span class="pill ready">'+ic('check')+'Zapísané na farmu</span>':btn('Zapísať tržbu na farmu','logsale:'+i,'plus','primary'))+'</div></article>'};
   const harvCard=(g,i)=>{const done=harvLogged(g),ks=Object.keys(g.dist).map(Number).sort((a,b)=>a-b),mx=Math.max(...Object.values(g.dist));
-    const fit=g.fields<20?'':g.fields%20===0&&g.fields<=120?g.fields/20+(g.fields/20===1?' sekcia':g.fields/20<5?' sekcie':' sekcií')+' po 20 polí':g.fields>120?'viac ako jedna farma':'nie je násobok 20, niečo možno ostalo nezobraté';
+    const fit=fieldsNote(g);
     return '<article class="log-card"><header>'+pic(g.crop)+'<div><h3>'+E(g.name)+'</h3><small>'+span(g.from,g.to)+(g.floor!=null?' · '+g.floor+'. poschodie':'')+(g.parts>1?' · v '+g.parts+' častiach':'')+'</small></div><strong class="lc-big">'+fmt(g.pieces)+' ks</strong></header>'+
       '<dl class="lc-facts"><div><dt>Polí</dt><dd>'+g.fields+'<small>'+fit+'</small></dd></div><div><dt>Kusy z poľa</dt><dd>'+(ks[0]===ks.at(-1)?ks[0]:ks[0]+' – '+ks.at(-1))+'</dd></div><div><dt>Priemer</dt><dd>'+fmt(Math.round(g.pieces/g.fields*10)/10)+' ks</dd></div></dl>'+
       (ks.length>1?'<div class="lc-dist" role="img" aria-label="Koľkokrát padol aký počet kusov">'+ks.map(k=>'<div><span style="height:'+Math.max(6,Math.round(g.dist[k]/mx*100))+'%"></span><b>'+g.dist[k]+'×</b><small>'+k+' ks</small></div>').join('')+'</div>':'')+
       '<div class="lc-act">'+(!g.crop?'<small class="hint">Plodinu sa nepodarilo rozpoznať.</small>':done?'<span class="pill ready">'+ic('check')+'Zapísané v plodine</span>'+btn('Odobrať','logharvdel:'+i):btn('Zapísať do plodiny','logharv:'+i,'plus'))+'</div></article>'};
   const how='<details class="log-how"><summary>Ako som to počítal</summary><p>Prečítaných '+fmt(d.stat.lines)+' riadkov, z toho '+fmt(d.stat.used)+' o úrode a pohybe vecí. Tvoje meno v logu: <b>'+E(d.me||'nezistené')+'</b>; rátajú sa len tvoje presuny.</p>'+
-    '<ul><li>Zber: <i>Sikeresen betakarítottál</i>. Jeden riadok je jedno pole. Úroda je tá istá plodina na tom istom poschodí, prestávky ani cesta k autu ju nerozdelia, novú začne až pauza nad 20 h.</li><li>Predaj: <i>Sikeresen eladtál</i>. Dávky tej istej plodiny s odstupom do 45 min sú jeden predaj.</li><li>Presuny: <i>berakott / betett / kivett</i> (auto podľa značky, debna), <i>letett / felvett</i> (zem), <i>átadott … játékosnak</i> (hráč).</li><li>„Pred logom“: keď si niečo vybral skôr, ako si to tam v logu dal, muselo to tam byť už predtým.</li><li>Číslo poschodia (szint) nie je farma, na jednom poschodí je viac dverí. Preto farmu pri zápise vyberáš ty.</li></ul></details>';
+    '<ul><li>Zber: <i>Sikeresen betakarítottál</i>. Jeden riadok je jedno pole. Úroda je tá istá plodina na tom istom poschodí, prestávky ani cesta k autu ju nerozdelia, novú začne až pauza nad 20 h.</li><li>Predaj: <i>Sikeresen eladtál</i>. Dávky tej istej plodiny s odstupom do 45 min sú jeden predaj.</li><li>Presuny: <i>berakott / betett / kivett</i> (auto podľa značky, debna), <i>letett / felvett</i> (zem), <i>átadott … játékosnak</i> (hráč).</li><li>„Pred logom“: keď si niečo vybral skôr, ako si to tam v logu dal, muselo to tam byť už predtým.</li><li>Číslo poschodia (szint) nie je farma: na jednom poschodí je viac fariem po 40, 80 alebo 120 poliach. Počet polí sa preto porovná s možnými kombináciami a s tvojimi farmami s tou plodinou. Farmu pri zápise tržby vyberáš ty.</li></ul></details>';
   return head+
     (d.file?'<p class="log-file">'+ic('basket')+E(d.file)+'</p>':'')+
     '<section class="panel log-sum"><div><small>Predaje spolu</small><strong>'+money(total)+'</strong></div><div><small>Zobraté</small><strong>'+fmt(harvests.reduce((t,g)=>t+g.pieces,0))+' ks</strong></div><div><small>Predané</small><strong>'+fmt(sales.reduce((t,g)=>t+g.pieces,0))+' ks</strong></div><div><small>Obdobie</small><strong>'+(d.from?span(d.from,d.to):'—')+'</strong></div></section>'+
