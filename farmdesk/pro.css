@@ -410,3 +410,18 @@ html.no-anim *,html.no-anim *:before,html.no-anim *:after{transition:none!import
 .log-how{margin-top:4px;color:var(--t2);font-size:13px}
 .log-how summary{cursor:pointer;color:var(--t3);padding:6px 0}
 .log-how ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+/* Log: zbaľovacie lišty */
+.log-bar{padding:0;overflow:hidden}
+.log-bar>summary{list-style:none;display:flex;align-items:center;gap:12px;padding:16px 18px;cursor:pointer;user-select:none}
+.log-bar>summary::-webkit-details-marker{display:none}
+.log-bar>summary:hover{background:var(--s2)}
+.log-bar>summary:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.log-bar .lb-title{font:500 16px/1.2 Ubuntu,sans-serif;color:var(--t1)}
+.log-bar .lb-meta{margin-left:auto;color:var(--t3);font-size:13px;white-space:nowrap}
+.log-bar .lb-warn{color:var(--warn);font-weight:500}
+.log-bar>summary svg{width:16px;height:16px;color:var(--t3);transition:transform .15s}
+.log-bar[open]>summary svg{transform:rotate(90deg)}
+.log-bar[open]>summary{border-bottom:1px solid var(--b1)}
+.log-bar .lb-body{padding:14px 18px 18px}
+.log-bar .log-finds,.log-bar .log-grid{margin-top:0}
+@media (prefers-reduced-motion:reduce){.log-bar>summary svg{transition:none}}

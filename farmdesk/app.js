@@ -1248,7 +1248,8 @@ function fieldsNote(g){
   if(g.fields<20)return '';
   const c=farmCombos(g.fields);
   if(!c.length){const next=[40,80,120,160,200,240,280,320,360].find(x=>x>g.fields);return 'nesedí na celé farmy (40/80/120); '+(next?(next-g.fields)+' polí do '+next+', niečo možno ostalo nezobraté':'')}
-  return c.length===1&&c[0].length===1?'celá farma so '+c[0][0]+' poľami':'môže byť '+c.slice(0,3).map(x=>x.join(' + ')).join(' alebo ');
+  if([40,80,120].includes(g.fields))return 'celá farma so '+g.fields+' poľami';
+  return 'viac fariem: '+c.slice(0,3).map(x=>x.join(' + ')).join(' alebo ');
 }
 // Zistenia: krátke vety, najdôležitejšie hore.
 function logFindings(d){
@@ -1261,24 +1262,15 @@ function logFindings(d){
     }else if(b.harvested){
       out.push({tone:'warn',crop:b.crop,text:'Zobral si '+fmt(b.harvested)+' ks, ale v tomto logu si ich nepredal.'+(Object.keys(left).length?' Sú '+list(left)+'.':'')});
     }else if(b.sold&&b.startTotal){
-      out.push({tone:'info',crop:b.crop,text:'Predal si '+fmt(b.sold)+' ks zo zásob spred tohto logu ('+list(b.start)+').'+(Object.keys(left).length?' Ešte zostalo: '+list(left)+'.':'')});
-    }else if(Object.keys(left).length&&(b.bal.me||Object.keys(b.bal).length>1)){
-      out.push({tone:'info',crop:b.crop,text:'Na konci logu: '+list(left)+'.'});
+      out.push({tone:Object.keys(left).length?'warn':'ok',crop:b.crop,text:'Predal si '+fmt(b.sold)+' ks zo zásob spred tohto logu ('+list(b.start)+').'+(Object.keys(left).length?' Ešte zostalo: '+list(left)+'.':'')});
     }
-    for(const [who,n] of Object.entries(b.received))out.push({tone:'info',crop:b.crop,text:who+' ti dal '+fmt(n)+' ks.'});
   }
-  for(const g of d.sales)if(g.crop&&g.max>g.avg*1.01&&g.pieces>=50){const miss=Math.round((g.max-g.avg)*g.pieces);
-    out.push({tone:'info',crop:g.crop,text:'Predaj za priemerne '+money(Math.round(g.avg))+'/ks, najlepšia dávka '+money(g.max)+'/ks. Pri každej dávke za najlepšiu cenu by to bolo o '+money(miss)+' viac.'})}
   for(const g of d.harvests){
     if(g.fields>=20){const mine=farmsForHarvest(g),c=farmCombos(g.fields),fl=g.floor!=null?' na '+g.floor+'. poschodí':'';
-      if(mine&&mine.length>1)out.push({tone:'info',crop:g.crop,text:g.fields+' polí'+fl+' sedí na tvoje farmy '+mine.map(f=>f.name+' ('+f.size+')').join(' + ')+'.'});
-      else if(g.fields>120)out.push({tone:'info',crop:g.crop,text:g.fields+' polí'+fl+' je viac ako jedna farma: '+c.slice(0,3).map(x=>x.join(' + ')).join(' alebo ')+'. Kusy z poľa sa do plodiny rátajú správne aj tak.'});
+      if(mine&&mine.length>1)out.push({tone:'ok',crop:g.crop,text:g.fields+' polí'+fl+' sedí na tvoje farmy '+mine.map(f=>f.name+' ('+f.size+')').join(' + ')+'.'});
+      else if(g.fields>120)out.push({tone:'warn',crop:g.crop,text:g.fields+' polí'+fl+' je viac ako jedna farma: '+c.slice(0,3).map(x=>x.join(' + ')).join(' alebo ')+'. Kusy z poľa sa do plodiny rátajú správne aj tak.'});
       else if(!c.length)out.push({tone:'warn',crop:g.crop,text:'Zber'+fl+' má '+g.fields+' polí, to nie je celá farma (40/80/120). '+fieldsNote(g).replace(/^nesedí na celé farmy \(40\/80\/120\); /,'')+'.'})}
-    if(g.pauses.length)out.push({tone:'info',crop:g.crop,text:'Zber bol prerušený '+g.pauses.length+'× ('+g.pauses.map(p=>hhmm(p.from)+' → '+hhmm(p.to)).join(', ')+'); všetko sa ráta ako jedna úroda.'});
-    if(g.full)out.push({tone:'info',crop:g.crop,text:g.full+'× plný inventár počas zberu.'});
   }
-  for(const p of d.plants)out.push({tone:'info',crop:p.crop||null,text:'Sadenie: '+p.who+', '+p.n+(p.n===1?' pole':p.n<5?' polia':' polí')+' ('+span(p.from,p.to)+').'});
-  for(const s of d.seeds)out.push({tone:'info',crop:s.crop,text:'Semienka: '+fmt(s.n)+' ks si dal hráčovi '+s.to+'.'});
   const rank={warn:0,ok:1,info:2};return out.sort((a,b)=>rank[a.tone]-rank[b.tone]);
 }
 const saleLogged=g=>db.tx.some(t=>t.logKey===g.key);
@@ -1286,6 +1278,10 @@ const harvLogged=g=>!!g.crop&&(cropInfo(g.crop).obs?.h||[]).some(x=>x.key===g.ke
 const hm=t=>new Date(t).toLocaleString('sk-SK',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'});
 const hhmm=t=>new Date(t).toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
 const span=(a,b)=>hm(a)+(b-a>60000?' – '+(new Date(a).toDateString()===new Date(b).toDateString()?hhmm(b):hm(b)):'');
+// Lišty na stránke logu: zatvorené, otvoria sa klikom; stav sa pamätá, aby sa pri obnovení nezatvorili.
+const logOpen={};
+const logBar=(key,title,meta,body)=>'<details class="panel log-bar" data-logbar="'+key+'"'+(logOpen[key]?' open':'')+'><summary><span class="lb-title">'+title+'</span><span class="lb-meta">'+meta+'</span>'+ic('arrow')+'</summary><div class="lb-body">'+body+'</div></details>';
+document.addEventListener('toggle',e=>{const k=e.target.dataset?.logbar;if(k)logOpen[k]=e.target.open},true);
 function logPage(){
   const head=heading('Log zo hry','Nahraj log zo SeeRPG. FarmDesk ho prečíta celý a ukáže, čo si zobral, predal a kde ostala úroda.',logData?btn('Nahrať iný log','logclear'):'');
   if(!logData)return head+'<section class="panel log-upload">'+(PICKER?'<div class="log-pick">'+btn('Načítať najnovší log','lognewest','basket','primary')+btn('Vybrať súbor','logpick','plus')+'</div>':'')+
@@ -1314,10 +1310,10 @@ function logPage(){
   return head+
     (d.file?'<p class="log-file">'+ic('basket')+E(d.file)+'</p>':'')+
     '<section class="panel log-sum"><div><small>Predaje spolu</small><strong>'+money(total)+'</strong></div><div><small>Zobraté</small><strong>'+fmt(harvests.reduce((t,g)=>t+g.pieces,0))+' ks</strong></div><div><small>Predané</small><strong>'+fmt(sales.reduce((t,g)=>t+g.pieces,0))+' ks</strong></div><div><small>Obdobie</small><strong>'+(d.from?span(d.from,d.to):'—')+'</strong></div></section>'+
-    '<section class="panel">'+section('Zistenia')+findHtml+'</section>'+
-    (ledger.length?'<section class="panel">'+section('Kde je úroda')+ledgerHtml+'</section>':'')+
-    '<section class="panel">'+section('Predaje','<span class="total">'+sales.length+'</span>')+(sales.length?'<div class="log-grid">'+sales.map(saleCard).join('')+'</div>':empty('V logu nie je žiadny predaj úrody.'))+'</section>'+
-    (harvests.length?'<section class="panel">'+section('Zbery','<span class="total">'+harvests.length+'</span>')+'<div class="log-grid">'+harvests.map(harvCard).join('')+'</div><p class="hint">Zápis do plodiny spresní Porovnanie plodín a Simuláciu úrody podľa toho, koľko kusov polia naozaj dávajú.</p></section>':'')+
+    logBar('finds','Zistenia',(()=>{const w=finds.filter(f=>f.tone==='warn').length;return w?'<span class="lb-warn">'+w+' na kontrolu</span>':finds.length?'všetko sedí':'nič'})(),findHtml)+
+    (ledger.length?logBar('ledger','Kde je úroda',ledger.length+(ledger.length===1?' plodina':ledger.length<5?' plodiny':' plodín'),ledgerHtml):'')+
+    logBar('sales','Predaje',sales.length?sales.length+' · '+money(total):'žiadne',sales.length?'<div class="log-grid">'+sales.map(saleCard).join('')+'</div>':empty('V logu nie je žiadny predaj úrody.'))+
+    (harvests.length?logBar('harv','Zbery',harvests.length+' · '+fmt(harvests.reduce((t,g)=>t+g.fields,0))+' polí','<div class="log-grid">'+harvests.map(harvCard).join('')+'</div><p class="hint">Zápis do plodiny spresní Porovnanie plodín a Simuláciu úrody podľa toho, koľko kusov polia naozaj dávajú.</p>'):'')+
     how;
 }
 // Výber priečinka s logmi (Chrome/Edge na PC): priečinok sa zapamätá v prehliadači, ďalej stačí jeden klik.
